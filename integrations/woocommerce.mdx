@@ -1,0 +1,225 @@
+---
+title: WooCommerce integration
+description: Learn how the WooCommerce plugin works with Rootfi and what data fields are synchronized
+---
+
+## Overview
+
+The WooCommerce integration allows Rootfi to connect with your WooCommerce store and synchronize e-commerce data. This integration enables you to access orders, products, customers, and other store data through the Rootfi API.
+
+## How it works
+
+The WooCommerce plugin establishes a secure connection between your WooCommerce store and Rootfi using the WooCommerce REST API. Once connected, Rootfi can fetch and synchronize data from your store at regular intervals or in real-time through webhooks.
+
+### Authentication
+
+The integration uses WooCommerce REST API keys for authentication:
+
+1. Generate API keys in your WooCommerce store (WooCommerce > Settings > Advanced > REST API)
+2. Provide the Consumer Key and Consumer Secret to Rootfi
+3. Rootfi establishes a secure connection using these credentials
+
+### Data synchronization
+
+Rootfi synchronizes data from WooCommerce through:
+
+- **Initial sync**: Complete data fetch when the integration is first established
+- **Incremental sync**: Regular updates to fetch new or modified records
+- **Webhook sync**: Real-time updates when configured (optional)
+
+## Data entities
+
+Rootfi fetches the following entities from WooCommerce:
+
+### Orders
+
+Order data includes transaction details, line items, customer information, and fulfillment status.
+
+**Key fields:**
+- `id` - Unique order identifier
+- `order_number` - Human-readable order number
+- `status` - Order status (pending, processing, completed, etc.)
+- `date_created` - Order creation timestamp
+- `date_modified` - Last modification timestamp
+- `total` - Order total amount
+- `currency` - Currency code
+- `customer_id` - Associated customer ID
+- `billing` - Billing address details
+- `shipping` - Shipping address details
+- `line_items` - Array of ordered products
+- `payment_method` - Payment method used
+- `transaction_id` - Payment transaction ID
+
+### Products
+
+Product catalog information including variants, pricing, and inventory.
+
+**Key fields:**
+- `id` - Unique product identifier
+- `name` - Product name
+- `slug` - URL-friendly product identifier
+- `type` - Product type (simple, variable, grouped, etc.)
+- `status` - Product status (publish, draft, pending)
+- `sku` - Stock keeping unit
+- `price` - Current price
+- `regular_price` - Regular price
+- `sale_price` - Sale price (if applicable)
+- `stock_quantity` - Available inventory count
+- `stock_status` - Stock status (instock, outofstock, onbackorder)
+- `categories` - Product categories
+- `images` - Product images
+- `attributes` - Product attributes
+- `variations` - Product variations (for variable products)
+
+### Customers
+
+Customer account and contact information.
+
+**Key fields:**
+- `id` - Unique customer identifier
+- `email` - Customer email address
+- `first_name` - Customer first name
+- `last_name` - Customer last name
+- `username` - Customer username
+- `date_created` - Account creation date
+- `billing` - Billing address details
+- `shipping` - Shipping address details
+- `orders_count` - Total number of orders
+- `total_spent` - Total amount spent
+
+### Refunds
+
+Refund transactions associated with orders.
+
+**Key fields:**
+- `id` - Unique refund identifier
+- `order_id` - Associated order ID
+- `date_created` - Refund creation date
+- `amount` - Refund amount
+- `reason` - Refund reason
+- `refunded_by` - User who processed the refund
+- `line_items` - Refunded line items
+
+### Categories
+
+Product category hierarchy and metadata.
+
+**Key fields:**
+- `id` - Unique category identifier
+- `name` - Category name
+- `slug` - URL-friendly category identifier
+- `parent` - Parent category ID
+- `description` - Category description
+- `count` - Number of products in category
+
+### Inventory
+
+Stock levels and inventory management data.
+
+**Key fields:**
+- `product_id` - Associated product ID
+- `stock_quantity` - Current stock level
+- `stock_status` - Stock availability status
+- `manage_stock` - Whether stock is managed
+- `backorders` - Backorder settings
+- `low_stock_amount` - Low stock threshold
+
+## Configuration
+
+### Prerequisites
+
+Before setting up the integration, ensure you have:
+
+- WooCommerce installed and activated on your WordPress site
+- Administrator access to your WooCommerce store
+- HTTPS enabled on your store (required for REST API)
+
+### Setup steps
+
+1. **Generate API credentials**
+   - Navigate to WooCommerce > Settings > Advanced > REST API
+   - Click "Add key"
+   - Set description (e.g., "Rootfi Integration")
+   - Select user with appropriate permissions
+   - Set permissions to "Read/Write"
+   - Click "Generate API key"
+   - Copy the Consumer Key and Consumer Secret
+
+2. **Connect to Rootfi**
+   - Log in to your Rootfi dashboard
+   - Navigate to Integrations
+   - Select WooCommerce
+   - Enter your store URL
+   - Provide the Consumer Key and Consumer Secret
+   - Click "Connect"
+
+3. **Configure sync settings** (optional)
+   - Set sync frequency
+   - Enable/disable specific data entities
+   - Configure webhook endpoints for real-time updates
+
+### Webhook configuration (optional)
+
+For real-time data synchronization, configure webhooks in WooCommerce:
+
+1. Navigate to WooCommerce > Settings > Advanced > Webhooks
+2. Create webhooks for the following events:
+   - Order created
+   - Order updated
+   - Product created
+   - Product updated
+   - Customer created
+   - Customer updated
+3. Set the delivery URL to your Rootfi webhook endpoint
+4. Set the secret key provided by Rootfi
+
+## API access
+
+Once the integration is active, you can access WooCommerce data through the Rootfi API:
+
+```bash
+GET /api/v1/woocommerce/orders
+GET /api/v1/woocommerce/products
+GET /api/v1/woocommerce/customers
+GET /api/v1/woocommerce/refunds
+```
+
+## Limitations
+
+- API rate limits apply based on your WooCommerce hosting environment
+- Large catalogs may require longer initial sync times
+- Some custom fields may require additional configuration
+- Webhook delivery depends on your server configuration
+
+## Troubleshooting
+
+### Connection issues
+
+If you encounter connection problems:
+
+- Verify API credentials are correct
+- Ensure HTTPS is enabled on your store
+- Check that the REST API is enabled in WooCommerce settings
+- Verify firewall rules allow outbound connections
+
+### Sync issues
+
+If data is not synchronizing:
+
+- Check sync logs in the Rootfi dashboard
+- Verify the integration status is "Active"
+- Ensure the API user has appropriate permissions
+- Check for WooCommerce plugin conflicts
+
+### Webhook issues
+
+If webhooks are not working:
+
+- Verify webhook URLs are correct
+- Check webhook delivery logs in WooCommerce
+- Ensure your server can make outbound HTTPS requests
+- Verify the webhook secret matches
+
+## Support
+
+For additional assistance with the WooCommerce integration, contact Rootfi support or refer to the [API documentation](/api-reference/introduction).
