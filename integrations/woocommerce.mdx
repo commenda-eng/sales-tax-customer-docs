@@ -1,0 +1,405 @@
+---
+title: WooCommerce integration
+description: Learn how Rootfi integrates with WooCommerce to fetch e-commerce data
+---
+
+## Overview
+
+Rootfi's WooCommerce integration enables you to seamlessly fetch and synchronize e-commerce data from WooCommerce stores. This integration provides access to orders, products, customers, inventory, and other critical business data.
+
+## How it works
+
+The WooCommerce integration connects to your WooCommerce store using the WooCommerce REST API. Once authenticated, Rootfi can fetch data from your store and keep it synchronized in real-time through webhooks.
+
+### Architecture
+
+1. **Authentication**: Secure connection using WooCommerce API keys
+2. **Data fetching**: Periodic synchronization of store data via REST API
+3. **Real-time updates**: Webhook notifications for immediate data changes
+4. **Data normalization**: Standardized data format across all integrations
+
+## Authentication
+
+### Prerequisites
+
+- WooCommerce store with REST API enabled
+- Admin access to generate API credentials
+- HTTPS enabled on your store (required for API access)
+
+### Connection process
+
+1. Navigate to your WooCommerce admin dashboard
+2. Go to **WooCommerce** > **Settings** > **Advanced** > **REST API**
+3. Click **Add key** to generate new API credentials
+4. Set the following:
+   - **Description**: Rootfi Integration
+   - **User**: Select an admin user
+   - **Permissions**: Read/Write
+5. Copy the generated **Consumer Key** and **Consumer Secret**
+6. In Rootfi, provide:
+   - Store URL
+   - Consumer Key
+   - Consumer Secret
+7. Test the connection to verify access
+
+### Security considerations
+
+- API keys should be stored securely and never exposed in client-side code
+- Use HTTPS for all API communications
+- Regularly rotate API credentials
+- Monitor API access logs for suspicious activity
+
+## Data entities
+
+Rootfi fetches the following data entities from WooCommerce:
+
+### Orders
+
+Complete order information including line items, customer details, and fulfillment status.
+
+**Key fields:**
+- `id` - Unique order identifier
+- `order_number` - Human-readable order number
+- `status` - Order status (pending, processing, completed, etc.)
+- `date_created` - Order creation timestamp
+- `date_modified` - Last modification timestamp
+- `total` - Order total amount
+- `subtotal` - Subtotal before taxes and shipping
+- `total_tax` - Total tax amount
+- `shipping_total` - Shipping cost
+- `discount_total` - Total discount amount
+- `currency` - Order currency code
+- `customer_id` - Associated customer ID
+- `billing` - Billing address object
+- `shipping` - Shipping address object
+- `payment_method` - Payment method used
+- `payment_method_title` - Payment method display name
+- `line_items` - Array of ordered products
+- `shipping_lines` - Shipping method details
+- `tax_lines` - Tax breakdown
+- `fee_lines` - Additional fees
+- `coupon_lines` - Applied coupons
+- `refunds` - Refund information
+
+### Products
+
+Product catalog including variations, pricing, and inventory.
+
+**Key fields:**
+- `id` - Unique product identifier
+- `name` - Product name
+- `slug` - URL-friendly product identifier
+- `type` - Product type (simple, variable, grouped, external)
+- `status` - Publication status (publish, draft, pending)
+- `sku` - Stock keeping unit
+- `price` - Current price
+- `regular_price` - Regular price before discounts
+- `sale_price` - Sale price if on sale
+- `date_on_sale_from` - Sale start date
+- `date_on_sale_to` - Sale end date
+- `stock_quantity` - Available stock count
+- `stock_status` - Stock status (instock, outofstock, onbackorder)
+- `manage_stock` - Whether stock is managed
+- `categories` - Product categories
+- `tags` - Product tags
+- `images` - Product images array
+- `attributes` - Product attributes
+- `variations` - Product variations (for variable products)
+- `weight` - Product weight
+- `dimensions` - Product dimensions (length, width, height)
+- `description` - Full product description
+- `short_description` - Short product description
+
+### Customers
+
+Customer profiles and contact information.
+
+**Key fields:**
+- `id` - Unique customer identifier
+- `email` - Customer email address
+- `first_name` - Customer first name
+- `last_name` - Customer last name
+- `username` - Customer username
+- `date_created` - Account creation date
+- `date_modified` - Last modification date
+- `billing` - Billing address object
+  - `first_name`
+  - `last_name`
+  - `company`
+  - `address_1`
+  - `address_2`
+  - `city`
+  - `state`
+  - `postcode`
+  - `country`
+  - `email`
+  - `phone`
+- `shipping` - Shipping address object
+  - `first_name`
+  - `last_name`
+  - `company`
+  - `address_1`
+  - `address_2`
+  - `city`
+  - `state`
+  - `postcode`
+  - `country`
+- `orders_count` - Total number of orders
+- `total_spent` - Total amount spent
+- `avatar_url` - Customer avatar URL
+
+### Inventory
+
+Stock levels and inventory management data.
+
+**Key fields:**
+- `product_id` - Associated product ID
+- `variation_id` - Variation ID (if applicable)
+- `sku` - Stock keeping unit
+- `stock_quantity` - Current stock level
+- `stock_status` - Stock availability status
+- `manage_stock` - Whether stock management is enabled
+- `backorders` - Backorder settings (no, notify, yes)
+- `low_stock_amount` - Low stock threshold
+
+### Categories
+
+Product categorization and taxonomy.
+
+**Key fields:**
+- `id` - Unique category identifier
+- `name` - Category name
+- `slug` - URL-friendly identifier
+- `parent` - Parent category ID
+- `description` - Category description
+- `display` - Display type
+- `image` - Category image
+- `count` - Number of products in category
+
+### Coupons
+
+Discount codes and promotional offers.
+
+**Key fields:**
+- `id` - Unique coupon identifier
+- `code` - Coupon code
+- `amount` - Discount amount
+- `discount_type` - Type of discount (percent, fixed_cart, fixed_product)
+- `description` - Coupon description
+- `date_expires` - Expiration date
+- `usage_count` - Number of times used
+- `usage_limit` - Maximum usage limit
+- `usage_limit_per_user` - Per-user usage limit
+- `individual_use` - Whether coupon can be used with other coupons
+- `product_ids` - Applicable product IDs
+- `excluded_product_ids` - Excluded product IDs
+- `minimum_amount` - Minimum order amount
+- `maximum_amount` - Maximum order amount
+
+### Refunds
+
+Order refund information.
+
+**Key fields:**
+- `id` - Unique refund identifier
+- `order_id` - Associated order ID
+- `date_created` - Refund creation date
+- `amount` - Refund amount
+- `reason` - Refund reason
+- `refunded_by` - User who processed refund
+- `line_items` - Refunded line items
+
+### Tax rates
+
+Tax configuration and rates.
+
+**Key fields:**
+- `id` - Unique tax rate identifier
+- `country` - Country code
+- `state` - State code
+- `postcode` - Postal code
+- `city` - City name
+- `rate` - Tax rate percentage
+- `name` - Tax rate name
+- `priority` - Tax priority
+- `compound` - Whether tax is compound
+- `shipping` - Whether tax applies to shipping
+- `class` - Tax class
+
+## API endpoints
+
+Rootfi uses the following WooCommerce REST API endpoints:
+
+### Orders
+- `GET /wp-json/wc/v3/orders` - List all orders
+- `GET /wp-json/wc/v3/orders/{id}` - Get single order
+- `POST /wp-json/wc/v3/orders` - Create order
+- `PUT /wp-json/wc/v3/orders/{id}` - Update order
+
+### Products
+- `GET /wp-json/wc/v3/products` - List all products
+- `GET /wp-json/wc/v3/products/{id}` - Get single product
+- `POST /wp-json/wc/v3/products` - Create product
+- `PUT /wp-json/wc/v3/products/{id}` - Update product
+
+### Customers
+- `GET /wp-json/wc/v3/customers` - List all customers
+- `GET /wp-json/wc/v3/customers/{id}` - Get single customer
+- `POST /wp-json/wc/v3/customers` - Create customer
+- `PUT /wp-json/wc/v3/customers/{id}` - Update customer
+
+### Product variations
+- `GET /wp-json/wc/v3/products/{product_id}/variations` - List variations
+- `GET /wp-json/wc/v3/products/{product_id}/variations/{id}` - Get variation
+
+### Categories
+- `GET /wp-json/wc/v3/products/categories` - List categories
+- `GET /wp-json/wc/v3/products/categories/{id}` - Get category
+
+### Coupons
+- `GET /wp-json/wc/v3/coupons` - List coupons
+- `GET /wp-json/wc/v3/coupons/{id}` - Get coupon
+
+### Refunds
+- `GET /wp-json/wc/v3/orders/{order_id}/refunds` - List refunds
+- `GET /wp-json/wc/v3/orders/{order_id}/refunds/{id}` - Get refund
+
+### Tax rates
+- `GET /wp-json/wc/v3/taxes` - List tax rates
+- `GET /wp-json/wc/v3/taxes/{id}` - Get tax rate
+
+## Webhooks
+
+Rootfi configures webhooks to receive real-time updates from WooCommerce.
+
+### Supported webhook events
+
+**Orders:**
+- `order.created` - New order created
+- `order.updated` - Order updated
+- `order.deleted` - Order deleted
+
+**Products:**
+- `product.created` - New product created
+- `product.updated` - Product updated
+- `product.deleted` - Product deleted
+
+**Customers:**
+- `customer.created` - New customer registered
+- `customer.updated` - Customer profile updated
+- `customer.deleted` - Customer deleted
+
+**Inventory:**
+- `product.updated` - Stock level changed (via product update)
+
+### Webhook configuration
+
+Webhooks are automatically configured during the integration setup:
+
+1. Rootfi creates webhook subscriptions via the WooCommerce API
+2. Webhook endpoint: `https://api.rootfi.com/webhooks/woocommerce/{integration_id}`
+3. Webhook secret is generated for signature verification
+4. Events are delivered in real-time as they occur
+
+### Webhook payload
+
+Each webhook includes:
+- `event` - Event type
+- `created_at` - Event timestamp
+- `resource` - Resource type (order, product, customer)
+- `data` - Complete resource data
+
+### Webhook security
+
+- All webhooks are signed with HMAC-SHA256
+- Signatures are verified before processing
+- Invalid signatures are rejected
+- Webhook endpoints use HTTPS only
+
+## Data synchronization
+
+### Initial sync
+
+When you first connect a WooCommerce store:
+
+1. Rootfi fetches all historical data
+2. Data is processed in batches to avoid rate limits
+3. Sync progress is tracked and resumable
+4. Typical sync time: 5-30 minutes depending on store size
+
+### Incremental sync
+
+After initial sync:
+
+1. Webhooks provide real-time updates
+2. Periodic polling ensures data consistency
+3. Modified records are detected and updated
+4. Deleted records are marked as inactive
+
+### Rate limits
+
+WooCommerce API rate limits:
+- Default: 25 requests per 10 seconds
+- Configurable per store
+- Rootfi automatically handles rate limiting with exponential backoff
+
+## Troubleshooting
+
+### Common issues
+
+**Authentication failed:**
+- Verify API credentials are correct
+- Ensure REST API is enabled in WooCommerce settings
+- Check that HTTPS is enabled on your store
+- Confirm the API user has admin permissions
+
+**Missing data:**
+- Check that the API user has appropriate permissions
+- Verify the data exists in WooCommerce
+- Review API rate limits and sync status
+- Check webhook delivery logs
+
+**Webhook not receiving updates:**
+- Verify webhook is active in WooCommerce settings
+- Check webhook delivery logs in WooCommerce
+- Ensure firewall allows outbound connections
+- Verify webhook URL is accessible
+
+**Sync performance issues:**
+- Large product catalogs may take longer to sync
+- Consider increasing API rate limits
+- Check for API errors in logs
+- Monitor server resources
+
+### Support
+
+For additional help:
+- Check Rootfi integration logs
+- Review WooCommerce system status
+- Contact Rootfi support with integration ID
+- Provide relevant error messages and timestamps
+
+## Best practices
+
+1. **Regular monitoring**: Check sync status and webhook delivery regularly
+2. **API key rotation**: Rotate API credentials periodically for security
+3. **Test environment**: Test integration changes in staging before production
+4. **Data validation**: Verify critical data after initial sync
+5. **Error handling**: Monitor error logs and set up alerts for failures
+6. **Performance optimization**: Use webhooks for real-time updates instead of frequent polling
+7. **Backup**: Maintain regular backups of your WooCommerce data
+
+## Limitations
+
+- Historical data retention depends on WooCommerce configuration
+- Some custom fields may require additional mapping
+- Third-party plugin data may not be included by default
+- API rate limits may affect sync speed for large stores
+- Webhook delivery is not guaranteed (use polling as backup)
+
+## Next steps
+
+- [Configure data mappings](#)
+- [Set up automated workflows](#)
+- [Monitor integration health](#)
+- [Explore analytics and reporting](#)
