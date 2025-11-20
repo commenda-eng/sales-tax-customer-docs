@@ -4,8 +4,8 @@
   "name": "Commenda Platform Documentation",
   "colors": {
     "primary": "#026EB9",
-    "light": "#D6E2E9",
-    "dark": "#98C1D7"
+    "light": "#98C1D7",
+    "dark": "#D6E2E9"
   },
   "favicon": "/favicon-32x32.png",
   "navigation": {
