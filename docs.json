@@ -1,17 +1,17 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "linden",
-  "name": "Commenda Sales Tax",
+  "name": "Commenda Platform Documentation",
   "colors": {
     "primary": "#026EB9",
-    "light": "#026EB9",
+    "light": "#D6E2E9",
     "dark": "#98C1D7"
   },
   "favicon": "/favicon-32x32.png",
   "navigation": {
     "tabs": [
       {
-        "tab": "Guides",
+        "tab": "Integration Guides",
         "groups": [
           {
             "group": "Getting started",
@@ -48,7 +48,7 @@
         ]
       },
       {
-        "tab": "API reference",
+        "tab": "Compliance Engine",
         "groups": [
           {
             "group": "API documentation",
@@ -85,8 +85,8 @@
     }
   },
   "logo": {
-    "light": "/logo/light.svg",
-    "dark": "/logo/dark.svg"
+    "light": "/logo/FullLogoLockupBlack.svg",
+    "dark": "/logo/FullLogoLockupWhite.svg"
   },
   "navbar": {
     "links": [
