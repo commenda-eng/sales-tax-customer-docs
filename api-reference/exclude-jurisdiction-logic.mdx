@@ -1,0 +1,164 @@
+---
+title: 'Exclude jurisdiction logic'
+description: 'How the calculation endpoint handles jurisdiction exclusion for tax calculations'
+---
+
+## Overview
+
+The exclude jurisdiction logic allows you to configure tax rates that selectively exclude certain jurisdiction types from tax calculations. This is useful for scenarios where specific jurisdiction types should not be taxed based on the tax rate configuration.
+
+## How it works
+
+When a tax rate is configured with excluded jurisdiction types, the calculation engine filters out those jurisdiction types before applying the tax rate. This ensures that tax is only calculated for the appropriate jurisdictions.
+
+### Database schema
+
+The `jurisdiction_rates` table includes an `exclude_jurisdiction_types` column:
+
+```sql
+ALTER TABLE "jurisdiction_rates" 
+ADD COLUMN "exclude_jurisdiction_types" text[] NULL;
+```
+
+This column stores an array of jurisdiction type strings that should be excluded when applying this tax rate.
+
+## Jurisdiction types
+
+The following jurisdiction types can be excluded:
+
+- `STATE_OR_PROVINCE` - State or province level jurisdictions
+- `COUNTY` - County level jurisdictions  
+- `CITY` - City level jurisdictions
+- `DISTRICT` - Special district jurisdictions
+- `LOCAL` - Local jurisdictions
+
+## Configuration
+
+### Setting excluded jurisdictions
+
+When ingesting tax rates via CSV, you can specify excluded jurisdiction types in the `exclude jurisdictions` column:
+
+```csv
+commenda id,rate,tax type,exclude jurisdictions
+STATE_CA_1001,8.5%,SALES_TAX,"CITY,DISTRICT"
+```
+
+The system will:
+1. Split the comma-separated values
+2. Trim whitespace from each type
+3. Sort them lexicographically
+4. Validate each type against the allowed jurisdiction types
+5. Store them in the database
+
+### Validation
+
+The system validates that all excluded jurisdiction types are valid. If an invalid type is provided, the ingestion will fail with an error:
+
+```
+invalid jurisdiction type passed. Passed jurisdiction type (INVALID_TYPE)
+```
+
+## Calculation behavior
+
+During tax calculation, the exclude jurisdiction logic works as follows:
+
+1. **Jurisdiction resolution**: The system resolves all applicable jurisdictions for the transaction address
+2. **Rate retrieval**: Tax rates are fetched for the resolved jurisdictions
+3. **Filtering**: For each rate with `exclude_jurisdiction_types` configured, the system filters out jurisdictions matching those types
+4. **Tax calculation**: Tax is calculated only on the remaining (non-excluded) jurisdictions
+
+### Example scenario
+
+Consider a transaction in California with the following resolved jurisdictions:
+- `STATE_CA_1001` (State)
+- `CO_CEN_06_037` (County - Los Angeles)
+- `CI_CEN_06_037_44000` (City - Los Angeles)
+
+If a tax rate is configured with:
+- `commenda_jurisdiction_id`: `STATE_CA_1001`
+- `rate`: 7.25%
+- `exclude_jurisdiction_types`: `["CITY", "DISTRICT"]`
+
+The calculation will:
+1. Apply the 7.25% rate to state and county jurisdictions
+2. Exclude city and district jurisdictions from this rate
+3. Allow other rates (if configured) to apply to the excluded jurisdiction types
+
+## Use cases
+
+### State-level exemptions
+
+Exclude local jurisdictions when applying state-level tax rates:
+
+```csv
+STATE_TX_1001,6.25%,SALES_TAX,"CITY,COUNTY,DISTRICT"
+```
+
+### County-level restrictions
+
+Exclude city jurisdictions when applying county rates:
+
+```csv
+CO_CEN_48_201,1.0%,SALES_TAX,"CITY"
+```
+
+### Special district handling
+
+Exclude specific jurisdiction types for special tax districts:
+
+```csv
+DIST_CA_1001_001,0.5%,SALES_TAX,"CITY,COUNTY"
+```
+
+## API integration
+
+The exclude jurisdiction logic is automatically applied during tax calculations through the calculation endpoint. No additional API parameters are required - the logic is driven entirely by the tax rate configuration in the database.
+
+### Calculation endpoint
+
+When you call the calculation endpoint:
+
+```bash
+POST /api/v1/calculate
+```
+
+The system automatically:
+1. Resolves jurisdictions for the provided address
+2. Retrieves applicable tax rates
+3. Applies exclude jurisdiction filtering
+4. Returns the calculated tax amounts
+
+## Best practices
+
+1. **Be specific**: Only exclude jurisdiction types that should genuinely not be taxed by this rate
+2. **Avoid conflicts**: Ensure excluded jurisdictions have alternative rates configured if they should be taxed
+3. **Test thoroughly**: Verify calculations with various address combinations to ensure correct behavior
+4. **Document exceptions**: Keep records of why specific jurisdiction types are excluded for audit purposes
+
+## Technical implementation
+
+The exclude jurisdiction logic is implemented in the content ingestion service:
+
+```go
+// From jurisdiction_rates.go
+excludedJurisdictionTypes := getHeaderValue(row, headerMap, "exclude jurisdictions")
+
+if excludedJurisdictionTypes != "" {
+    // Split by comma, trim spaces, sort lexicographically
+    types := strings.Split(excludedJurisdictionTypes, ",")
+    for i, t := range types {
+        types[i] = strings.TrimSpace(t)
+    }
+    sort.Strings(types)
+    excludedJurisdictionTypes = strings.Join(types, ",")
+}
+
+// Validate each jurisdiction type
+for _, eachJurisdictionType := range strings.Split(excludedJurisdictionTypes, ",") {
+    if !isValidJurisdictionType(eachJurisdictionType) {
+        return error
+    }
+}
+```
+
+The filtered jurisdiction types are stored in the database and automatically applied during tax calculations.
