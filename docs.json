@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "mint",
+  "theme": "linden",
   "name": "Commenda Sales Tax",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#026EB9",
+    "light": "#026EB9",
+    "dark": "#98C1D7"
   },
   "favicon": "/favicon-32x32.png",
   "navigation": {
