@@ -17,7 +17,8 @@
             "group": "Integrations",
             "pages": [
               "integrations/overview",
-              "integrations/woocommerce/setup"
+              "integrations/woocommerce/setup",
+              "integrations/settings"
             ]
           },
           {
