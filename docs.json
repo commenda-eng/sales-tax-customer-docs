@@ -22,6 +22,12 @@
             ]
           },
           {
+            "group": "Integrations",
+            "pages": [
+              "integrations/woocommerce"
+            ]
+          },
+          {
             "group": "Customization",
             "pages": [
               "essentials/settings",
