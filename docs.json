@@ -11,12 +11,12 @@
   "navigation": {
     "tabs": [
       {
-        "tab": "Integration Guides",
+        "tab": "Guides",
         "groups": [
           {
-            "group": "Aryan's Group",
+            "group": "Integrations",
             "pages": [
-              "aryans-folder/the-one"
+              "integrations/woocommerce"
             ]
           },
           {
