@@ -16,6 +16,7 @@
           {
             "group": "Integrations",
             "pages": [
+              "integrations/overview",
               "integrations/woocommerce/setup"
             ]
           },
