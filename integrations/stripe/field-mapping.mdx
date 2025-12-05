@@ -555,3 +555,97 @@ All Stripe monetary amounts are in the currency's smallest unit (e.g., cents for
 | BHD | 3 | 1000 | 1.000 |
 
 By the time data reaches Sales Tax API, all amounts are already converted to standard units (dollars, not cents).
+
+---
+
+## Summary: RootFi Unified API vs Stripe RawData
+
+This section provides a clear summary of which Sales Tax fields come from RootFi's normalized fields versus Stripe's raw data.
+
+### Fields from Stripe RawData
+
+| Entity | Sales Tax Field | RawData Path | Why RawData? |
+|--------|-----------------|--------------|--------------|
+| Customer | Ship To Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` | Stripe address structure preserved |
+| Customer | Ship To City | `raw_data.shipping.address.city` or `raw_data.city` | Stripe address structure preserved |
+| Customer | Ship To State | `raw_data.shipping.address.state` or `raw_data.state` | Stripe address structure preserved |
+| Customer | Ship To Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Stripe address structure preserved |
+| Customer | Ship To Country | `raw_data.shipping.address.country` or `raw_data.country` | Stripe address structure preserved |
+| Transaction | Ship To Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` | Stripe address structure preserved |
+| Transaction | Ship To City | `raw_data.shipping.address.city` or `raw_data.city` | Stripe address structure preserved |
+| Transaction | Ship To State | `raw_data.shipping.address.state` or `raw_data.state` | Stripe address structure preserved |
+| Transaction | Ship To Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Stripe address structure preserved |
+| Transaction | Ship To Country | `raw_data.shipping.address.country` or `raw_data.country` | Stripe address structure preserved |
+
+### Fields from RootFi Unified API
+
+| Entity | Sales Tax Field | RootFi Field |
+|--------|-----------------|--------------|
+| Customer | Name | `name` |
+| Customer | Email | `external_links` (type=EMAIL) |
+| Customer | Phone | `phone_numbers` |
+| Customer | Source Platform ID | `platform_id` |
+| Product | Name | `name` |
+| Product | Description | `description` |
+| Product | Source Platform ID | `platform_id` |
+| Transaction | Transaction Date | `posted_date` |
+| Transaction | Currency | `currency_id` |
+| Transaction | Subtotal | `sub_total` |
+| Transaction | Discount | `total_discount` |
+| Transaction | Shipping Amount | `shipping_amount` |
+| Transaction | Total | `total_amount` |
+| Transaction | Tax Amount | `tax_amount` |
+| Transaction | Invoice Number | `document_number` |
+| Transaction | Source Platform ID | `platform_id` |
+| Transaction | Customer ID | `contact_id` |
+| Line Item | Amount | `total_amount` |
+| Line Item | Quantity | `quantity` |
+| Line Item | Discount | `total_discount` |
+| Line Item | Tax Amount | `tax_amount` |
+| Line Item | Unit Amount | `unit_amount` |
+| Line Item | Product ID | `item_id` |
+
+### Fields NOT mapped from Stripe
+
+| Entity | Sales Tax Field | Value | Notes |
+|--------|-----------------|-------|-------|
+| Product | SKU | `""` (empty) | Stripe products don't have SKU in RootFi mapping |
+| Product | Tax Code | `""` (empty) | Must be configured manually |
+| Line Item | Product SKU | `""` (empty) | Not available from Stripe |
+| Line Item | Product Taxability Code | `""` (empty) | Except shipping items: `SRV_Shipping` |
+| Transaction | Ship From Address | `""` (empty) | Not mapped from Stripe |
+
+### Address parsing code reference
+
+The Stripe address parsing logic in `sync.address_parser.ts`:
+
+```typescript
+if (integration === RootFiIntegration.STRIPE) {
+  const rawAddress = addressData?.raw_data?.shipping?.address 
+                     ?? addressData?.raw_data;
+  return (
+    (rawAddress?.line1 ? rawAddress?.line1 + ", " : "") +
+    (rawAddress?.city ? rawAddress?.city + ", " : "") +
+    (rawAddress?.state ? rawAddress?.state + ", " : "") +
+    (rawAddress?.postal_code ? rawAddress?.postal_code + ", " : "") +
+    (rawAddress?.country ? rawAddress?.country + ", " : "")
+  );
+}
+```
+
+### Product mapping code reference
+
+The Stripe product mapping in `stripe.transformer.ts`:
+
+```typescript
+getProductMapper(): (product: PaymentItemWebhookData) => any {
+  return (product: PaymentItemWebhookData): BulkUploadProductTemplate => ({
+    "Product Name": product.name,
+    SKU: "",  // Not mapped from Stripe
+    "Product Taxability Code": "",  // Not mapped from Stripe
+    "Product Description": product.description,
+    "Source Platform ID": product.platform_id,
+    "Source Platform": RootFiIntegration.STRIPE,
+  });
+}
+```
