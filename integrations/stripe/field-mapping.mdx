@@ -1,0 +1,779 @@
+---
+title: Stripe field mapping reference
+description: Complete mapping of Stripe data fields to RootFi and Sales Tax models with transformation logic
+---
+
+This document provides a comprehensive reference for how Stripe data fields are mapped through RootFi to the final Sales Tax models. Each section details the source field, target field, and any transformation logic applied.
+
+## Data flow overview
+
+```
+Stripe Raw Data → RootFi Data Model → Sales Tax API Model
+```
+
+The integration follows a three-stage transformation:
+1. **Stripe Raw Data**: Original data from Stripe API
+2. **RootFi Data Model**: Normalized intermediate representation
+3. **Sales Tax Model**: Final model used for tax calculations
+
+---
+
+## Customer mapping
+
+### Stripe → RootFi (PAYMENT_CUSTOMERS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `updated_at` | `_` | date | Not available from Stripe |
+| `name` | `name` | string | Direct mapping |
+| `tax_number` | `tax_ids.data.0.value` | string | First tax ID value |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `addresses` | `_` | array | `STRIPE_CONTACT_ADDRESS_PARSER` |
+| `phone_numbers` | `_` | string | `STRIPE_CONTACT_PHONE_NUMBERS_PARSER` |
+| `external_links` | `_` | string | `STRIPE_CONTACT_EXTERNAL_LINKS_PARSER` |
+
+### RootFi → Sales Tax (Customer)
+
+| Sales Tax Field | Source | Derivation |
+|-----------------|--------|------------|
+| `ID` | RootFi `platform_id` | UUID generated |
+| `Name` | RootFi `name` | Direct mapping |
+| `Email` | RootFi `external_links` | Extracted from EMAIL type external link |
+| `SourcePlatformID` | RootFi `platform_id` | Stripe customer ID (e.g., `cus_xxx`) |
+| `SourcePlatform` | Integration type | Set to `STRIPE` |
+| `Corporation_id` | Context | From integration connection |
+| `ShippingAddress` | RootFi `addresses` | Address with type `SHIPPING` |
+
+### Parser functions
+
+#### STRIPE_DATE_PARSER
+```pseudo
+function STRIPE_DATE_PARSER(timestamp):
+    if timestamp is null:
+        return null
+    # Stripe timestamps are in seconds (Unix epoch)
+    return new Date(timestamp * 1000).toISOString()
+```
+
+#### STRIPE_CURRENCY_PARSER
+```pseudo
+function STRIPE_CURRENCY_PARSER(currency_code):
+    if currency_code is null:
+        return null
+    # Stripe returns lowercase currency codes (e.g., "usd")
+    uppercase_code = currency_code.toUpperCase()
+    if isValidISO4217(uppercase_code):
+        return uppercase_code
+    return null
+```
+
+#### STRIPE_CONTACT_ADDRESS_PARSER
+```pseudo
+function STRIPE_CONTACT_ADDRESS_PARSER(customer):
+    addresses = []
+    
+    # Billing address from customer.address
+    if customer.address exists:
+        billing = mapAddress(customer.address, "BILLING", data_model, customer.id)
+        addresses.push(billing)
+    
+    # Shipping address from customer.shipping.address
+    if customer.shipping?.address exists:
+        shipping = mapAddress(customer.shipping.address, "SHIPPING", data_model, customer.id)
+        addresses.push(shipping)
+    
+    return addresses
+```
+
+#### STRIPE_CONTACT_PHONE_NUMBERS_PARSER
+```pseudo
+function STRIPE_CONTACT_PHONE_NUMBERS_PARSER(customer):
+    phone_numbers = []
+    if customer.phone exists:
+        phone = mapPhoneNumber(customer.phone, "MOBILE", data_model, customer.id)
+        phone_numbers.push(phone)
+    return phone_numbers
+```
+
+#### STRIPE_CONTACT_EXTERNAL_LINKS_PARSER
+```pseudo
+function STRIPE_CONTACT_EXTERNAL_LINKS_PARSER(customer):
+    external_links = []
+    if customer.email exists:
+        email = mapExternalLinks(data_model, customer.id, customer.email, "EMAIL")
+        external_links.push(email)
+    return external_links
+```
+
+---
+
+## Product mapping
+
+### Stripe → RootFi (PAYMENT_PRODUCTS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `description` | `description` | string | Direct mapping |
+| `name` | `name` | string | Direct mapping |
+| `status` | `active` | string | `STRIPE_PRODUCT_STATUS_PARSER` |
+| `updated_at` | `updated` | date | `STRIPE_DATE_PARSER` |
+
+### Stripe → RootFi (PAYMENT_ITEMS - Legacy)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `name` | `name` | string | Direct mapping |
+| `description` | `description` | string | Direct mapping |
+| `code` | `_` | string | Not available |
+| `unit_price` | `default_price.unit_amount` | number | Direct (in cents) |
+| `updated_at` | `_` | date | Not available |
+| `currency_id` | `default_price.currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `status` | `active` | string | `STRIPE_PRODUCT_STATUS_PARSER` |
+
+### RootFi → Sales Tax (Product)
+
+| Sales Tax Field | Source | Derivation |
+|-----------------|--------|------------|
+| `ID` | Generated | UUID |
+| `Name` | RootFi `name` | Direct mapping |
+| `TaxCode` | RootFi or default | From product or defaults to `TPP` |
+| `Sku` | RootFi `code` | Direct mapping if available |
+| `Description` | RootFi `description` | Direct mapping |
+| `SourcePlatformID` | RootFi `platform_id` | Stripe product ID (e.g., `prod_xxx`) |
+| `SourcePlatform` | Integration type | Set to `STRIPE` |
+| `CorporationId` | Context | From integration connection |
+
+### Parser functions
+
+#### STRIPE_PRODUCT_STATUS_PARSER
+```pseudo
+function STRIPE_PRODUCT_STATUS_PARSER(active):
+    if active == true:
+        return "ACTIVE"
+    else:
+        return "ARCHIVED"
+```
+
+---
+
+## Invoice/Transaction mapping
+
+### Stripe → RootFi (PAYMENT_INVOICES)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `document_number` | `number` | string | Direct mapping |
+| `contact_id` | `customer` | string | Stripe customer ID |
+| `posted_date` | `effective_at` | date | `STRIPE_DATE_PARSER` |
+| `due_date` | `due_date` | date | `STRIPE_DATE_PARSER` |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `status` | `status` | string | `ARTIFACT_STATUS_ENUM` mapper |
+| `sub_total` | `subtotal` | number | `STRIPE_AMOUNT_PARSER` |
+| `tax_amount` | `_` | number | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
+| `total_discount` | `_` | number | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
+| `total_amount` | `total` | number | `STRIPE_AMOUNT_PARSER` |
+| `amount_due` | `amount_due` | number | `STRIPE_AMOUNT_PARSER` |
+| `memo` | `description` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `line_items` | `lines.data` | array | Nested mapping to `PAYMENT_LINE_ITEMS` |
+| `addresses` | `_` | array | `STRIPE_INVOICE_ADDRESS_PARSER` |
+| `shipping_amount` | `shipping_cost.amount_total` | number | `STRIPE_AMOUNT_PARSER` |
+
+### RootFi → Sales Tax (Invoice)
+
+| Sales Tax Field | Source | Derivation |
+|-----------------|--------|------------|
+| `ID` | Generated | UUID |
+| `CorporationId` | Context | From integration connection |
+| `TransactedAt` | RootFi `posted_date` | ISO date string |
+| `InvoiceCurrency` | RootFi `currency_id` | ISO currency code |
+| `Subtotal` | RootFi `sub_total` | Converted to dollars |
+| `Discount` | RootFi `total_discount` | Converted to dollars |
+| `ShippingAndHandling` | RootFi `shipping_amount` | Converted to dollars |
+| `Total` | RootFi `total_amount` | Converted to dollars |
+| `TaxCollected` | RootFi `tax_amount` | Converted to dollars |
+| `TransactionType` | Derived | `SALE`, `RETURN`, or `REFUND` |
+| `SourcePlatform` | Integration type | Set to `STRIPE` |
+| `SourcePlatformID` | RootFi `platform_id` | Stripe invoice ID (e.g., `in_xxx`) |
+| `InvoiceNumber` | RootFi `document_number` | Direct mapping |
+| `CustomerId` | Lookup | Resolved by `source_platform_id` |
+| `ShippingAddress` | RootFi `addresses` | Address with type `SHIPPING` |
+
+### Parser functions
+
+#### STRIPE_AMOUNT_PARSER
+```pseudo
+function STRIPE_AMOUNT_PARSER(value, record, stack):
+    if value is null:
+        return null
+    
+    # Determine currency from record or parent
+    if record.object == "invoice" or record.object == "credit_note":
+        currency = record.currency
+    else if record.object == "line_item" or record.object == "credit_note_line_item":
+        currency = stack[1].currency  # Parent's currency
+    
+    # Convert from smallest unit (cents) to standard unit (dollars)
+    return CurrencyHandler.fromLowerDenominator(value, currency)
+    
+    # Example: 1000 cents USD → 10.00 dollars
+```
+
+#### STRIPE_TOTAL_TAX_AMOUNT_PARSER
+```pseudo
+function STRIPE_TOTAL_TAX_AMOUNT_PARSER(record, stack):
+    tax_amounts = []
+    
+    if record.object == "invoice" or record.object == "credit_note":
+        # Use total_tax_amounts or tax_amounts array
+        tax_amounts = record.total_tax_amounts ?? record.tax_amounts ?? []
+        currency = record.currency
+    else if record.object == "line_item" or record.object == "credit_note_line_item":
+        tax_amounts = record.tax_amounts ?? []
+        currency = stack[1].currency  # Parent's currency
+    
+    # Sum all tax amounts
+    total = 0
+    for each tax in tax_amounts:
+        total += tax.amount
+    
+    return CurrencyHandler.fromLowerDenominator(total, currency)
+```
+
+#### STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER
+```pseudo
+function STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER(record, stack):
+    discount_amounts = []
+    
+    if record.object == "invoice" or record.object == "credit_note":
+        discount_amounts = record.total_discount_amounts ?? record.discount_amounts ?? []
+        currency = record.currency
+    else if record.object == "line_item" or record.object == "credit_note_line_item":
+        discount_amounts = record.discount_amounts ?? []
+        currency = stack[1].currency
+    
+    # Sum all discount amounts
+    total = 0
+    for each discount in discount_amounts:
+        total += discount.amount
+    
+    return CurrencyHandler.fromLowerDenominator(total, currency)
+```
+
+#### STRIPE_INVOICE_ADDRESS_PARSER
+```pseudo
+function STRIPE_INVOICE_ADDRESS_PARSER(invoice):
+    addresses = []
+    
+    # Billing address from invoice.customer_address
+    if invoice.customer_address exists:
+        billing = mapAddress(invoice.customer_address, "BILLING", data_model, invoice.id)
+        addresses.push(billing)
+    
+    # Shipping address from invoice.customer_shipping.address
+    if invoice.customer_shipping?.address exists:
+        shipping = mapAddress(invoice.customer_shipping.address, "SHIPPING", data_model, invoice.id)
+        addresses.push(shipping)
+    
+    return addresses
+```
+
+---
+
+## Line item mapping
+
+### Stripe → RootFi (PAYMENT_LINE_ITEMS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `line_item_type` | `$data_model` | string | Parent data model type |
+| `line_item_type_id` | `$parent.id` | string | Parent record ID |
+| `description` | `description` | string | Direct mapping |
+| `item_id` | `_` | string | `STRIPE_ITEM_ID_PARSER` |
+| `total_discount` | `_` | number | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
+| `tax_amount` | `_` | number | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
+| `quantity` | `quantity` | number | `STRIPE_LINE_ITEM_QUANTITY_PARSER` |
+| `unit_amount` | `unit_amount_excluding_tax` | number | `STRIPE_LINE_ITEM_UNIT_AMOUNT_PARSER` |
+| `total_amount` | `amount` | number | `STRIPE_AMOUNT_PARSER` |
+| `tax_id` | `tax_rates.0.id` | string | First tax rate ID |
+| `sub_total` | `amount_excluding_tax` | number | `STRIPE_AMOUNT_PARSER` |
+
+### RootFi → Sales Tax (LineItem)
+
+| Sales Tax Field | Source | Derivation |
+|-----------------|--------|------------|
+| `ID` | Generated | UUID |
+| `Amount` | RootFi `total_amount` | Converted to dollars |
+| `Quantity` | RootFi `quantity` | Direct mapping |
+| `Discount` | RootFi `total_discount` | Converted to dollars |
+| `TaxCollected` | RootFi `tax_amount` | Converted to dollars |
+| `TaxCode` | Product lookup or default | From product's `tax_code` or `TPP` |
+| `ProductId` | Lookup | Resolved by `source_platform_id` |
+| `PricePerUnit` | RootFi `unit_amount` | Converted to dollars |
+
+### Parser functions
+
+#### STRIPE_ITEM_ID_PARSER
+```pseudo
+function STRIPE_ITEM_ID_PARSER(record):
+    # Extract product ID from price object
+    product_id = record.price?.product ?? record.pricing?.price_details?.product
+    return product_id
+```
+
+#### STRIPE_LINE_ITEM_QUANTITY_PARSER
+```pseudo
+function STRIPE_LINE_ITEM_QUANTITY_PARSER(value):
+    return value  # Direct passthrough, null if not present
+```
+
+#### STRIPE_LINE_ITEM_UNIT_AMOUNT_PARSER
+```pseudo
+function STRIPE_LINE_ITEM_UNIT_AMOUNT_PARSER(unit_amount, lineItem, stack):
+    if unit_amount is null:
+        return null
+    return STRIPE_AMOUNT_PARSER(unit_amount, lineItem, stack)
+```
+
+---
+
+## Tax rate mapping
+
+### Stripe → RootFi (PAYMENT_TAX_RATES)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `updated_at` | `updated_at` | date | `STRIPE_DATE_PARSER` |
+| `name` | `display_name` | string | Direct mapping |
+| `description` | `description` | string | Direct mapping |
+| `rate` | `percentage` | number | `STRIPE_RATE_PARSER` |
+
+### Parser functions
+
+#### STRIPE_RATE_PARSER
+```pseudo
+function STRIPE_RATE_PARSER(percentage):
+    # Convert percentage to decimal
+    # Example: 8.25 (percent) → 0.0825 (decimal)
+    return percentage / 100
+```
+
+---
+
+## Payment mapping
+
+### Stripe → RootFi (PAYMENT_PAYMENTS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `amount` | `amount` | number | Direct (in cents) |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `customer_id` | `customer.id` | string | Expanded customer ID |
+| `invoice_id` | `invoice` | string | Stripe invoice ID |
+| `payment_method` | `payment_method.type` | string | `PAYMENTS_PAYMENT_METHOD` enum |
+| `status` | `status` | string | `STRIPE_PAYMENT_STATUS_PARSER` |
+| `order_id` | `id` | string | Same as platform_id |
+| `description` | `description` | string | Direct mapping |
+
+### Parser functions
+
+#### STRIPE_PAYMENT_STATUS_PARSER
+```pseudo
+function STRIPE_PAYMENT_STATUS_PARSER(record):
+    # Check for payment error first
+    if record.last_payment_error exists:
+        return "FAILED"
+    
+    # Map Stripe status to internal status
+    switch record.status:
+        case "requires_payment_method":
+            return "CREATED"
+        case "canceled":
+            return "CREATED"
+        case "requires_confirmation":
+            return "ATTEMPTED"
+        case "requires_capture":
+            return "ATTEMPTED"
+        case "requires_action":
+            return "ATTEMPTED"
+        case "processing":
+            return "ATTEMPTED"
+        case "succeeded":
+            return "PAID"
+        default:
+            return null
+```
+
+---
+
+## Refund mapping
+
+### Stripe → RootFi (PAYMENT_REFUNDS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `amount` | `amount` | number | Direct (in cents) |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `payment_id` | `payment_intent` | string | Stripe payment intent ID |
+| `description` | `reason` | string | Refund reason |
+| `status` | `status` | string | `PAYMENTS_REFUND_STATUS_ENUM` mapper |
+
+---
+
+## Credit note mapping
+
+### Stripe → RootFi (PAYMENT_CREDIT_NOTES)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `contact_id` | `customer` | string | Stripe customer ID |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `document_number` | `number` | string | Direct mapping |
+| `invoice_ids` | `invoice` | array | Single invoice ID as array |
+| `line_items` | `lines.data` | array | Nested mapping |
+| `memo` | `memo` | string | Direct mapping |
+| `posted_date` | `effective_at` | date | `STRIPE_DATE_PARSER` |
+| `status` | `status` | string | `ARTIFACT_STATUS_ENUM` mapper |
+| `tax_amount` | `_` | number | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
+| `total_amount` | `total` | number | `STRIPE_AMOUNT_PARSER` |
+| `total_discount` | `_` | number | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `shipping_amount` | `shipping_cost.amount_total` | number | `STRIPE_AMOUNT_PARSER` |
+
+---
+
+## Subscription mapping
+
+### Stripe → RootFi (PAYMENT_SUBSCRIPTIONS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `contact_id` | `customer` | string | Stripe customer ID |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `current_end` | `current_period_end` | date | `STRIPE_DATE_PARSER` |
+| `current_start` | `current_period_start` | date | `STRIPE_DATE_PARSER` |
+| `description` | `description` | string | Direct mapping |
+| `line_items` | `_` | array | `STRIPE_SUBSCRIPTION_ITEMS_PARSER` |
+| `payment_method` | `default_payment_method` | string | Direct mapping |
+| `status` | `status` | string | Direct mapping |
+
+### Parser functions
+
+#### STRIPE_SUBSCRIPTION_ITEMS_PARSER
+```pseudo
+function STRIPE_SUBSCRIPTION_ITEMS_PARSER(subscription):
+    lines = []
+    
+    for each item in subscription.items.data:
+        unit_amount = item.price.unit_amount ?? null
+        quantity = item.quantity ?? null
+        
+        lineItem = {
+            platform_id: item.id,
+            quantity: quantity,
+            unit_amount: unit_amount,
+            total_amount: (unit_amount != null && quantity != null) 
+                          ? unit_amount * quantity 
+                          : null,
+            line_item_type: data_model,
+            line_item_type_id: subscription.id
+        }
+        lines.push(lineItem)
+    
+    return lines
+```
+
+---
+
+## Balance mapping
+
+### Stripe → RootFi (PAYMENT_BALANCES)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `available[0].currency` | string | First available currency |
+| `total_balance` | `_` | number | `STRIPE_TOTAL_BALANCE_PARSER` |
+| `available_balance` | `_` | number | `STRIPE_AVAILABLE_BALANCE_PARSER` |
+| `pending_balance` | `_` | number | `STRIPE_PENDING_BALANCE_PARSER` |
+| `currency_id` | `available[0].currency` | string | `STRIPE_CURRENCY_PARSER` |
+
+### Parser functions
+
+#### STRIPE_TOTAL_BALANCE_PARSER
+```pseudo
+function STRIPE_TOTAL_BALANCE_PARSER(balance):
+    all_records = [...balance.available, ...balance.pending]
+    total = 0
+    for each record in all_records:
+        total += record.amount
+    return total
+```
+
+#### STRIPE_AVAILABLE_BALANCE_PARSER
+```pseudo
+function STRIPE_AVAILABLE_BALANCE_PARSER(balance):
+    total = 0
+    for each record in balance.available:
+        total += record.amount
+    return total
+```
+
+#### STRIPE_PENDING_BALANCE_PARSER
+```pseudo
+function STRIPE_PENDING_BALANCE_PARSER(balance):
+    total = 0
+    for each record in balance.pending:
+        total += record.amount
+    return total
+```
+
+---
+
+## Dispute mapping
+
+### Stripe → RootFi (PAYMENT_DISPUTES)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `amount` | `amount` | number | `STRIPE_AMOUNT_PARSER` |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `reason_code` | `reason` | string | Direct mapping |
+| `reason_description` | `_` | string | `STRIPE_DISPUTE_REASON_PARSER` |
+| `status` | `status` | string | `PAYMENT_DISPUTE_STATUS_ENUM` mapper |
+| `payment_id` | `payment_intent` | string | Stripe payment intent ID |
+
+### Parser functions
+
+#### STRIPE_DISPUTE_REASON_PARSER
+```pseudo
+function STRIPE_DISPUTE_REASON_PARSER(dispute):
+    reason = dispute.reason ?? ""
+    evidence = dispute.evidence ?? {}
+    
+    # Reason-specific field mappings
+    REASON_FIELDS = {
+        "duplicate": ["duplicate_charge_explanation", "uncategorized_text"],
+        "canceled": ["cancellation_rebuttal", "cancellation_policy_disclosure", "uncategorized_text"],
+        "credit_not_processed": ["refund_refusal_explanation", "uncategorized_text"],
+        "product_not_received": ["uncategorized_text", "customer_communication", "product_description"],
+        "product_unacceptable": ["uncategorized_text", "product_description"],
+        "subscription_canceled": ["cancellation_rebuttal", "uncategorized_text"],
+        "general": ["uncategorized_text"],
+        "fraudulent": ["customer_communication", "uncategorized_text"]
+    }
+    
+    # Try reason-specific fields first
+    fields_to_check = REASON_FIELDS[reason] ?? []
+    for each field in fields_to_check:
+        if evidence[field] is not empty:
+            return evidence[field]
+    
+    # Fallback to common fields
+    fallback_fields = [
+        "uncategorized_text",
+        "duplicate_charge_explanation",
+        "cancellation_rebuttal",
+        "refund_refusal_explanation",
+        "product_description"
+    ]
+    for each field in fallback_fields:
+        if evidence[field] is not empty:
+            return evidence[field]
+    
+    return null
+```
+
+---
+
+## Order mapping
+
+### Stripe → RootFi (PAYMENT_ORDERS)
+
+| RootFi Field | Stripe Field | Type | Parser/Transformation |
+|--------------|--------------|------|----------------------|
+| `platform_id` | `id` | string | Direct mapping |
+| `platform_unique_id` | `id` | string | Direct mapping |
+| `amount` | `amount_total` | number | `STRIPE_AMOUNT_PARSER` |
+| `amount_due` | `_` | number | `STRIPE_ORDER_AMOUNT_DUE_PARSER` |
+| `created_at` | `created` | date | `STRIPE_DATE_PARSER` |
+| `reference` | `client_reference_id` | string | Direct mapping |
+| `status` | `payment_status` | string | `PAYMENTS_ORDER_STATUS_ENUM` mapper |
+| `currency_id` | `currency` | string | `STRIPE_CURRENCY_PARSER` |
+
+### Parser functions
+
+#### STRIPE_ORDER_AMOUNT_DUE_PARSER
+```pseudo
+function STRIPE_ORDER_AMOUNT_DUE_PARSER(record):
+    amount = record.amount ?? null
+    amount_received = record.amount_received ?? null
+    
+    if amount is null or amount_received is null:
+        return null
+    
+    amount_due = amount - amount_received
+    return CurrencyHandler.fromLowerDenominator(amount_due, record.currency)
+```
+
+---
+
+## Sales Tax integration flow
+
+When data flows from Stripe to the Sales Tax API, the following resolution logic is applied:
+
+### Customer resolution
+```pseudo
+function resolveCustomer(corporation_id, source_platform, source_platform_id):
+    # Look up customer by source platform ID
+    customer = GetCustomerBySourcePlatformId(
+        corporation_id,
+        source_platform,      # "STRIPE"
+        source_platform_id    # e.g., "cus_xxx"
+    )
+    
+    if customer exists and customer.corporation_id == corporation_id:
+        return customer.ID
+    
+    return null
+```
+
+### Product resolution
+```pseudo
+function resolveProduct(corporation_id, source_platform, source_platform_id):
+    # Look up product by source platform ID
+    products = GetProductsBySourcePlatforms(
+        corporation_id,
+        [source_platform],      # ["STRIPE"]
+        [source_platform_id]    # ["prod_xxx"]
+    )
+    
+    for each product in products:
+        if product.source_platform_id == source_platform_id:
+            return {
+                product_id: product.ID,
+                tax_code: product.tax_code ?? "TPP"
+            }
+    
+    # Default if product not found
+    return {
+        product_id: null,
+        tax_code: "TPP"
+    }
+```
+
+### Tax code defaulting
+```pseudo
+function getTaxCode(line_item, product, corporation_config):
+    # Priority order:
+    # 1. Line item explicit tax code
+    if line_item.taxability_code is not empty:
+        return line_item.taxability_code
+    
+    # 2. Product's tax code
+    if product exists and product.tax_code is not empty:
+        return product.tax_code
+    
+    # 3. Corporation default
+    if corporation_config.default_product_taxability_code exists:
+        return corporation_config.default_product_taxability_code
+    
+    # 4. System default
+    return "TPP"  # Tangible Personal Property
+```
+
+---
+
+## Currency handling
+
+All Stripe monetary amounts are in the currency's smallest unit (e.g., cents for USD). The `CurrencyHandler.fromLowerDenominator` function converts these to standard units:
+
+```pseudo
+function fromLowerDenominator(amount, currency):
+    # Get currency decimal places (e.g., USD = 2, JPY = 0)
+    decimal_places = getCurrencyDecimalPlaces(currency)
+    
+    # Convert: 1000 cents → 10.00 dollars
+    return amount / (10 ^ decimal_places)
+```
+
+| Currency | Decimal Places | Example |
+|----------|---------------|---------|
+| USD | 2 | 1000 → 10.00 |
+| EUR | 2 | 1000 → 10.00 |
+| JPY | 0 | 1000 → 1000 |
+| BHD | 3 | 1000 → 1.000 |
+
+---
+
+## Enum mappings
+
+### ARTIFACT_STATUS_ENUM (Invoice/Credit Note Status)
+
+| Stripe Status | RootFi Status |
+|---------------|---------------|
+| `draft` | `DRAFT` |
+| `open` | `OPEN` |
+| `paid` | `PAID` |
+| `uncollectible` | `UNCOLLECTIBLE` |
+| `void` | `VOID` |
+| `deleted` | `DELETED` |
+| `issued` | `ISSUED` |
+
+### PAYMENTS_ORDER_STATUS_ENUM
+
+| Stripe Status | RootFi Status |
+|---------------|---------------|
+| `paid` | `PAID` |
+| `unpaid` | `UNPAID` |
+| `no_payment_required` | `NO_PAYMENT_REQUIRED` |
+
+### PAYMENTS_REFUND_STATUS_ENUM
+
+| Stripe Status | RootFi Status |
+|---------------|---------------|
+| `pending` | `PENDING` |
+| `succeeded` | `SUCCEEDED` |
+| `failed` | `FAILED` |
+| `canceled` | `CANCELED` |
+
+### PAYMENT_DISPUTE_STATUS_ENUM
+
+| Stripe Status | RootFi Status |
+|---------------|---------------|
+| `warning_needs_response` | `WARNING_NEEDS_RESPONSE` |
+| `warning_under_review` | `WARNING_UNDER_REVIEW` |
+| `needs_response` | `NEEDS_RESPONSE` |
+| `under_review` | `UNDER_REVIEW` |
+| `charge_refunded` | `CHARGE_REFUNDED` |
+| `won` | `WON` |
+| `lost` | `LOST` |
