@@ -416,9 +416,14 @@ function resolveTransactionShippingAddress(transaction, customer):
 | `Quantity` | RootFi Unified API | `quantity` | Direct mapping |
 | `Discount` | RootFi Unified API | `total_discount` | Already converted to dollars |
 | `TaxCollected` | RootFi Unified API | `tax_amount` | Already converted to dollars |
-| `TaxCode` | Resolved | - | From product lookup or default `TPP` |
+| `TaxCode` | Hardcoded or Resolved | - | Empty string `""` unless shipping item (`SRV_Shipping`) |
+| `ProductSKU` | Hardcoded | - | Set to empty string `""` (not mapped from Stripe) |
 | `ProductId` | Resolved | `item_id` | Resolved by `source_platform_id` lookup |
 | `PricePerUnit` | RootFi Unified API | `unit_amount` | Already converted to dollars |
+
+<Note>
+**Product SKU and TaxCode:** For Stripe line items, `Product SKU` is always empty and `Product Taxability Code` is empty except for shipping line items which use `SRV_Shipping`.
+</Note>
 
 #### Product resolution for line items
 
