@@ -378,28 +378,34 @@ function getTaxCode(line_item, product, corporation_config):
 
 #### Transaction shipping address resolution with fallback
 
+For Stripe, addresses are extracted from **Stripe RawData**:
+
 ```pseudo
 function resolveTransactionShippingAddress(transaction, customer):
-    # Step 1: Check transaction addresses for SHIPPING type
+    # Step 1: For Stripe - parse from raw_data.shipping.address
     if transaction.addresses exists:
-        for address in transaction.addresses:
-            if address.type == "SHIPPING":
-                return {
-                    address_line_1: address.line1,
-                    address_line_2: address.line2,
-                    city: address.city,
-                    state: address.state,
-                    postal_code: address.postal_code,
-                    country: address.country
-                }
+        rawAddress = transaction.addresses[0].raw_data.shipping.address 
+                     ?? transaction.addresses[0].raw_data
+        
+        return {
+            address_line_1: rawAddress.line1,
+            city: rawAddress.city,
+            state: rawAddress.state,
+            postal_code: rawAddress.postal_code,
+            country: rawAddress.country
+        }
     
-    # Step 2: Fallback to customer's shipping address
+    # Step 2: Fallback to customer's shipping address (also from raw_data)
     if customer exists and customer.shipping_address exists:
         return customer.shipping_address
     
     # Step 3: No shipping address available - calculation will fail
     return null  # Error: CALCULATION_MISSING_SHIP_TO_ADDRESS
 ```
+
+<Warning>
+**Address source for Stripe:** The address parsing logic specifically uses `raw_data.shipping.address` or `raw_data` for Stripe integration. This is different from other integrations that use RootFi's normalized address fields.
+</Warning>
 
 ### Line Item
 
