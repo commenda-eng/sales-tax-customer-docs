@@ -297,22 +297,26 @@ This section documents how Sales Tax API consumes data from RootFi, specifying w
 
 #### Customer shipping address resolution
 
+For Stripe, addresses are extracted from **Stripe RawData** (not RootFi unified fields):
+
 ```pseudo
 function resolveCustomerShippingAddress(customer):
-    # Check RootFi addresses array for SHIPPING type
-    for address in customer.addresses:
-        if address.type == "SHIPPING":
-            return {
-                address_line_1: address.line1,
-                address_line_2: address.line2,
-                city: address.city,
-                state: address.state,
-                postal_code: address.postal_code,
-                country: address.country
-            }
+    # For Stripe: Use raw_data.shipping.address or raw_data directly
+    rawAddress = customer.addresses[0].raw_data.shipping.address 
+                 ?? customer.addresses[0].raw_data
     
-    return null
+    return {
+        address_line_1: rawAddress.line1,
+        city: rawAddress.city,
+        state: rawAddress.state,
+        postal_code: rawAddress.postal_code,
+        country: rawAddress.country
+    }
 ```
+
+<Info>
+**Stripe-specific behavior:** Unlike other integrations that use RootFi's normalized address fields (`street`, `locality`, `city`, `state`, `country`, `pincode`), Stripe addresses are parsed directly from the `raw_data` field to preserve the original Stripe address structure.
+</Info>
 
 ### Product
 
