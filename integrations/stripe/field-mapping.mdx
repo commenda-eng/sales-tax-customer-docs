@@ -17,6 +17,17 @@ RootFi normalizes Stripe data into a unified data model. Sales Tax API consumes 
 - **RootFi Unified API fields** - Normalized, standardized fields
 - **Stripe RawData** - Original Stripe data accessible via `raw_data` field for fields not normalized by RootFi
 
+### Fields using Stripe RawData
+
+The following Sales Tax fields are derived from **Stripe RawData** (via `raw_data` field from RootFi):
+
+| Entity | Field | RawData Path | Notes |
+|--------|-------|--------------|-------|
+| Customer | Shipping Address | `raw_data.shipping.address` | Falls back to `raw_data` if no shipping |
+| Transaction | Ship To Address | `raw_data.shipping.address` | Address parsing uses raw Stripe data |
+
+All other fields use RootFi's normalized/unified API fields.
+
 ---
 
 ## Section 1: Stripe → RootFi mapping reference
