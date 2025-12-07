@@ -1,586 +1,190 @@
 ---
 title: Stripe field mapping reference
-description: Complete mapping of Stripe data fields to RootFi and Sales Tax models with transformation logic
+description: Complete mapping of Commenda Sales Tax fields and their data sources from RootFi
 ---
 
-This document provides a comprehensive reference for how Stripe data fields are mapped through RootFi to the final Sales Tax models.
+This document provides a comprehensive reference for all fields used by Commenda's Sales Tax engine and where each field originates from.
 
 ## Data flow overview
 
 ```
-Stripe Raw Data → RootFi Unified API → Sales Tax API Model
-                         ↓
-              (raw_data also available)
+Stripe → RootFi (Unified API + Raw Data) → Commenda Sales Tax Engine
 ```
 
-RootFi normalizes Stripe data into a unified data model. Sales Tax API consumes both:
-- **RootFi Unified API fields** - Normalized, standardized fields
-- **Stripe RawData** - Original Stripe data accessible via `raw_data` field for fields not normalized by RootFi
-
-### Fields using Stripe RawData
-
-The following Sales Tax fields are derived from **Stripe RawData** (via `raw_data` field from RootFi):
-
-| Entity | Field | RawData Path | Notes |
-|--------|-------|--------------|-------|
-| Customer | Shipping Address | `raw_data.shipping.address` | Falls back to `raw_data` if no shipping |
-| Transaction | Ship To Address | `raw_data.shipping.address` | Address parsing uses raw Stripe data |
-
-All other fields use RootFi's normalized/unified API fields.
+RootFi acts as Commenda's data integration vendor. RootFi provides:
+- **Unified API fields** - Normalized, standardized fields across integrations
+- **Raw Data** - Original Stripe data accessible via `raw_data` field
 
 ---
 
-## Section 1: Stripe → RootFi mapping reference
+## Commenda Sales Tax field mappings
 
-This section documents how Stripe fields are stored in RootFi's unified data models.
-
-### Customer (PAYMENT_CUSTOMERS)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` (Unix seconds → ISO date) |
-| `updated_at` | - | Not available from Stripe |
-| `name` | `name` | Direct mapping |
-| `tax_number` | `tax_ids.data[0].value` | First tax ID value |
-| `currency_id` | `currency` | `STRIPE_CURRENCY_PARSER` (lowercase → uppercase) |
-| `addresses` | `address`, `shipping.address` | `STRIPE_CONTACT_ADDRESS_PARSER` |
-| `phone_numbers` | `phone` | `STRIPE_CONTACT_PHONE_NUMBERS_PARSER` |
-| `external_links` | `email` | `STRIPE_CONTACT_EXTERNAL_LINKS_PARSER` |
-
-#### Address parsing logic (STRIPE_CONTACT_ADDRESS_PARSER)
-
-```pseudo
-function STRIPE_CONTACT_ADDRESS_PARSER(customer):
-    addresses = []
-    
-    # Billing address from customer.address
-    if customer.address exists:
-        billing = {
-            type: "BILLING",
-            line1: customer.address.line1,
-            line2: customer.address.line2,
-            city: customer.address.city,
-            state: customer.address.state,
-            postal_code: customer.address.postal_code,
-            country: customer.address.country
-        }
-        addresses.push(billing)
-    
-    # Shipping address from customer.shipping.address
-    if customer.shipping?.address exists:
-        shipping = {
-            type: "SHIPPING",
-            line1: customer.shipping.address.line1,
-            line2: customer.shipping.address.line2,
-            city: customer.shipping.address.city,
-            state: customer.shipping.address.state,
-            postal_code: customer.shipping.address.postal_code,
-            country: customer.shipping.address.country
-        }
-        addresses.push(shipping)
-    
-    return addresses
-```
-
-### Product (PAYMENT_PRODUCTS)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `description` | `description` | Direct mapping |
-| `name` | `name` | Direct mapping |
-| `status` | `active` | `STRIPE_PRODUCT_STATUS_PARSER` (true→ACTIVE, false→ARCHIVED) |
-| `updated_at` | `updated` | `STRIPE_DATE_PARSER` |
-
-### Invoice (PAYMENT_INVOICES)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `document_number` | `number` | Direct mapping |
-| `contact_id` | `customer` | Stripe customer ID |
-| `posted_date` | `effective_at` | `STRIPE_DATE_PARSER` |
-| `due_date` | `due_date` | `STRIPE_DATE_PARSER` |
-| `currency_id` | `currency` | `STRIPE_CURRENCY_PARSER` |
-| `status` | `status` | `ARTIFACT_STATUS_ENUM` mapper |
-| `sub_total` | `subtotal` | `STRIPE_AMOUNT_PARSER` (cents → dollars) |
-| `tax_amount` | `total_tax_amounts` | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
-| `total_discount` | `total_discount_amounts` | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
-| `total_amount` | `total` | `STRIPE_AMOUNT_PARSER` |
-| `amount_due` | `amount_due` | `STRIPE_AMOUNT_PARSER` |
-| `memo` | `description` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `line_items` | `lines.data` | Nested mapping to PAYMENT_LINE_ITEMS |
-| `addresses` | `customer_address`, `customer_shipping.address` | `STRIPE_INVOICE_ADDRESS_PARSER` |
-| `shipping_amount` | `shipping_cost.amount_total` | `STRIPE_AMOUNT_PARSER` |
-
-#### Invoice address parsing logic (STRIPE_INVOICE_ADDRESS_PARSER)
-
-```pseudo
-function STRIPE_INVOICE_ADDRESS_PARSER(invoice):
-    addresses = []
-    
-    # Billing address from invoice.customer_address
-    if invoice.customer_address exists:
-        billing = {
-            type: "BILLING",
-            line1: invoice.customer_address.line1,
-            line2: invoice.customer_address.line2,
-            city: invoice.customer_address.city,
-            state: invoice.customer_address.state,
-            postal_code: invoice.customer_address.postal_code,
-            country: invoice.customer_address.country
-        }
-        addresses.push(billing)
-    
-    # Shipping address from invoice.customer_shipping.address
-    if invoice.customer_shipping?.address exists:
-        shipping = {
-            type: "SHIPPING",
-            line1: invoice.customer_shipping.address.line1,
-            line2: invoice.customer_shipping.address.line2,
-            city: invoice.customer_shipping.address.city,
-            state: invoice.customer_shipping.address.state,
-            postal_code: invoice.customer_shipping.address.postal_code,
-            country: invoice.customer_shipping.address.country
-        }
-        addresses.push(shipping)
-    
-    return addresses
-```
-
-### Line Item (PAYMENT_LINE_ITEMS)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `line_item_type` | `$data_model` | Parent data model type |
-| `line_item_type_id` | `$parent.id` | Parent record ID |
-| `description` | `description` | Direct mapping |
-| `item_id` | `price.product` | `STRIPE_ITEM_ID_PARSER` |
-| `total_discount` | `discount_amounts` | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
-| `tax_amount` | `tax_amounts` | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
-| `quantity` | `quantity` | Direct mapping |
-| `unit_amount` | `unit_amount_excluding_tax` | `STRIPE_LINE_ITEM_UNIT_AMOUNT_PARSER` |
-| `total_amount` | `amount` | `STRIPE_AMOUNT_PARSER` |
-| `tax_id` | `tax_rates[0].id` | First tax rate ID |
-| `sub_total` | `amount_excluding_tax` | `STRIPE_AMOUNT_PARSER` |
-
-### Tax Rate (PAYMENT_TAX_RATES)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `updated_at` | `updated_at` | `STRIPE_DATE_PARSER` |
-| `name` | `display_name` | Direct mapping |
-| `description` | `description` | Direct mapping |
-| `rate` | `percentage` | `STRIPE_RATE_PARSER` (percentage → decimal, e.g., 8.25 → 0.0825) |
-
-### Credit Note (PAYMENT_CREDIT_NOTES)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `contact_id` | `customer` | Stripe customer ID |
-| `currency_id` | `currency` | `STRIPE_CURRENCY_PARSER` |
-| `document_number` | `number` | Direct mapping |
-| `invoice_ids` | `invoice` | Single invoice ID as array |
-| `line_items` | `lines.data` | Nested mapping |
-| `memo` | `memo` | Direct mapping |
-| `posted_date` | `effective_at` | `STRIPE_DATE_PARSER` |
-| `status` | `status` | `ARTIFACT_STATUS_ENUM` mapper |
-| `tax_amount` | `total_tax_amounts` | `STRIPE_TOTAL_TAX_AMOUNT_PARSER` |
-| `total_amount` | `total` | `STRIPE_AMOUNT_PARSER` |
-| `total_discount` | `total_discount_amounts` | `STRIPE_TOTAL_DISCOUNT_AMOUNT_PARSER` |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `shipping_amount` | `shipping_cost.amount_total` | `STRIPE_AMOUNT_PARSER` |
-
-### Refund (PAYMENT_REFUNDS)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `amount` | `amount` | Direct (in cents) |
-| `currency_id` | `currency` | `STRIPE_CURRENCY_PARSER` |
-| `payment_id` | `payment_intent` | Stripe payment intent ID |
-| `description` | `reason` | Refund reason |
-| `status` | `status` | `PAYMENTS_REFUND_STATUS_ENUM` mapper |
-
-### Subscription (PAYMENT_SUBSCRIPTIONS)
-
-| RootFi Field | Stripe Field | Parser/Transformation |
-|--------------|--------------|----------------------|
-| `platform_id` | `id` | Direct mapping |
-| `platform_unique_id` | `id` | Direct mapping |
-| `created_at` | `created` | `STRIPE_DATE_PARSER` |
-| `contact_id` | `customer` | Stripe customer ID |
-| `currency_id` | `currency` | `STRIPE_CURRENCY_PARSER` |
-| `current_end` | `current_period_end` | `STRIPE_DATE_PARSER` |
-| `current_start` | `current_period_start` | `STRIPE_DATE_PARSER` |
-| `description` | `description` | Direct mapping |
-| `line_items` | `items.data` | `STRIPE_SUBSCRIPTION_ITEMS_PARSER` |
-| `payment_method` | `default_payment_method` | Direct mapping |
-| `status` | `status` | Direct mapping |
-
-### Parser functions reference
-
-#### STRIPE_AMOUNT_PARSER
-Converts Stripe amounts from smallest currency unit (cents) to standard unit (dollars).
-
-```pseudo
-function STRIPE_AMOUNT_PARSER(value, record, stack):
-    if value is null:
-        return null
-    
-    # Determine currency from record or parent
-    if record.object == "invoice" or record.object == "credit_note":
-        currency = record.currency
-    else if record.object == "line_item":
-        currency = stack[1].currency  # Parent's currency
-    
-    # Convert from smallest unit to standard unit
-    return CurrencyHandler.fromLowerDenominator(value, currency)
-    
-    # Example: 1000 cents USD → 10.00 dollars
-    # Example: 1000 JPY → 1000 (JPY has 0 decimal places)
-```
-
-#### STRIPE_DATE_PARSER
-Converts Unix timestamps (seconds) to ISO date strings.
-
-```pseudo
-function STRIPE_DATE_PARSER(timestamp):
-    if timestamp is null:
-        return null
-    # Stripe timestamps are in seconds (Unix epoch)
-    return new Date(timestamp * 1000).toISOString()
-```
-
-#### STRIPE_CURRENCY_PARSER
-Converts lowercase currency codes to uppercase ISO 4217.
-
-```pseudo
-function STRIPE_CURRENCY_PARSER(currency_code):
-    if currency_code is null:
-        return null
-    return currency_code.toUpperCase()  # "usd" → "USD"
-```
-
----
-
-## Section 2: RootFi → Sales Tax mapping
-
-This section documents how Sales Tax API consumes data from RootFi, specifying whether each field comes from the **RootFi Unified API** or **Stripe RawData**.
+This section documents every field used by Commenda's Sales Tax engine and its source.
 
 ### Customer
 
-| Sales Tax Field | Source | RootFi/Stripe Field | Notes |
-|-----------------|--------|---------------------|-------|
-| `ID` | Generated | - | UUID generated by Sales Tax |
-| `Name` | RootFi Unified API | `name` | Direct mapping |
-| `Email` | RootFi Unified API | `external_links` (type=EMAIL) | Extracted from external links array |
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `ID` | Generated | - | UUID generated by Commenda |
+| `Name` | RootFi Unified API | `name` | Direct mapping from `PaymentCustomerWebhookData.name` |
+| `Email` | RootFi Unified API | `external_links` | Extracted from `external_links` array where `type === "EMAIL"` |
 | `SourcePlatformID` | RootFi Unified API | `platform_id` | Stripe customer ID (e.g., `cus_xxx`) |
 | `SourcePlatform` | Constant | - | Set to `STRIPE` |
 | `CorporationId` | Context | - | From integration connection |
-| `ShippingAddress` | RootFi Unified API | `addresses` (type=SHIPPING) | See address resolution below |
+| `CreatedAt` | Generated | - | Timestamp when synced to Commenda |
 
-#### Customer shipping address resolution
+#### Customer address fields
 
-For Stripe, addresses are extracted from **Stripe RawData** (not RootFi unified fields):
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `Shipping Address Line 1` | **Stripe RawData** | `raw_data.shipping.address.line1` or `raw_data.line1` | Falls back to `raw_data` if no shipping object |
+| `Shipping Address Line 2` | **Stripe RawData** | `raw_data.shipping.address.line2` or `raw_data.line2` | Falls back to `raw_data` if no shipping object |
+| `Shipping City` | **Stripe RawData** | `raw_data.shipping.address.city` or `raw_data.city` | Falls back to `raw_data` if no shipping object |
+| `Shipping State` | **Stripe RawData** | `raw_data.shipping.address.state` or `raw_data.state` | Falls back to `raw_data` if no shipping object |
+| `Shipping Postal Code` | **Stripe RawData** | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Falls back to `raw_data` if no shipping object |
+| `Shipping Country` | **Stripe RawData** | `raw_data.shipping.address.country` or `raw_data.country` | Falls back to `raw_data` if no shipping object |
+| `Billing Address Line 1` | Not Mapped | - | Set to empty string `""` |
+| `Billing City` | Not Mapped | - | Set to empty string `""` |
+| `Billing State` | Not Mapped | - | Set to empty string `""` |
+| `Billing Postal Code` | Not Mapped | - | Set to empty string `""` |
+| `Billing Country` | Not Mapped | - | Set to empty string `""` |
 
-```pseudo
-function resolveCustomerShippingAddress(customer):
-    # For Stripe: Use raw_data.shipping.address or raw_data directly
-    rawAddress = customer.addresses[0].raw_data.shipping.address 
-                 ?? customer.addresses[0].raw_data
-    
-    return {
-        address_line_1: rawAddress.line1,
-        city: rawAddress.city,
-        state: rawAddress.state,
-        postal_code: rawAddress.postal_code,
-        country: rawAddress.country
-    }
-```
+#### Customer phone field
+
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `Phone` | RootFi Unified API | `phone_numbers` | Extracted by priority: `MOBILE` → `WORK` → `HOME` → first available |
 
 <Info>
-**Stripe-specific behavior:** Unlike other integrations that use RootFi's normalized address fields (`street`, `locality`, `city`, `state`, `country`, `pincode`), Stripe addresses are parsed directly from the `raw_data` field to preserve the original Stripe address structure.
+**Address parsing for Stripe:** The address parser in `sync.address_parser.ts` specifically uses `raw_data.shipping.address` or falls back to `raw_data` directly for Stripe integration. This bypasses RootFi's normalized address fields (`street`, `locality`, `city`, `state`, `country`, `pincode`).
 </Info>
+
+---
 
 ### Product
 
-| Sales Tax Field | Source | RootFi/Stripe Field | Notes |
-|-----------------|--------|---------------------|-------|
-| `ID` | Generated | - | UUID generated by Sales Tax |
-| `Name` | RootFi Unified API | `name` | Direct mapping |
-| `TaxCode` | Hardcoded | - | Set to empty string `""` (not mapped from Stripe) |
-| `Sku` | Hardcoded | - | Set to empty string `""` (not mapped from Stripe) |
-| `Description` | RootFi Unified API | `description` | Direct mapping |
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `ID` | Generated | - | UUID generated by Commenda |
+| `Name` | RootFi Unified API | `name` | Direct mapping from `PaymentItemWebhookData.name` |
+| `TaxCode` | Not Mapped | - | **Hardcoded to empty string `""`** - must be configured manually in Commenda |
+| `Sku` | Not Mapped | - | **Hardcoded to empty string `""`** - Stripe products don't have SKU in RootFi mapping |
+| `Description` | RootFi Unified API | `description` | Direct mapping from `PaymentItemWebhookData.description` |
 | `SourcePlatformID` | RootFi Unified API | `platform_id` | Stripe product ID (e.g., `prod_xxx`) |
 | `SourcePlatform` | Constant | - | Set to `STRIPE` |
 | `CorporationId` | Context | - | From integration connection |
+| `WeightInKg` | Not Mapped | - | Not available from Stripe |
+| `VolumeInLiters` | Not Mapped | - | Not available from Stripe |
 
-<Note>
-**SKU and TaxCode are not available from Stripe via RootFi.** The Stripe transformer explicitly sets these to empty strings. If you need SKU or tax codes for products, they must be manually configured in the Sales Tax system after sync.
-</Note>
-
-#### Tax code defaulting logic
-
-```pseudo
-function getTaxCode(line_item, product, corporation_config):
-    # Priority order:
-    # 1. Line item explicit tax code
-    if line_item.taxability_code is not empty:
-        return line_item.taxability_code
-    
-    # 2. Product's tax code (from RootFi)
-    if product exists and product.tax_code is not empty:
-        return product.tax_code
-    
-    # 3. Corporation default configuration
-    if corporation_config.default_product_taxability_code exists:
-        return corporation_config.default_product_taxability_code
-    
-    # 4. System default
-    return "TPP"  # Tangible Personal Property
+<Warning>
+**SKU and TaxCode are not available from Stripe.** The Stripe transformer in `stripe.transformer.ts` explicitly sets these to empty strings:
+```typescript
+SKU: "",
+"Product Taxability Code": "",
 ```
+If you need SKU or tax codes for products, they must be manually configured in Commenda after sync.
+</Warning>
 
-### Transaction (Invoice)
+---
 
-| Sales Tax Field | Source | RootFi/Stripe Field | Notes |
-|-----------------|--------|---------------------|-------|
-| `ID` | Generated | - | UUID generated by Sales Tax |
+### Transaction (Invoice/Credit Note)
+
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `ID` | Generated | - | UUID generated by Commenda |
 | `CorporationId` | Context | - | From integration connection |
-| `TransactedAt` | RootFi Unified API | `posted_date` | ISO date string |
+| `TransactedAt` | RootFi Unified API | `posted_date` | ISO date string, falls back to `created_at` if not available |
 | `InvoiceCurrency` | RootFi Unified API | `currency_id` | ISO currency code (e.g., `USD`) |
-| `Subtotal` | RootFi Unified API | `sub_total` | Already converted to dollars |
-| `Discount` | RootFi Unified API | `total_discount` | Already converted to dollars |
-| `ShippingAndHandling` | RootFi Unified API | `shipping_amount` | Already converted to dollars |
-| `Total` | RootFi Unified API | `total_amount` | Already converted to dollars |
-| `TaxCollected` | RootFi Unified API | `tax_amount` | Already converted to dollars |
-| `TransactionType` | Derived | - | `SALE`, `RETURN`, or `REFUND` based on document type |
+| `Subtotal` | RootFi Unified API | `sub_total` | Already converted to dollars by RootFi |
+| `Discount` | RootFi Unified API | `total_discount` | Already converted to dollars by RootFi |
+| `ShippingAndHandling` | RootFi Unified API | `shipping_amount` | Already converted to dollars by RootFi |
+| `Total` | RootFi Unified API | `total_amount` | Already converted to dollars by RootFi |
+| `TaxCollected` | RootFi Unified API | `tax_amount` | Already converted to dollars by RootFi |
+| `TransactionType` | Derived | - | `SALE` for invoices, `REFUND` for credit notes |
+| `TransactionStatus` | RootFi Unified API | `status` | `VOID` → `VOIDED`, otherwise empty |
 | `SourcePlatform` | Constant | - | Set to `STRIPE` |
 | `SourcePlatformID` | RootFi Unified API | `platform_id` | Stripe invoice ID (e.g., `in_xxx`) |
 | `InvoiceNumber` | RootFi Unified API | `document_number` | Direct mapping |
-| `CustomerId` | Resolved | `contact_id` | Resolved by `source_platform_id` lookup |
-| `ShippingAddress` | RootFi Unified API | `addresses` (type=SHIPPING) | See address resolution below |
+| `CustomerId` | Resolved | `contact_id` | Resolved by `source_platform_id` lookup in Commenda |
+| `ExemptionType` | Not Mapped | - | Set to empty string `""` |
 
-#### Transaction shipping address resolution with fallback
+#### Transaction address fields
 
-For Stripe, addresses are extracted from **Stripe RawData**:
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `Ship To Address Line 1` | **Stripe RawData** | `raw_data.shipping.address.line1` or `raw_data.line1` | Parsed from address via `sync.address_parser.ts` |
+| `Ship To Address Line 2` | **Stripe RawData** | `raw_data.shipping.address.line2` or `raw_data.line2` | Parsed from address |
+| `Ship To Address Line 3` | Not Mapped | - | Set to empty string `""` |
+| `Ship To City` | **Stripe RawData** | `raw_data.shipping.address.city` or `raw_data.city` | Parsed from address |
+| `Ship To State` | **Stripe RawData** | `raw_data.shipping.address.state` or `raw_data.state` | Parsed from address |
+| `Ship To Postal Code` | **Stripe RawData** | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Parsed from address |
+| `Ship To Country` | **Stripe RawData** | `raw_data.shipping.address.country` or `raw_data.country` | Parsed from address |
+| `Ship From Address Line 1` | Not Mapped | - | Set to empty string `""` |
+| `Ship From City` | Not Mapped | - | Set to empty string `""` |
+| `Ship From State` | Not Mapped | - | Set to empty string `""` |
+| `Ship From Postal Code` | Not Mapped | - | Set to empty string `""` |
+| `Ship From Country` | Not Mapped | - | Set to empty string `""` |
 
-```pseudo
-function resolveTransactionShippingAddress(transaction, customer):
-    # Step 1: For Stripe - parse from raw_data.shipping.address
-    if transaction.addresses exists:
-        rawAddress = transaction.addresses[0].raw_data.shipping.address 
-                     ?? transaction.addresses[0].raw_data
-        
-        return {
-            address_line_1: rawAddress.line1,
-            city: rawAddress.city,
-            state: rawAddress.state,
-            postal_code: rawAddress.postal_code,
-            country: rawAddress.country
-        }
-    
-    # Step 2: Fallback to customer's shipping address (also from raw_data)
-    if customer exists and customer.shipping_address exists:
-        return customer.shipping_address
-    
-    # Step 3: No shipping address available - calculation will fail
-    return null  # Error: CALCULATION_MISSING_SHIP_TO_ADDRESS
-```
-
-<Warning>
-**Address source for Stripe:** The address parsing logic specifically uses `raw_data.shipping.address` or `raw_data` for Stripe integration. This is different from other integrations that use RootFi's normalized address fields.
-</Warning>
+---
 
 ### Line Item
 
-| Sales Tax Field | Source | RootFi/Stripe Field | Notes |
-|-----------------|--------|---------------------|-------|
-| `ID` | Generated | - | UUID generated by Sales Tax |
-| `Amount` | RootFi Unified API | `total_amount` | Already converted to dollars |
-| `Quantity` | RootFi Unified API | `quantity` | Direct mapping |
-| `Discount` | RootFi Unified API | `total_discount` | Already converted to dollars |
-| `TaxCollected` | RootFi Unified API | `tax_amount` | Already converted to dollars |
-| `TaxCode` | Hardcoded or Resolved | - | Empty string `""` unless shipping item (`SRV_Shipping`) |
-| `ProductSKU` | Hardcoded | - | Set to empty string `""` (not mapped from Stripe) |
-| `ProductId` | Resolved | `item_id` | Resolved by `source_platform_id` lookup |
-| `PricePerUnit` | RootFi Unified API | `unit_amount` | Already converted to dollars |
+| Sales Tax Field | Source | Source Field | Notes |
+|-----------------|--------|--------------|-------|
+| `ID` | Generated | - | UUID generated by Commenda |
+| `Amount` | RootFi Unified API | `sub_total` | Absolute value, already converted to dollars |
+| `Quantity` | RootFi Unified API | `quantity` | Absolute value, defaults to 1 if null |
+| `PricePerUnit` | RootFi Unified API | `unit_amount` | Absolute value, or calculated as `sub_total / quantity` |
+| `Discount` | RootFi Unified API | `total_discount` | Mapped to `discount_amount_for_line` |
+| `Shipping` | Derived | - | Set to 0 for regular items; shipping handled as separate line item |
+| `TaxCollected` | RootFi Unified API | `tax_amount` | Direct mapping |
+| `TaxCode` | Not Mapped / Special | - | Empty string `""` except for shipping items which use `SRV_Shipping` |
+| `ProductId` | Resolved | `item_id` | Resolved by `source_platform_id` lookup in Commenda |
+| `ProductSku` | Not Mapped | - | **Hardcoded to empty string `""`** |
+| `ExemptionType` | Not Mapped | - | Set to empty string `""` |
+| `ExemptionCertificateID` | Not Mapped | - | Set to empty string `""` |
+| `TaxIncluded` | Configuration | - | Based on `TAX_INCLUDED_IN_PRICE` config setting |
+| `LineNumber` | RootFi Unified API | `line_number` | Direct mapping |
 
-<Note>
-**Product SKU and TaxCode:** For Stripe line items, `Product SKU` is always empty and `Product Taxability Code` is empty except for shipping line items which use `SRV_Shipping`.
-</Note>
+#### Shipping line item
 
-#### Product resolution for line items
+When an invoice has a `shipping_amount > 0`, a synthetic shipping line item is created:
 
-```pseudo
-function resolveLineItemProduct(line_item, corporation_id):
-    # Get product ID from line item
-    product_source_platform_id = line_item.item_id  # This is Stripe product ID (prod_xxx)
-    
-    if product_source_platform_id is empty:
-        return {
-            product_id: null,
-            tax_code: "TPP"  # Default
-        }
-    
-    # Look up product by source platform ID
-    product = GetProductBySourcePlatformId(
-        corporation_id,
-        "STRIPE",
-        product_source_platform_id
-    )
-    
-    if product exists:
-        return {
-            product_id: product.ID,
-            tax_code: product.tax_code ?? "TPP"
-        }
-    
-    # Product not found in Sales Tax system
-    return {
-        product_id: null,
-        tax_code: "TPP"
-    }
-```
-
-### Customer resolution for transactions
-
-```pseudo
-function resolveCustomer(corporation_id, source_platform, source_platform_id):
-    # Look up customer by source platform ID
-    customer = GetCustomerBySourcePlatformId(
-        corporation_id,
-        source_platform,      # "STRIPE"
-        source_platform_id    # e.g., "cus_xxx"
-    )
-    
-    if customer exists and customer.corporation_id == corporation_id:
-        return customer.ID
-    
-    return null
-```
+| Sales Tax Field | Value | Notes |
+|-----------------|-------|-------|
+| `item_id` | `SHIPPING_ITEM_ID` | Synthetic ID for shipping |
+| `TaxCode` | `SRV_Shipping` | Special tax code for shipping services |
+| `Quantity` | `1` | Always 1 |
+| `PricePerUnit` | `shipping_amount` | From invoice's shipping amount |
+| `LineNumber` | `9999` or last | Appended after all other line items |
 
 ---
 
-## Address field mapping detail
+## Summary: Fields by source
 
-### Stripe address structure
+### Fields from Stripe RawData (via RootFi `raw_data`)
 
-```json
-{
-  "line1": "123 Main St",
-  "line2": "Suite 100",
-  "city": "San Francisco",
-  "state": "CA",
-  "postal_code": "94102",
-  "country": "US"
-}
-```
+These fields bypass RootFi's normalized fields and read directly from Stripe's original data structure:
 
-### RootFi address structure (PAYMENT_ADDRESSES)
-
-| RootFi Field | Stripe Field | Notes |
-|--------------|--------------|-------|
-| `type` | Derived | `BILLING` or `SHIPPING` based on source |
-| `line1` | `line1` | Direct mapping |
-| `line2` | `line2` | Direct mapping |
-| `city` | `city` | Direct mapping |
-| `state` | `state` | Direct mapping |
-| `postal_code` | `postal_code` | Direct mapping |
-| `country` | `country` | ISO 3166-1 alpha-2 |
-
-### Sales Tax address structure
-
-| Sales Tax Field | RootFi Field | Notes |
-|-----------------|--------------|-------|
-| `address_line_1` | `line1` | Required |
-| `address_line_2` | `line2` | Optional |
-| `address_line_3` | - | Not mapped from Stripe |
-| `city` | `city` | Optional |
-| `state` | `state` | Required for US |
-| `postal_code` | `postal_code` | Required |
-| `country` | `country` | Required, ISO country code |
-
----
-
-## Enum mappings
-
-### Invoice/Credit Note Status (ARTIFACT_STATUS_ENUM)
-
-| Stripe Status | RootFi Status |
-|---------------|---------------|
-| `draft` | `DRAFT` |
-| `open` | `OPEN` |
-| `paid` | `PAID` |
-| `uncollectible` | `UNCOLLECTIBLE` |
-| `void` | `VOID` |
-| `deleted` | `DELETED` |
-| `issued` | `ISSUED` |
-
-### Refund Status (PAYMENTS_REFUND_STATUS_ENUM)
-
-| Stripe Status | RootFi Status |
-|---------------|---------------|
-| `pending` | `PENDING` |
-| `succeeded` | `SUCCEEDED` |
-| `failed` | `FAILED` |
-| `canceled` | `CANCELED` |
-
----
-
-## Currency handling
-
-All Stripe monetary amounts are in the currency's smallest unit (e.g., cents for USD). RootFi converts these to standard units using `CurrencyHandler.fromLowerDenominator`:
-
-| Currency | Decimal Places | Stripe Value | Converted Value |
-|----------|---------------|--------------|-----------------|
-| USD | 2 | 1000 | 10.00 |
-| EUR | 2 | 1000 | 10.00 |
-| JPY | 0 | 1000 | 1000 |
-| BHD | 3 | 1000 | 1.000 |
-
-By the time data reaches Sales Tax API, all amounts are already converted to standard units (dollars, not cents).
-
----
-
-## Summary: RootFi Unified API vs Stripe RawData
-
-This section provides a clear summary of which Sales Tax fields come from RootFi's normalized fields versus Stripe's raw data.
-
-### Fields from Stripe RawData
-
-| Entity | Sales Tax Field | RawData Path | Why RawData? |
-|--------|-----------------|--------------|--------------|
-| Customer | Ship To Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` | Stripe address structure preserved |
-| Customer | Ship To City | `raw_data.shipping.address.city` or `raw_data.city` | Stripe address structure preserved |
-| Customer | Ship To State | `raw_data.shipping.address.state` or `raw_data.state` | Stripe address structure preserved |
-| Customer | Ship To Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Stripe address structure preserved |
-| Customer | Ship To Country | `raw_data.shipping.address.country` or `raw_data.country` | Stripe address structure preserved |
-| Transaction | Ship To Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` | Stripe address structure preserved |
-| Transaction | Ship To City | `raw_data.shipping.address.city` or `raw_data.city` | Stripe address structure preserved |
-| Transaction | Ship To State | `raw_data.shipping.address.state` or `raw_data.state` | Stripe address structure preserved |
-| Transaction | Ship To Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` | Stripe address structure preserved |
-| Transaction | Ship To Country | `raw_data.shipping.address.country` or `raw_data.country` | Stripe address structure preserved |
+| Entity | Field | RawData Path |
+|--------|-------|--------------|
+| Customer | Shipping Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` |
+| Customer | Shipping Address Line 2 | `raw_data.shipping.address.line2` or `raw_data.line2` |
+| Customer | Shipping City | `raw_data.shipping.address.city` or `raw_data.city` |
+| Customer | Shipping State | `raw_data.shipping.address.state` or `raw_data.state` |
+| Customer | Shipping Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` |
+| Customer | Shipping Country | `raw_data.shipping.address.country` or `raw_data.country` |
+| Transaction | Ship To Address Line 1 | `raw_data.shipping.address.line1` or `raw_data.line1` |
+| Transaction | Ship To Address Line 2 | `raw_data.shipping.address.line2` or `raw_data.line2` |
+| Transaction | Ship To City | `raw_data.shipping.address.city` or `raw_data.city` |
+| Transaction | Ship To State | `raw_data.shipping.address.state` or `raw_data.state` |
+| Transaction | Ship To Postal Code | `raw_data.shipping.address.postal_code` or `raw_data.postal_code` |
+| Transaction | Ship To Country | `raw_data.shipping.address.country` or `raw_data.country` |
 
 ### Fields from RootFi Unified API
 
-| Entity | Sales Tax Field | RootFi Field |
-|--------|-----------------|--------------|
+| Entity | Field | RootFi Field |
+|--------|-------|--------------|
 | Customer | Name | `name` |
 | Customer | Email | `external_links` (type=EMAIL) |
 | Customer | Phone | `phone_numbers` |
@@ -588,7 +192,7 @@ This section provides a clear summary of which Sales Tax fields come from RootFi
 | Product | Name | `name` |
 | Product | Description | `description` |
 | Product | Source Platform ID | `platform_id` |
-| Transaction | Transaction Date | `posted_date` |
+| Transaction | Transaction Date | `posted_date` or `created_at` |
 | Transaction | Currency | `currency_id` |
 | Transaction | Subtotal | `sub_total` |
 | Transaction | Discount | `total_discount` |
@@ -598,26 +202,31 @@ This section provides a clear summary of which Sales Tax fields come from RootFi
 | Transaction | Invoice Number | `document_number` |
 | Transaction | Source Platform ID | `platform_id` |
 | Transaction | Customer ID | `contact_id` |
-| Line Item | Amount | `total_amount` |
+| Transaction | Status | `status` |
+| Line Item | Amount | `sub_total` |
 | Line Item | Quantity | `quantity` |
+| Line Item | Unit Amount | `unit_amount` |
 | Line Item | Discount | `total_discount` |
 | Line Item | Tax Amount | `tax_amount` |
-| Line Item | Unit Amount | `unit_amount` |
 | Line Item | Product ID | `item_id` |
+| Line Item | Line Number | `line_number` |
 
 ### Fields NOT mapped from Stripe
 
-| Entity | Sales Tax Field | Value | Notes |
-|--------|-----------------|-------|-------|
-| Product | SKU | `""` (empty) | Stripe products don't have SKU in RootFi mapping |
-| Product | Tax Code | `""` (empty) | Must be configured manually |
-| Line Item | Product SKU | `""` (empty) | Not available from Stripe |
-| Line Item | Product Taxability Code | `""` (empty) | Except shipping items: `SRV_Shipping` |
-| Transaction | Ship From Address | `""` (empty) | Not mapped from Stripe |
+| Entity | Field | Value | Notes |
+|--------|-------|-------|-------|
+| Product | SKU | `""` | Stripe products don't have SKU |
+| Product | TaxCode | `""` | Must be configured manually |
+| Line Item | Product SKU | `""` | Not available from Stripe |
+| Line Item | Product Taxability Code | `""` | Empty except shipping items (`SRV_Shipping`) |
+| Transaction | Ship From Address | `""` | Not mapped from Stripe |
+| Customer | Billing Address | `""` | Not mapped (only shipping is used) |
 
-### Address parsing code reference
+---
 
-The Stripe address parsing logic in `sync.address_parser.ts`:
+## Code references
+
+### Address parsing (`sync.address_parser.ts`)
 
 ```typescript
 if (integration === RootFiIntegration.STRIPE) {
@@ -633,9 +242,7 @@ if (integration === RootFiIntegration.STRIPE) {
 }
 ```
 
-### Product mapping code reference
-
-The Stripe product mapping in `stripe.transformer.ts`:
+### Product mapping (`stripe.transformer.ts`)
 
 ```typescript
 getProductMapper(): (product: PaymentItemWebhookData) => any {
@@ -647,5 +254,73 @@ getProductMapper(): (product: PaymentItemWebhookData) => any {
     "Source Platform ID": product.platform_id,
     "Source Platform": RootFiIntegration.STRIPE,
   });
+}
+```
+
+### Customer mapping (`stripe.transformer.ts`)
+
+```typescript
+getContactMapper(): (contact: PaymentCustomerWebhookData) => any {
+  return (customer: PaymentCustomerWebhookData): BulkUploadContactTemplate => {
+    const phoneNumber = this.getCustomerNumber(customer?.phone_numbers);
+    const email = this.getCustomerEmail(customer?.external_links);
+
+    return {
+      "Customer Name": customer.name,
+      "Customer Contact Name": customer.name,
+      "Customer Contact Email": email,
+      "Customer Contact Phone": phoneNumber,
+      // Billing addresses not mapped
+      "Billing Address line 1": "",
+      "Billing City": "",
+      // Shipping from parsed address (raw_data)
+      "Shipping Address line 1": this._address?.address_line1 ?? "",
+      "Shipping City": this._address?.city ?? "",
+      "Shipping Postal Code": this._address?.zip_code ?? "",
+      "Shipping State Code": this._address?.state ?? "",
+      "Shipping Country Code": this._address?.country ?? "",
+      "Source Platform": RootFiIntegration.STRIPE,
+      "Source Platform ID": customer.platform_id,
+    };
+  };
+}
+```
+
+### Invoice/Line Item mapping (`stripe.transformer.ts`)
+
+```typescript
+getInvoiceMapper(dataModel: RootfiSyncDatamodels) {
+  const isRefund = dataModel === RootfiSyncDatamodels.PAYMENT_CREDIT_NOTES;
+
+  return (lineItem: PaymentInvoicelineItemWebhookData) => {
+    const isShippingItem = lineItem.item_id === "SHIPPING_ITEM_ID";
+    
+    return {
+      "Transaction Type": isRefund ? "REFUND" : "SALE",
+      "Transaction Date (YYYY-MM-DD)": this._voucher?.posted_date?.slice(0, 10) 
+                                       || this._voucher?.created_at?.slice(0, 10),
+      "Price Per Unit": Math.abs(lineItem.unit_amount) 
+                        || lineItem.sub_total / lineItem.quantity,
+      Quantity: Math.abs(lineItem?.quantity) || 1,
+      Discount: lineItem?.discount_amount_for_line ?? 0,
+      "Item Tax": lineItem?.tax_amount ?? 0,
+      "Product SKU": "",  // Not mapped
+      "Product Taxability Code": isShippingItem ? "SRV_Shipping" : "",
+      "Source Platform": RootFiIntegration.STRIPE,
+      "Source Platform ID": this._voucher?.platform_id,
+      "Invoice Number": this._voucher?.document_number,
+      "Currency Code": this._voucher?.currency_id,
+      // Ship To from parsed address (raw_data)
+      "Ship To Address Line 1": this._address?.address_line1 ?? "",
+      "Ship To City": this._address?.city ?? "",
+      "Ship To State Code": this._address?.state ?? "",
+      "Ship To Postal Code": this._address?.zip_code ?? "",
+      "Ship To Country Code": this._address?.country ?? "",
+      // Ship From not mapped
+      "Ship From Address Line 1": "",
+      "Customer Source Platform ID": this._voucher?.contact_id,
+      "Product Source Platform ID": lineItem?.item_id,
+    };
+  };
 }
 ```
