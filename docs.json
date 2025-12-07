@@ -18,6 +18,7 @@
             "pages": [
               "integrations/overview",
               "integrations/woocommerce/setup",
+              "integrations/stripe/field-mapping",
               "integrations/settings"
             ]
           },
