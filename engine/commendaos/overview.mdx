@@ -1,10 +1,173 @@
 ---
 title: 'CommendaOS'
-description: 'Overview of CommendaOS'
+description: 'Global entity data modeling system for business entities'
 icon: 'microchip'
 ---
 
 ## Overview
 
-CommendaOS documentation coming soon.
+CommendaOS is Commenda's comprehensive data modeling system for managing business entity information across jurisdictions worldwide. It provides a unified API for modeling, storing, and retrieving entity data including government identifiers, registrations, locations, credentials, and documents.
 
+## Core concepts
+
+### Business entity
+
+The central model representing a legal business entity (corporation, LLC, partnership, etc.) operating in any jurisdiction. Business entities contain:
+
+- **General information**: Legal name, DBA name, business description, formation date
+- **Jurisdiction details**: Incorporation country, jurisdiction, entity type
+- **Addresses**: Registered office, operating, and mailing addresses
+- **Tax information**: Fiscal year, accounting basis, tax classification
+
+### Government identifiers
+
+Official identification numbers issued by government authorities for business entities. Examples include:
+
+- **US**: EIN (Employer Identification Number), state entity numbers
+- **India**: PAN, TAN, GSTIN, CIN/LLPIN
+- **UK**: Company Registration Number, UTR, VAT Number, PAYE Number
+- **Canada**: Business Number, Corporation Number, Company Key
+- **Singapore**: UEN, GST Number, CPF Submission Number
+- **UAE**: License Number, TRN
+- **Australia**: ACN, ABN, TFN, GST Number
+- **Germany**: HRB Number, Steuernummer, VAT Number
+- **France**: SIREN, Corporate Tax Number, TVA Number
+
+Each identifier includes:
+- Display name and description
+- Validation rules (regex patterns)
+- Supporting document requirements
+- Purpose (formation, taxation, payroll, etc.)
+- Function criticality level
+
+### Registrations
+
+Formal registrations with government agencies that enable business operations. Common registration types:
+
+- **Formation**: Company registration with corporate registry
+- **Income tax**: Federal/national tax identification
+- **Indirect tax**: VAT/GST/sales tax registration
+- **Payroll**: Employer withholding and unemployment insurance
+- **Social security**: Employee benefit programs
+- **Trade**: Import/export licenses
+- **Corporate registry**: Access credentials for filing systems
+
+Registrations can be:
+- **Domestic**: For entities formed in the jurisdiction
+- **Foreign**: For entities qualified to do business from another jurisdiction
+- **Expirable**: Some registrations require renewal
+
+### Locations
+
+Physical addresses where business entities operate, categorized by type:
+
+- **Registered office address**: Official legal address on file with authorities
+- **Operating address**: Primary business operations location
+- **Mailing address**: Correspondence address
+- **Headquarters**: Main administrative office
+- **Point of sale**: Retail or customer-facing locations
+- **Warehouse**: Inventory storage facilities
+- **Branch**: Secondary office locations
+- **Employee work location**: Where staff are based
+
+Locations support:
+- Employee count tracking
+- Start date for nexus determination
+- Multiple location types per address
+- Integration with external data sources
+
+### Credentials
+
+Secure storage for login credentials to government portals and systems. Credential types include:
+
+- **Corporate tax portals**: IRS e-Services, state franchise tax systems
+- **Indirect tax portals**: VAT/GST/sales tax filing systems
+- **Payroll tax portals**: Withholding and unemployment insurance systems
+- **Company secretarial portals**: Secretary of State business registries
+- **Social security portals**: Employee benefit systems
+- **Banking portals**: Financial institution access
+
+Credentials consist of:
+- **Plain text blocks**: Usernames, account numbers, identifiers
+- **Secure string blocks**: Passwords, PINs, access tokens (encrypted)
+- **Custom blocks**: Jurisdiction-specific fields
+
+Credentials can be:
+- Linked to registrations
+- Shared across business entities
+- Shared with accountants and service providers
+
+### Documents
+
+Business entity documents organized by category:
+
+- **Formation documents**: Articles of incorporation, bylaws, operating agreements
+- **Tax documents**: EIN letters, tax registration certificates
+- **Compliance documents**: Annual reports, franchise tax filings
+- **Financial documents**: Bank statements, financial statements
+- **Personnel documents**: Director identification, employment records
+
+Documents support:
+- Time-sensitive periods (effective start/end dates)
+- Version control
+- Unique constraints (one per entity)
+- Service request associations
+
+## Key features
+
+### Multi-jurisdiction support
+
+CommendaOS models entities across 50+ countries with jurisdiction-specific rules for:
+- Required government identifiers
+- Mandatory registrations
+- Document requirements
+- Credential portal access
+- Compliance obligations
+
+### Intelligent validation
+
+Built-in validation rules ensure data quality:
+- Regex patterns for identifier formats
+- Uniqueness constraints for critical identifiers
+- Date validation for time-sensitive data
+- Cross-entity relationship validation
+
+### Audit logging
+
+Comprehensive audit trails track all changes to:
+- Business entity core data
+- Government identifiers
+- Registrations
+- Locations
+- Credentials
+- Documents
+
+### API-first design
+
+RESTful API endpoints for all operations:
+- Create, read, update, delete operations
+- Bulk operations for efficiency
+- Relationship management
+- Credential sharing and access control
+
+## Use cases
+
+CommendaOS enables:
+
+1. **Entity formation**: Track incorporation process and obtain required identifiers
+2. **Tax compliance**: Manage tax registrations and filing credentials across jurisdictions
+3. **Payroll operations**: Store employer registrations and portal access
+4. **Multi-entity management**: Handle parent-subsidiary relationships and corporate groups
+5. **Accountant collaboration**: Share credentials and documents with service providers
+6. **Nexus tracking**: Monitor physical presence through location data
+7. **Compliance automation**: Link registrations to filing obligations
+8. **Document management**: Organize entity documents by type and time period
+
+## Architecture
+
+CommendaOS is built on:
+- **Database**: PostgreSQL with Prisma ORM
+- **Backend**: NestJS TypeScript services
+- **Security**: Encrypted credential storage in MongoDB
+- **Validation**: DTO-based request validation with class-validator
+- **Audit**: Comprehensive change tracking system
