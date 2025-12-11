@@ -1,0 +1,299 @@
+---
+title: 'Documents API'
+description: 'Manage business entity documents and files'
+icon: 'file-text'
+---
+
+## Overview
+
+The Documents API manages business entity documents organized by category, including formation documents, tax certificates, compliance filings, financial records, and contracts. Documents support time-sensitive periods, version control, and service request associations.
+
+## Core endpoints
+
+### List documents
+
+Get all documents for a business entity.
+
+```http
+GET /business-entity/:businessEntityId/documents
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Response**
+
+```json
+{
+  "documents": [
+    {
+      "id": 123,
+      "documentType": "FORMATION_DOCUMENT",
+      "documentSubType": "CertificateOfIncorporation",
+      "documentName": "Certificate of Incorporation",
+      "fileId": "file_abc123",
+      "fileName": "Certificate_of_Incorporation.pdf",
+      "effectiveStartDate": "2020-01-15",
+      "effectiveEndDate": null,
+      "serviceRequestId": null,
+      "createdAt": "2020-01-15T10:00:00Z"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Create document
+
+Add a new document to a business entity.
+
+```http
+POST /business-entity/:businessEntityId/documents
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Request body**
+
+```json
+{
+  "documentType": "FORMATION_DOCUMENT",
+  "documentSubType": "CertificateOfIncorporation",
+  "fileId": "file_abc123",
+  "effectiveStartDate": "2020-01-15",
+  "serviceRequestId": 456
+}
+```
+
+**Response**
+
+```json
+{
+  "document": {
+    "id": 123,
+    "documentType": "FORMATION_DOCUMENT",
+    "documentSubType": "CertificateOfIncorporation",
+    "fileId": "file_abc123"
+  }
+}
+```
+
+### Update document
+
+Update an existing document.
+
+```http
+POST /business-entity/:businessEntityId/documents/:documentId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `documentId` | integer | Document ID |
+
+**Request body**
+
+```json
+{
+  "effectiveStartDate": "2020-01-15",
+  "effectiveEndDate": "2025-12-31",
+  "serviceRequestId": 456
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+## Supported documents
+
+### Get supported document types
+
+Get all document types available for a business entity.
+
+```http
+GET /business-entity/:businessEntityId/documents/supported
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Response**
+
+```json
+{
+  "supportedDocumentTypes": [
+    {
+      "documentName": "Certificate of Incorporation",
+      "documentType": "FORMATION_DOCUMENT",
+      "documentSubType": "CertificateOfIncorporation",
+      "country": "US",
+      "jurisdiction": null,
+      "corporationType": "C_CORP",
+      "isTimeSensitive": false,
+      "isUnique": true,
+      "canBeAddedByAddDocument": true
+    }
+  ]
+}
+```
+
+## Document categories
+
+### Formation documents
+
+Company formation and incorporation documents:
+- **Certificate of Incorporation**: Official incorporation certificate
+- **Articles of Incorporation**: Corporate charter
+- **Bylaws**: Corporate governance rules
+- **Operating Agreement**: LLC governance document
+- **Memorandum of Association**: Company constitution
+- **Articles of Association**: Shareholder rights and obligations
+
+### Tax and compliance documents
+
+Tax registration and compliance certificates:
+- **EIN Letter**: IRS Employer Identification Number confirmation
+- **Tax Registration Certificate**: State/national tax registration
+- **VAT Certificate**: VAT/GST registration certificate
+- **PAYE Certificate**: Payroll tax registration
+- **PF Registration**: Provident fund registration
+- **ESIC Registration**: Employee insurance registration
+
+### Financial records
+
+Financial statements and accounting documents:
+- **Balance Sheet**: Statement of financial position
+- **Income Statement**: Profit and loss statement
+- **Cash Flow Statement**: Cash flow analysis
+- **Bank Statements**: Monthly bank account statements
+- **Card Statements**: Credit card statements
+- **Audit Reports**: Annual audit documents
+
+### Shareholder documents
+
+Shareholder and equity-related documents:
+- **Share Certificates**: Stock ownership certificates
+- **Share Purchase Agreement**: Equity transfer agreements
+- **Board Resolutions**: Board meeting minutes
+- **Shareholder Resolutions**: Shareholder meeting minutes
+- **Stock Option Plans**: Employee equity plans
+
+### Contracts and agreements
+
+Business contracts and legal agreements:
+- **Lease Agreement**: Office rental contracts
+- **Service Agreements**: Vendor contracts
+- **Employment Agreements**: Employee contracts
+- **Partnership Agreements**: Business partnership documents
+
+### Miscellaneous
+
+Other business documents:
+- **Utility Bills**: Proof of address documents
+- **Office Photos**: Physical location verification
+- **Director Identification**: Director ID documents
+- **Company Profile**: Business information summaries
+
+## Document properties
+
+### Time-sensitive documents
+
+Some documents have effective date ranges:
+- `effectiveStartDate`: When the document becomes valid
+- `effectiveEndDate`: When the document expires (optional)
+
+Examples: Tax returns (fiscal year), financial statements (period), audit reports (year)
+
+### Unique documents
+
+Some document types can only exist once per entity:
+- `isUnique: true`: Only one instance allowed (e.g., Certificate of Incorporation)
+- `isUnique: false`: Multiple versions allowed (e.g., Board Resolutions)
+
+### Service request association
+
+Documents can be linked to service requests:
+- `serviceRequestId`: Associates document with a specific service request
+- Enables tracking of documents generated through compliance workflows
+
+## Jurisdiction-specific documents
+
+Document types vary by country and entity type:
+
+### United States (C-Corp, LLC)
+- Certificate of Incorporation
+- EIN Confirmation Letter
+- State tax registration certificates
+- Annual reports
+- Franchise tax filings
+
+### India (Pvt Ltd, LLP)
+- Certificate of Incorporation
+- PAN Card
+- GST Certificate
+- TAN Document
+- Annual audit reports
+
+### United Kingdom (Ltd)
+- Certificate of Incorporation
+- Memorandum of Association
+- VAT Certificate
+- PAYE Reference Letter
+- HMRC UTR Letter
+
+### Singapore (Pte Ltd, LLP)
+- Certificate of Incorporation
+- GST Certificate
+- CPF Activation Letter
+- Articles of Association
+
+### Canada (Corporation)
+- Certificate of Incorporation
+- CRA Business Number Confirmation
+- Articles of Incorporation
+- Initial Return
+
+### UAE (Free Zone Company)
+- Trade License Certificate
+- TRN Letter
+- Employer Establishment Card
+
+### Australia (Pty Ltd)
+- Certificate of Incorporation
+- Company Constitution
+- Director's Consent
+
+### Germany (GmbH)
+- Notarial Deed of Incorporation
+- Commercial Register Extract
+- Shareholder List
+
+### France (SAS)
+- Extrait Kbis
+- Articles of Association (Statuts)
+- Shareholders' Agreement
+
+## File management
+
+Documents reference files stored in the Files API:
+1. Upload file using Files API to get `fileId`
+2. Create document record with `fileId` reference
+3. Document metadata stored separately from file content
+
+## Related resources
+
+- [Business Entity API](/engine/commendaos/business-entity) - Manage parent business entities
+- [Registrations API](/engine/commendaos/registrations) - Documents linked to registrations

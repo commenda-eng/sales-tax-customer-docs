@@ -16,7 +16,13 @@
           {
             "group": "CommendaOS",
             "pages": [
-              "engine/commendaos/overview"
+              "engine/commendaos/overview",
+              "engine/commendaos/business-entity",
+              "engine/commendaos/government-identifiers",
+              "engine/commendaos/registrations",
+              "engine/commendaos/locations",
+              "engine/commendaos/credentials",
+              "engine/commendaos/documents"
             ]
           },
           {

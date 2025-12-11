@@ -1,0 +1,248 @@
+---
+title: 'Locations API'
+description: 'Manage physical addresses and locations for business entities'
+icon: 'map-pin'
+---
+
+## Overview
+
+The Locations API manages physical addresses where business entities operate, including registered offices, operating addresses, warehouses, branches, and points of sale. Locations are used for nexus determination, compliance tracking, and employee management.
+
+## Core endpoints
+
+### List locations
+
+Get all locations for a business entity.
+
+```http
+GET /business-entity/:businessEntityId/locations
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Response**
+
+```json
+{
+  "locations": [
+    {
+      "id": "loc_abc123",
+      "addressLine1": "123 Main Street",
+      "addressLine2": "Suite 100",
+      "city": "San Francisco",
+      "state": "CA",
+      "postalCode": "94105",
+      "country": "US",
+      "locationType": ["REGISTERED_OFFICE", "OPERATING"],
+      "startDate": "2020-01-15",
+      "endDate": null,
+      "employeeCount": 25,
+      "source": "COMMENDA",
+      "sourceId": null
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get location
+
+Retrieve a single location by ID.
+
+```http
+GET /business-entity/:businessEntityId/locations/:locationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `locationId` | string | Location ID |
+
+**Response**
+
+```json
+{
+  "id": "loc_abc123",
+  "addressLine1": "123 Main Street",
+  "addressLine2": "Suite 100",
+  "city": "San Francisco",
+  "state": "CA",
+  "postalCode": "94105",
+  "country": "US",
+  "locationType": ["REGISTERED_OFFICE", "OPERATING"],
+  "startDate": "2020-01-15",
+  "endDate": null,
+  "employeeCount": 25,
+  "source": "COMMENDA",
+  "sourceId": null
+}
+```
+
+### Create location
+
+Add a new location to a business entity.
+
+```http
+POST /business-entity/:businessEntityId/locations
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Request body**
+
+```json
+{
+  "addressLine1": "123 Main Street",
+  "addressLine2": "Suite 100",
+  "city": "San Francisco",
+  "state": "CA",
+  "postalCode": "94105",
+  "country": "US",
+  "locationType": ["OPERATING"],
+  "startDate": "2020-01-15",
+  "employeeCount": 25
+}
+```
+
+**Response**
+
+```json
+{
+  "location": {
+    "id": "loc_abc123"
+  }
+}
+```
+
+### Update location
+
+Update an existing location.
+
+```http
+POST /business-entity/:businessEntityId/locations/:locationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `locationId` | string | Location ID |
+
+**Request body**
+
+```json
+{
+  "addressLine1": "456 Market Street",
+  "addressLine2": "Floor 5",
+  "city": "San Francisco",
+  "state": "CA",
+  "postalCode": "94103",
+  "employeeCount": 30,
+  "endDate": "2025-12-31"
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+### Delete location
+
+Remove a location from a business entity.
+
+```http
+DELETE /business-entity/:businessEntityId/locations/:locationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `locationId` | string | Location ID |
+
+**Response**
+
+Returns `204 No Content` on success.
+
+## Location types
+
+A single location can have multiple types:
+
+| Type | Description | Use case |
+|------|-------------|----------|
+| `REGISTERED_OFFICE` | Official legal address on file with authorities | Required for corporate filings |
+| `OPERATING` | Primary business operations location | Main office or headquarters |
+| `MAILING` | Correspondence address | Where mail is received |
+| `HEADQUARTERS` | Main administrative office | Corporate HQ |
+| `POINT_OF_SALE` | Retail or customer-facing location | Stores, showrooms |
+| `WAREHOUSE` | Inventory storage facility | Distribution centers |
+| `BRANCH` | Secondary office location | Regional offices |
+| `EMPLOYEE_WORK_LOCATION` | Where staff are based | Remote offices, coworking spaces |
+
+## Address fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `addressLine1` | string | Yes | Street address |
+| `addressLine2` | string | No | Apartment, suite, unit, building, floor |
+| `city` | string | Yes | City or locality |
+| `state` | string | Conditional | State/province (required for US, Canada, India, Australia) |
+| `postalCode` | string | Yes | ZIP/postal code |
+| `country` | string | Yes | ISO 3166-1 alpha-2 country code |
+
+## Employee tracking
+
+Track employee count at each location for:
+- Payroll tax nexus determination
+- Workers' compensation requirements
+- Local tax obligations
+- Headcount reporting
+
+Update `employeeCount` as staff levels change.
+
+## Nexus determination
+
+Use `startDate` to track when physical presence began in a jurisdiction. This is critical for:
+- Sales tax nexus
+- Income tax nexus
+- Payroll tax obligations
+- Registration requirements
+
+## Location sources
+
+Locations can be created from multiple sources:
+
+| Source | Description |
+|--------|-------------|
+| `COMMENDA` | Manually entered in CommendaOS |
+| `GUSTO` | Synced from Gusto payroll |
+| `RIPPLING` | Synced from Rippling HRIS |
+| `JUSTWORKS` | Synced from Justworks |
+| `DEEL` | Synced from Deel |
+
+External locations include a `sourceId` for reference back to the originating system.
+
+## Time periods
+
+Track location validity with `startDate` and `endDate`:
+- `startDate`: When the location became active (required)
+- `endDate`: When the location was closed (optional, null for active locations)
+
+This enables historical tracking of where entities operated over time.
+
+## Related resources
+
+- [Business Entity API](/engine/commendaos/business-entity) - Manage parent business entities
+- [Registrations API](/engine/commendaos/registrations) - Registrations triggered by location nexus

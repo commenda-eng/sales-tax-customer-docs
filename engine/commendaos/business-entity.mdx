@@ -1,0 +1,228 @@
+---
+title: 'Business entity API'
+description: 'Manage business entities and their core information'
+icon: 'building'
+---
+
+## Overview
+
+The Business Entity API provides endpoints for managing legal business entities (corporations, LLCs, partnerships, etc.) and their associated data including locations, persons, government identifiers, registrations, documents, and credentials.
+
+## Core endpoints
+
+### Get business entity
+
+Retrieve a single business entity by ID.
+
+```http
+GET /business-entity/:businessEntityId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `extends` | string[] | Optional fields to include: `governmentIdentifiers`, `locations` |
+
+**Response**
+
+```json
+{
+  "id": 123,
+  "legalName": "Acme Corporation",
+  "dbaName": "Acme",
+  "incorporationCountry": "US",
+  "incorporationJurisdiction": "DE",
+  "entityType": "C_CORP",
+  "formationDate": "2020-01-15",
+  "businessDescription": "Software development",
+  "fiscalYearEnd": "12-31",
+  "accountingBasis": "ACCRUAL",
+  "governmentIdentifiers": [...],
+  "locations": [...]
+}
+```
+
+### Update business entity
+
+Update core business entity information.
+
+```http
+POST /business-entity/:businessEntityId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Request body**
+
+```json
+{
+  "legalName": "Acme Corporation Inc.",
+  "dbaName": "Acme",
+  "businessDescription": "Enterprise software development",
+  "fiscalYearEnd": "12-31",
+  "accountingBasis": "ACCRUAL",
+  "taxClassification": "C_CORP"
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+### List business entities
+
+Get all business entities for a company.
+
+```http
+GET /business-entity/list/company/:companyId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `companyId` | integer | Unique identifier for the company |
+
+**Response**
+
+```json
+{
+  "entities": [
+    {
+      "id": 123,
+      "legalName": "Acme Corporation",
+      "incorporationCountry": "US",
+      "incorporationJurisdiction": "DE"
+    }
+  ]
+}
+```
+
+## Key persons
+
+### Add key person
+
+Associate a person with a business entity.
+
+```http
+POST /business-entity/:businessEntityId/persons/:personId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `personId` | integer | Person ID |
+
+**Request body**
+
+```json
+{
+  "role": "DIRECTOR",
+  "startDate": "2020-01-15",
+  "endDate": null,
+  "ownershipPercentage": 25.5
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+### Remove key person
+
+Remove a person from a business entity.
+
+```http
+DELETE /business-entity/:businessEntityId/persons/:personId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `personId` | integer | Person ID |
+
+**Response**
+
+Returns `204 No Content` on success.
+
+## Bulk operations
+
+### Bulk assign
+
+Assign multiple business entities to companies.
+
+```http
+POST /business-entity/bulk/assign
+```
+
+**Request body**
+
+```json
+[
+  {
+    "businessEntityId": 123,
+    "companyId": 456
+  },
+  {
+    "businessEntityId": 124,
+    "companyId": 456
+  }
+]
+```
+
+**Response**
+
+```json
+{
+  "success": [
+    {
+      "businessEntityId": 123,
+      "companyId": 456
+    }
+  ],
+  "failed": []
+}
+```
+
+### Unassign business entity
+
+Remove a business entity from a company.
+
+```http
+POST /business-entity/unassign
+```
+
+**Request body**
+
+```json
+{
+  "businessEntityId": 123
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+## Related resources
+
+- [Locations API](/engine/commendaos/locations) - Manage business entity addresses
+- [Government Identifiers API](/engine/commendaos/government-identifiers) - Manage tax IDs and official numbers
+- [Registrations API](/engine/commendaos/registrations) - Manage government registrations
+- [Documents API](/engine/commendaos/documents) - Manage entity documents
+- [Credentials API](/engine/commendaos/credentials) - Manage portal access credentials
