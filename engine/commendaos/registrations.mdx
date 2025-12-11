@@ -1,0 +1,327 @@
+---
+title: 'Registrations API'
+description: 'Manage government registrations for business entities'
+icon: 'file-check'
+---
+
+## Overview
+
+The Registrations API manages formal registrations with government agencies that enable business operations, including tax registrations, payroll accounts, corporate registry access, and trade licenses.
+
+## Core endpoints
+
+### List registrations
+
+Get all registrations for a business entity.
+
+```http
+GET /business-entity/:businessEntityId/registrations
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `extends` | string[] | Optional fields to include: `credentials` |
+
+**Response**
+
+```json
+{
+  "registrations": [
+    {
+      "id": "reg_abc123",
+      "type": "INCOME_TAX",
+      "country": "US",
+      "jurisdiction": "FEDERAL",
+      "registrationDate": "2020-01-15",
+      "status": "ACTIVE",
+      "isDomestic": true,
+      "expiryDate": null,
+      "governmentIdentifierId": "gi_xyz789",
+      "credentials": [...]
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get registration
+
+Retrieve a single registration by ID.
+
+```http
+GET /business-entity/:businessEntityId/registrations/:registrationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `registrationId` | string | Registration ID |
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `extends` | string[] | Optional fields to include: `credentials` |
+
+**Response**
+
+```json
+{
+  "registration": {
+    "id": "reg_abc123",
+    "type": "INCOME_TAX",
+    "country": "US",
+    "jurisdiction": "FEDERAL",
+    "registrationDate": "2020-01-15",
+    "status": "ACTIVE",
+    "isDomestic": true,
+    "expiryDate": null,
+    "governmentIdentifierId": "gi_xyz789",
+    "credentials": [
+      {
+        "id": "cred_123",
+        "name": "IRS e-Services"
+      }
+    ]
+  }
+}
+```
+
+### Create registration
+
+Add a new registration to a business entity.
+
+```http
+POST /business-entity/:businessEntityId/registrations
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Request body**
+
+```json
+{
+  "type": "INCOME_TAX",
+  "country": "US",
+  "jurisdiction": "FEDERAL",
+  "registrationDate": "2020-01-15",
+  "status": "ACTIVE",
+  "isDomestic": true,
+  "governmentIdentifierId": "gi_xyz789"
+}
+```
+
+**Response**
+
+```json
+{
+  "registration": {
+    "id": "reg_abc123"
+  }
+}
+```
+
+### Update registration
+
+Update an existing registration.
+
+```http
+POST /business-entity/:businessEntityId/registrations/:registrationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `registrationId` | string | Registration ID |
+
+**Request body**
+
+```json
+{
+  "status": "INACTIVE",
+  "expiryDate": "2025-12-31",
+  "registrationDate": "2020-01-15"
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+### Delete registration
+
+Remove a registration from a business entity.
+
+```http
+DELETE /business-entity/:businessEntityId/registrations/:registrationId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `registrationId` | string | Registration ID |
+
+**Response**
+
+Returns `204 No Content` on success.
+
+## Supported registrations
+
+### Get supported registrations
+
+Get all registration types available for a business entity or country.
+
+```http
+GET /business-entity/registrations/supportedRegistrations
+```
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Filter by business entity (optional) |
+| `country` | string | Filter by country code (optional) |
+
+**Response**
+
+```json
+{
+  "supportedRegistrations": [
+    {
+      "type": "INCOME_TAX",
+      "displayName": "Federal Income Tax",
+      "description": "IRS federal income tax registration",
+      "country": "US",
+      "jurisdiction": "FEDERAL",
+      "requiredIdentifiers": ["EIN"],
+      "isExpirable": false,
+      "purpose": "TAXATION"
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get supported registrations for entity
+
+Get registration types available for a specific business entity.
+
+```http
+GET /business-entity/:businessEntityId/registrations/supportedRegistrations
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Response**
+
+Same format as above, filtered by the entity's incorporation country and jurisdiction.
+
+## Registration types
+
+### Formation
+
+Company registration with corporate registry:
+- **US**: Secretary of State registration
+- **UK**: Companies House registration
+- **India**: ROC (Registrar of Companies) registration
+- **Singapore**: ACRA registration
+
+### Income tax
+
+Federal/national tax identification:
+- **US**: IRS federal income tax
+- **UK**: HMRC Corporation Tax
+- **India**: Income Tax Department
+- **Canada**: CRA corporate income tax
+
+### Indirect tax
+
+VAT/GST/sales tax registration:
+- **US**: State sales tax permits
+- **UK**: VAT registration
+- **India**: GST registration
+- **Singapore**: GST registration
+- **UAE**: VAT registration
+
+### Payroll
+
+Employer withholding and unemployment insurance:
+- **US**: State withholding tax, unemployment insurance
+- **UK**: PAYE registration
+- **India**: Professional Tax, ESI, EPF
+- **Singapore**: CPF registration
+
+### Social security
+
+Employee benefit programs:
+- **US**: Social Security Administration
+- **India**: ESIC, EPFO
+- **Singapore**: CPF Board
+
+### Trade
+
+Import/export licenses:
+- **US**: Customs and Border Protection
+- **India**: Import Export Code (IEC)
+- **UAE**: Trade license
+
+### Corporate registry
+
+Access credentials for filing systems:
+- **US**: State business portals
+- **UK**: Companies House WebFiling
+- **India**: MCA portal
+- **Singapore**: BizFile+
+
+## Registration status
+
+| Status | Description |
+|--------|-------------|
+| `ACTIVE` | Registration is current and valid |
+| `INACTIVE` | Registration has been deactivated |
+| `PENDING` | Registration application in progress |
+| `EXPIRED` | Registration has expired (for expirable types) |
+| `SUSPENDED` | Registration temporarily suspended by authority |
+
+## Domestic vs foreign registrations
+
+- **Domestic**: For entities formed in the jurisdiction (e.g., Delaware corporation registering in Delaware)
+- **Foreign**: For entities qualified to do business from another jurisdiction (e.g., Delaware corporation registering in California)
+
+## Linking credentials
+
+Associate portal access credentials with registrations:
+
+```http
+POST /business-entity/:businessEntityId/registrations/:registrationId/credential/:credentialId
+```
+
+This links a credential to a specific registration, enabling automated filing and compliance workflows.
+
+## Related resources
+
+- [Business Entity API](/engine/commendaos/business-entity) - Manage parent business entities
+- [Government Identifiers API](/engine/commendaos/government-identifiers) - Required identifiers for registrations
+- [Credentials API](/engine/commendaos/credentials) - Portal access for registrations
