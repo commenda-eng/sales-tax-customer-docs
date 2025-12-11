@@ -1,0 +1,231 @@
+---
+title: 'Service request integration'
+description: 'How workflows integrate with the legacy service request system'
+icon: 'link'
+---
+
+This reference explains how Workflow Builder integrates with the existing service request system during the transition period.
+
+<Note>
+This is a temporary solution until form builder fully powers the workflow UI. Currently, workflows handle **orchestration only** while service requests maintain business context (files, assignees, corporations, etc.).
+</Note>
+
+## Architecture overview
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Service Request                       │
+│  ┌─────────────────────────────────────────────────────┐│
+│  │ Business Context: files, assignees, corporations... ││
+│  └─────────────────────────────────────────────────────┘│
+│                         │                                │
+│                         ▼                                │
+│  ┌─────────────────────────────────────────────────────┐│
+│  │              Task Groups & Tasks                    ││
+│  │  (Statuses synced from Workflow Execution)          ││
+│  └─────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────┘
+                          │
+                          │ (sync)
+                          ▼
+┌─────────────────────────────────────────────────────────┐
+│                  Workflow Execution                      │
+│  ┌─────────────────────────────────────────────────────┐│
+│  │        Step Groups & Steps (Source of Truth)        ││
+│  └─────────────────────────────────────────────────────┘│
+└─────────────────────────────────────────────────────────┘
+```
+
+## Service request configuration
+
+For each service request type, we maintain a configuration defining:
+
+- Which **task groups** exist
+- Which **tasks** belong to each group
+
+These are represented using `TaskGroup` and `Task` enums.
+
+At runtime, this configuration generates service request instances on the backend.
+
+## Frontend rendering
+
+The frontend uses a `componentMap` that maps each `taskKey` to a React component:
+
+```typescript
+const componentMap = {
+  'add-bank-account': AddBankAccount,
+  'mark-as-completed': MarkAsCompleted,
+  // ... other mappings
+};
+```
+
+When rendering a task:
+1. Look up the `taskKey` in `componentMap`
+2. If found, render the custom component
+3. If not found, render a **Generic Task** (assigned to an agent, "Mark as Completed" behavior)
+
+## Workflow as source of truth
+
+When a service request is initiated:
+
+1. Check if a **workflow link** exists for that service request type
+2. If yes, start a **workflow execution**
+3. The workflow execution becomes the **source of truth** for task statuses
+
+<Warning>
+Service request instances and workflow execution instances co-exist and must be **kept in sync**. Statuses should always come from the workflow execution.
+</Warning>
+
+## Syncing task updates
+
+When updating a task in the service request:
+
+```
+1. Check if service request has associated workflow execution
+           │
+           ▼
+2. Propagate update to workflow execution
+           │
+           ▼
+3. Wait for update to complete
+           │
+           ▼
+4. Fetch latest runtime statuses from workflow
+           │
+           ▼
+5. Build Prisma mutations for each status change
+           │
+           ▼
+6. Execute updates in a transaction
+```
+
+If something fails midway, a manual **"Sync" button** allows reconciliation between the service request and workflow.
+
+## Mapping workflows to service requests
+
+When creating a new workflow, connect it to a service request using these fields:
+
+### Workflow level
+
+```typescript
+{
+  legacyServiceRequestType: "INDIA_PVT_LTD_INCORPORATION"
+}
+```
+
+### Step group level
+
+```typescript
+{
+  stepGroups: [
+    {
+      id: "group-1",
+      name: "Document Verification",
+      legacyServiceRequestTaskGroupKey: "DOCUMENT_VERIFICATION"
+    }
+  ]
+}
+```
+
+### Step level
+
+```typescript
+{
+  steps: [
+    {
+      id: "step-1",
+      type: "human.confirm",
+      legacyServiceRequestTaskKey: "VERIFY_PAN_CARD"
+    }
+  ]
+}
+```
+
+### Mapping flow
+
+1. **Select** the `legacyServiceRequestType`
+2. **Select** the `taskGroup` for each `stepGroup`
+3. For each step, **select** the `taskKey`
+
+## Component rendering logic
+
+```
+Task has legacyServiceRequestTaskKey?
+          │
+    ┌─────┴─────┐
+    │           │
+   YES         NO
+    │           │
+    ▼           ▼
+Look up in   Render
+componentMap Generic Task
+    │
+    ▼
+Found?
+    │
+┌───┴───┐
+│       │
+YES     NO
+│       │
+▼       ▼
+Render  Render
+Custom  Generic
+Comp.   Task
+```
+
+## Handling dynamic DSC task groups
+
+The India Pvt Ltd incorporation workflow requires dynamic task groups—each director without a DSC goes through a separate DSC onboarding flow.
+
+### Domain mismatch
+
+| Domain | Representation |
+|--------|----------------|
+| Workflow | One child workflow per director |
+| Service Request | Separate task group per DSC workflow |
+
+### Current solution
+
+```typescript
+// Determine which workflow execution to update
+workflowExecutionToUpdate =
+  serviceRequestTaskGroup.workflowExecutionId
+    || serviceRequest.workflowExecutionId
+```
+
+The system:
+
+1. Identifies DSC-related child workflow executions
+2. Creates/updates corresponding Service Request task groups
+3. Links each task group to the correct `workflowExecutionId`
+4. Ensures group names and ordering follow SR UI conventions
+
+### Update routing
+
+- If task belongs to a DSC group → update **child workflow execution**
+- Otherwise → update **parent workflow execution**
+
+## Future considerations
+
+<Note>
+We have not yet generalized this pattern. Open questions include:
+
+- Should all child workflows appear as Service Request task groups?
+- Should child-of-child workflows be shown?
+- How should workflows with multiple step groups be projected?
+- Should we introduce a generic "projection type" system?
+
+These will be revisited as more diverse workflows are built and real patterns emerge.
+</Note>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Data models" icon="database" href="/engine/workflow-builder/reference/data-models">
+    Database schema reference
+  </Card>
+  <Card title="Creating workflows" icon="hammer" href="/engine/workflow-builder/guides/creating-workflows">
+    Build workflows with legacy mapping
+  </Card>
+</CardGroup>
+

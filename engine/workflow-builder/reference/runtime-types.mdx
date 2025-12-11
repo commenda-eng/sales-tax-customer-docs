@@ -1,0 +1,206 @@
+---
+title: 'Runtime types'
+description: 'Technical reference for workflow execution runtime types'
+icon: 'play'
+---
+
+This reference documents the types used during workflow execution.
+
+## Workflow runtime status
+
+```typescript
+export enum WorkflowRuntimeStatus {
+  NOT_STARTED = 'NotStarted',
+  IN_PROGRESS = 'InProgress',
+  COMPLETED = 'Completed',
+  FAILED = 'Failed',
+  CANCELLED = 'Cancelled',
+}
+```
+
+| Status | Description |
+|--------|-------------|
+| `NOT_STARTED` | Workflow defined but not yet begun |
+| `IN_PROGRESS` | Actively executing steps |
+| `COMPLETED` | All steps finished successfully |
+| `FAILED` | One or more steps failed |
+| `CANCELLED` | Execution was explicitly cancelled |
+
+## Step runtime status
+
+```typescript
+export enum WorkflowRuntimeStepStatus {
+  NOT_STARTED = 'NotStarted',
+  IN_PROGRESS = 'InProgress',
+  COMPLETED = 'Completed',
+  DISABLED = 'Disabled',
+  FAILED = 'Failed',
+}
+```
+
+| Status | Description |
+|--------|-------------|
+| `NOT_STARTED` | Step has not started |
+| `IN_PROGRESS` | Step is currently executing |
+| `COMPLETED` | Step finished successfully |
+| `DISABLED` | Step is disabled |
+| `FAILED` | Step execution failed |
+
+## TRuntimeWorkflowExecution
+
+Represents a running workflow instance:
+
+```typescript
+export type TRuntimeWorkflowExecution = {
+  id: string;
+  correlationId: string;
+  parentWorkflowExecutionId?: string;
+  rootWorkflowExecutionId?: string;
+  workflowTemplateVersionId: string;
+  runtimeStatus: WorkflowRuntimeStatus;
+  startedAt: string;
+  completedAt?: string;
+  failedAt?: string;
+  lastActivityAt?: string;
+  context: Record<string, any>;
+  steps: Record<string, TRuntimeWorkflowStepExecution>;
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique execution identifier |
+| `correlationId` | Correlation ID for tracing |
+| `parentWorkflowExecutionId` | Parent workflow if spawned as sub-workflow |
+| `rootWorkflowExecutionId` | Root workflow in nested hierarchies |
+| `workflowTemplateVersionId` | Template version being executed |
+| `runtimeStatus` | Current overall status |
+| `startedAt` | Execution start timestamp |
+| `completedAt` | Completion timestamp (if completed) |
+| `failedAt` | Failure timestamp (if failed) |
+| `lastActivityAt` | Last step update timestamp |
+| `context` | Global workflow context data |
+| `steps` | Map of step execution states by ID |
+
+### Context usage
+
+The `context` property serves two purposes:
+
+1. **Global context** - Accessible via `__context__` in expressions
+2. **Metadata storage** - Additional execution information (e.g., `directorId` for DSC workflows)
+
+## TRuntimeWorkflowStepExecution
+
+Represents a step's execution state:
+
+```typescript
+export type TRuntimeWorkflowStepExecution = {
+  id: string;
+  type: WorkflowStepType;
+  stepId: string;
+  status: WorkflowRuntimeStepStatus;
+  attempt: number;
+  startedAt?: string;
+  completedAt?: string;
+  failedAt?: string;
+  dueAt?: string;
+  outputData?: Record<string, any>;
+  childWorkflowExecutions?: { id: string }[];
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique step execution ID |
+| `type` | Step type |
+| `stepId` | Reference to step definition ID |
+| `status` | Current step status |
+| `attempt` | Attempt number (for retries) |
+| `startedAt` | Step start timestamp |
+| `completedAt` | Completion timestamp |
+| `failedAt` | Failure timestamp |
+| `dueAt` | Due date for the step |
+| `outputData` | Step output (follows outputSchema) |
+| `childWorkflowExecutions` | Child workflows triggered by this step |
+
+## Runtime flow
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                 Workflow Execution                       │
+│                                                          │
+│  Status: IN_PROGRESS                                     │
+│  Context: { customerId: "123", ... }                     │
+│                                                          │
+│  Steps:                                                  │
+│  ┌─────────────┬──────────────┬─────────────────┐       │
+│  │ start       │ IN_PROGRESS  │ outputData: {}  │       │
+│  ├─────────────┼──────────────┼─────────────────┤       │
+│  │ verify      │ NOT_STARTED  │ outputData: null│       │
+│  ├─────────────┼──────────────┼─────────────────┤       │
+│  │ end         │ NOT_STARTED  │ outputData: null│       │
+│  └─────────────┴──────────────┴─────────────────┘       │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Accessing runtime data
+
+In expressions, access step outputs via the `__steps__` variable:
+
+```jsonata
+__steps__.verify.outputData.verified
+```
+
+This returns the `verified` field from the `verify` step's output.
+
+## Child workflow executions
+
+For sub-workflow steps, `childWorkflowExecutions` contains references to spawned workflows:
+
+```json
+{
+  "id": "step-exec-1",
+  "type": "sys.sub_workflow",
+  "stepId": "dsc-step",
+  "status": "Completed",
+  "childWorkflowExecutions": [
+    { "id": "child-exec-1" },
+    { "id": "child-exec-2" },
+    { "id": "child-exec-3" }
+  ]
+}
+```
+
+## Status transitions
+
+### Workflow status flow
+
+```
+NOT_STARTED → IN_PROGRESS → COMPLETED
+                    │
+                    ├──────→ FAILED
+                    │
+                    └──────→ CANCELLED
+```
+
+### Step status flow
+
+```
+NOT_STARTED → IN_PROGRESS → COMPLETED
+                    │
+                    └──────→ FAILED
+
+(DISABLED can be set at any point via activation policy)
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Data models" icon="database" href="/engine/workflow-builder/reference/data-models">
+    Database schema reference
+  </Card>
+  <Card title="Validation rules" icon="check" href="/engine/workflow-builder/reference/validation-rules">
+    Definition validation rules
+  </Card>
+</CardGroup>
+

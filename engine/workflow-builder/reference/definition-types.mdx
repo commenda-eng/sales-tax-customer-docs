@@ -1,0 +1,298 @@
+---
+title: 'Definition types'
+description: 'Technical reference for workflow definition structures'
+icon: 'file-code'
+---
+
+This reference documents the types used to define workflows.
+
+## TWorkflowDefinition
+
+The root type for a workflow definition:
+
+```typescript
+export type TWorkflowDefinition = {
+  id: string;
+  name: string;
+  steps: TWorkflowStepDefinition[];
+  stepTransitions: TWorkflowStepTransition[];
+  stepGroups?: TStepGroup[];
+  legacyServiceRequestType?: string;
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier |
+| `name` | Human-readable name |
+| `steps` | Array of step definitions |
+| `stepTransitions` | Connections between steps |
+| `stepGroups` | UI groupings for steps |
+| `legacyServiceRequestType` | Maps to service request type |
+
+## Step definitions
+
+### TWorkflowBaseStepDefinition
+
+Base properties shared by all steps:
+
+```typescript
+export type TWorkflowBaseStepDefinition = {
+  id: string;
+  type: WorkflowStepType;
+  name: string;
+  outputSchema?: Record<string, any>;
+  group?: {
+    groupId: string;
+    order: number;
+  };
+  legacyServiceRequestTaskKey?: string;
+  activationPolicy?: TStepActivationPolicy;
+  ui: {
+    reactFlow: {
+      position: {
+        x: number;
+        y: number;
+      };
+    };
+  };
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique step identifier |
+| `type` | Step type enum value |
+| `name` | Display label |
+| `outputSchema` | JSON Schema for output validation |
+| `group` | Grouping metadata |
+| `legacyServiceRequestTaskKey` | Legacy task mapping |
+| `activationPolicy` | Default activation state |
+| `ui.reactFlow.position` | Visual editor coordinates |
+
+### TStepActivationPolicy
+
+```typescript
+export type TStepActivationPolicy = {
+  defaultStatus?: WorkflowRuntimeStepStatus;
+};
+```
+
+### Control flow steps
+
+```typescript
+export type TStartWorkflowStepDefinition = TWorkflowBaseStepDefinition & {
+  type: WorkflowStepType.START;
+};
+
+export type TEndWorkflowStepDefinition = TWorkflowBaseStepDefinition & {
+  type: WorkflowStepType.END;
+};
+```
+
+### Human steps
+
+```typescript
+export type TBaseHumanStepDefinition = TWorkflowBaseStepDefinition & {
+  type:
+    | WorkflowStepType.HUMAN_URL_REDIRECT
+    | WorkflowStepType.HUMAN_FORM
+    | WorkflowStepType.HUMAN_CONFIRM
+    | WorkflowStepType.HUMAN_DOC_UPLOAD;
+};
+```
+
+### Gateway steps
+
+```typescript
+export type TBaseGatewayStepDefinition = TWorkflowBaseStepDefinition & {
+  type:
+    | WorkflowStepType.GATEWAY_PARALLEL_SPLIT
+    | WorkflowStepType.GATEWAY_PARALLEL_JOIN
+    | WorkflowStepType.GATEWAY_EXCLUSIVE_SPLIT
+    | WorkflowStepType.GATEWAY_INCLUSIVE_SPLIT;
+};
+```
+
+### Sub-workflow steps
+
+#### Base definition
+
+```typescript
+export type TBaseSubWorkflowStepDefinition = TWorkflowBaseStepDefinition & {
+  type: WorkflowStepType.SYS_SUB_WORKFLOW;
+  mode: SubWorkflowStepMode;
+  childWorkflowTemplateVersionId: string;
+  dataSources?: TDataSourceCall[];
+  inputMapping?: TMapping[];
+  contextProjection?: TMapping[];
+  childWorkflowName?: TExpr;
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `mode` | SINGLE or BATCH |
+| `childWorkflowTemplateVersionId` | Child workflow to execute |
+| `dataSources` | Data to fetch before execution |
+| `inputMapping` | How to populate child context |
+| `contextProjection` | How to project child outputs back |
+| `childWorkflowName` | Dynamic naming expression |
+
+#### Single mode
+
+```typescript
+export type TSingleWorkflowStepDefinition = TBaseSubWorkflowStepDefinition & {
+  mode: SubWorkflowStepMode.SINGLE;
+};
+```
+
+#### Batch mode
+
+```typescript
+export type TBatchWorkflowStepDefinition = TBaseSubWorkflowStepDefinition & {
+  mode: SubWorkflowStepMode.BATCH;
+  iterable: TIterableProvider;
+};
+```
+
+The `iterable` property defines how to construct the batch collection.
+
+### Union type
+
+```typescript
+export type TWorkflowStepDefinition =
+  | TWorkflowBaseStepDefinition
+  | TSingleWorkflowStepDefinition
+  | TBatchWorkflowStepDefinition
+  | TStartWorkflowStepDefinition
+  | TEndWorkflowStepDefinition
+  | TBaseHumanStepDefinition
+  | TBaseGatewayStepDefinition;
+```
+
+## Step transitions
+
+### TWorkflowStepTransition
+
+```typescript
+export type TWorkflowStepTransition = {
+  id: string;
+  fromStepId: string;
+  toStepId: string;
+  condition?: TExpr;
+  isDefault?: boolean;
+  label?: string;
+  onArrival?: TStepTransitionOnArrival;
+  ui: {
+    reactFlow: {
+      handle: {
+        sourceHandle: string;
+        targetHandle: string;
+      };
+    };
+  };
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier |
+| `fromStepId` | Source step |
+| `toStepId` | Target step |
+| `condition` | Optional conditional expression |
+| `isDefault` | Default branch for exclusive gateways |
+| `label` | Display label |
+| `onArrival` | Actions when transition activates target |
+| `ui.reactFlow.handle` | Visual editor handle references |
+
+### TStepTransitionOnArrival
+
+```typescript
+export type TStepTransitionOnArrival = {
+  status?: WorkflowRuntimeStepStatus;
+};
+```
+
+Use this to set the target step's status when the transition fires. For example, set to `ACTION_REQUIRED` when an issue is reported.
+
+## Step groups
+
+### TStepGroup
+
+```typescript
+export type TStepGroup = {
+  id: string;
+  name: string;
+  stepIds: string[];
+  legacyServiceRequestTaskGroupKey?: string;
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier |
+| `name` | Display name |
+| `stepIds` | Steps belonging to this group |
+| `legacyServiceRequestTaskGroupKey` | Legacy task group mapping |
+
+## Example definition
+
+```json
+{
+  "id": "workflow-1",
+  "name": "Customer Verification",
+  "steps": [
+    {
+      "id": "start",
+      "type": "start",
+      "name": "Start",
+      "ui": { "reactFlow": { "position": { "x": 0, "y": 0 } } }
+    },
+    {
+      "id": "verify",
+      "type": "human.confirm",
+      "name": "Verify Documents",
+      "outputSchema": {
+        "type": "object",
+        "properties": {
+          "verified": { "type": "boolean" }
+        }
+      },
+      "ui": { "reactFlow": { "position": { "x": 200, "y": 0 } } }
+    },
+    {
+      "id": "end",
+      "type": "end",
+      "name": "End",
+      "ui": { "reactFlow": { "position": { "x": 400, "y": 0 } } }
+    }
+  ],
+  "stepTransitions": [
+    {
+      "id": "t1",
+      "fromStepId": "start",
+      "toStepId": "verify",
+      "ui": { "reactFlow": { "handle": { "sourceHandle": "out", "targetHandle": "in" } } }
+    },
+    {
+      "id": "t2",
+      "fromStepId": "verify",
+      "toStepId": "end",
+      "ui": { "reactFlow": { "handle": { "sourceHandle": "out", "targetHandle": "in" } } }
+    }
+  ]
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Runtime types" icon="play" href="/engine/workflow-builder/reference/runtime-types">
+    Execution runtime types
+  </Card>
+  <Card title="Validation rules" icon="check" href="/engine/workflow-builder/reference/validation-rules">
+    Definition validation rules
+  </Card>
+</CardGroup>
+

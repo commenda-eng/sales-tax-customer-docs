@@ -1,0 +1,236 @@
+---
+title: 'DSL types'
+description: 'Technical reference for the Workflow Builder Domain Specific Language types'
+icon: 'code'
+---
+
+This reference documents the type system used in Workflow Builder's Domain Specific Language (DSL).
+
+## Expressions
+
+Expressions evaluate to a value using a specified expression engine. Currently, JSONata is the supported expression type.
+
+### ExpressionType
+
+```typescript
+export enum ExpressionType {
+  JSONATA = 'jsonata',
+}
+```
+
+### TExpr
+
+```typescript
+export type TExpr = { 
+  type: ExpressionType.JSONATA; 
+  src: string 
+};
+```
+
+### Evaluation scope
+
+All expressions are evaluated against an environment containing:
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `__context__` | Global workflow context | `__context__.customerId` |
+| `__steps__` | Step outputs by ID | `__steps__.stepId.name` |
+| `__datasources__` | Datasource outputs by alias | `__datasources__.dsId.data` |
+| `__each__` | Current item in iterations | `__each__.id` |
+
+## Value providers
+
+### TFieldRef
+
+Defines how to access a field from different sources.
+
+```typescript
+export enum FieldRefSource {
+  CONTEXT = 'CONTEXT',
+  STEP = 'STEP',
+  DATASOURCE = 'DATASOURCE',
+  EACH = 'EACH',
+}
+
+export type TFieldRef =
+  | { source: FieldRefSource.CONTEXT; path: string }
+  | { source: FieldRefSource.STEP; stepId: string; path: string }
+  | { source: FieldRefSource.DATASOURCE; key: string; path: string }
+  | { source: FieldRefSource.EACH; path: string };
+```
+
+| Source | Description |
+|--------|-------------|
+| `CONTEXT` | Access from global context |
+| `STEP` | Access from step output |
+| `DATASOURCE` | Access from datasource output |
+| `EACH` | Access current item in loops |
+
+<Note>
+The `path` property uses dot notation (e.g., `"director.id"`) powered by the `dot-props` library.
+</Note>
+
+### TValueProvider
+
+Defines how to produce a value:
+
+```typescript
+export type TValueProvider = 
+  | { type: "const"; value: unknown }
+  | { type: "field"; ref: TFieldRef } 
+  | { type: "expr"; expr: TExpr };
+```
+
+| Type | Description |
+|------|-------------|
+| `const` | Hardcoded value |
+| `field` | Value from a field reference |
+| `expr` | Computed expression result |
+
+### TParamValue
+
+Used for datasource or function parameters:
+
+```typescript
+export type TParamValue = 
+  | TValueProvider 
+  | { [k: string]: TParamValue } 
+  | TParamValue[];
+```
+
+## Datasource calls
+
+### TDataSourceCall
+
+```typescript
+export enum DataSourceType {
+  COMMENDA_LOGICAL_BACKEND = 'COMMENDA_LOGICAL_BACKEND',
+}
+
+export type TDataSourceCall = {
+  id: string;
+  alias: string;
+  type: DataSourceType.COMMENDA_LOGICAL_BACKEND;
+  dataSourceID: string;
+  params?: TParamValue;
+  select?: TExpr;
+  scope?: 'per-step' | 'per-item';
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier |
+| `alias` | Reference name for accessing results |
+| `type` | Datasource type |
+| `dataSourceID` | Database reference to datasource definition |
+| `params` | Parameters to pass to the datasource |
+| `select` | Expression to transform output (default: entire output) |
+| `scope` | `per-step` (default) or `per-item` for batch workflows |
+
+## Iterator providers
+
+### TIterableProvider
+
+Provides an array for iteration:
+
+```typescript
+export enum IterableType {
+  EXPRESSION = 'EXPRESSION',
+  STEP = 'STEP',
+  DATASOURCE = 'DATASOURCE',
+}
+
+export type TIterableProvider =
+  | { type: IterableType.EXPRESSION; expr: TExpr }
+  | { type: IterableType.STEP; stepId: string; select?: TExpr }
+  | { type: IterableType.DATASOURCE; key: string; select?: TExpr };
+```
+
+| Type | Description |
+|------|-------------|
+| `EXPRESSION` | Evaluate expression against context |
+| `STEP` | Access step output array |
+| `DATASOURCE` | Access datasource output array |
+
+## Mappings
+
+### TMapping
+
+Specifies how to write values to a target:
+
+```typescript
+export type TMapping = {
+  id: string;
+  targetPath: string;
+  value: TValueProvider;
+  mode?: 'set' | 'append';
+};
+```
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier |
+| `targetPath` | Dot-notation destination path |
+| `value` | How to derive the value |
+| `mode` | `set` (replace, default) or `append` (for arrays) |
+
+### Example
+
+```json
+{
+  "id": "map-directorId",
+  "targetPath": "directorId",
+  "value": {
+    "type": "expr",
+    "expr": { "src": "__each__.id" }
+  },
+  "mode": "set"
+}
+```
+
+This sets `directorId` to the current batch item's `id`.
+
+## Step types enum
+
+```typescript
+export enum WorkflowStepType {
+  START = 'start',
+  END = 'end',
+  HUMAN_URL_REDIRECT = 'human.url_redirect',
+  HUMAN_FORM = 'human.form',
+  HUMAN_CONFIRM = 'human.confirm',
+  HUMAN_DOC_UPLOAD = 'human.doc_upload',
+  SYS_SUB_WORKFLOW = 'sys.sub_workflow',
+  GATEWAY_PARALLEL_SPLIT = 'gateway.parallel_split',
+  GATEWAY_PARALLEL_JOIN = 'gateway.parallel_join',
+  GATEWAY_EXCLUSIVE_SPLIT = 'gateway.exclusive_split',
+  GATEWAY_INCLUSIVE_SPLIT = 'gateway.inclusive_split',
+}
+```
+
+## Sub-workflow modes
+
+```typescript
+export enum SubWorkflowStepMode {
+  SINGLE = 'SINGLE',
+  BATCH = 'BATCH',
+}
+```
+
+| Mode | Description |
+|------|-------------|
+| `SINGLE` | Execute one child workflow |
+| `BATCH` | Execute child workflow for each item in collection |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Definition types" icon="file-code" href="/engine/workflow-builder/reference/definition-types">
+    Workflow definition structure
+  </Card>
+  <Card title="Runtime types" icon="play" href="/engine/workflow-builder/reference/runtime-types">
+    Execution runtime types
+  </Card>
+</CardGroup>
+

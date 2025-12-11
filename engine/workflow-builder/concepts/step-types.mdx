@@ -1,0 +1,216 @@
+---
+title: 'Step types'
+description: 'Learn about the different types of steps available in Workflow Builder'
+icon: 'shapes'
+---
+
+Workflow Builder provides several step types to handle different aspects of your business processes.
+
+## Control flow steps
+
+### START
+
+The entry point of every workflow. Each workflow must have exactly one START step.
+
+- No incoming transitions allowed
+- Exactly one outgoing transition required
+
+```
+┌─────────┐
+│  START  │───▶ (next step)
+└─────────┘
+```
+
+### END
+
+The terminal point of every workflow. When execution reaches this step, the workflow is complete.
+
+- Exactly one incoming transition required
+- No outgoing transitions allowed
+
+```
+(previous step) ───▶ ┌─────────┐
+                     │   END   │
+                     └─────────┘
+```
+
+## Human steps
+
+### HUMAN_CONFIRM
+
+A step that waits for human confirmation before the workflow can continue. The assigned person must explicitly mark the step as completed.
+
+**Use cases:**
+- Waiting for an agent to complete a manual task
+- Requiring approval before proceeding
+- Confirming external actions are done
+
+```
+┌─────────────────┐
+│  HUMAN_CONFIRM  │
+│                 │
+│  "Verify docs"  │
+└─────────────────┘
+```
+
+<Note>
+Additional human step types like `HUMAN_FORM`, `HUMAN_URL_REDIRECT`, and `HUMAN_DOC_UPLOAD` are planned but not yet implemented.
+</Note>
+
+## System steps
+
+### SYS_SUB_WORKFLOW
+
+Triggers another workflow (child workflow) from within the current workflow. Supports two modes:
+
+#### Single mode
+
+Execute one child workflow:
+
+```json
+{
+  "type": "SYS_SUB_WORKFLOW",
+  "mode": "SINGLE",
+  "childWorkflowTemplateVersionId": "version-123",
+  "inputMapping": [...]
+}
+```
+
+#### Batch mode
+
+Execute multiple child workflows by iterating over a collection:
+
+```json
+{
+  "type": "SYS_SUB_WORKFLOW",
+  "mode": "BATCH",
+  "childWorkflowTemplateVersionId": "version-123",
+  "iterable": {
+    "type": "EXPRESSION",
+    "expr": { "src": "__context__.directors" }
+  },
+  "inputMapping": [...]
+}
+```
+
+**Use case:** Trigger multiple DSC workflows from an India Private Incorporation workflow, one for each director.
+
+## Gateway steps
+
+Gateways control the flow of execution through branching and merging.
+
+### GATEWAY_PARALLEL_SPLIT
+
+Branches the workflow into multiple paths that execute simultaneously.
+
+```
+                    ┌───▶ Path A ───┐
+                    │               │
+───▶ [PARALLEL] ────┼───▶ Path B ───┼───▶
+     [  SPLIT  ]    │               │
+                    └───▶ Path C ───┘
+```
+
+- All outgoing paths start at the same time
+- Must be paired with a GATEWAY_PARALLEL_JOIN
+
+### GATEWAY_PARALLEL_JOIN
+
+Waits for all incoming parallel branches to complete before proceeding.
+
+```
+     Path A ───┐
+               │
+     Path B ───┼───▶ [PARALLEL] ───▶
+               │     [  JOIN   ]
+     Path C ───┘
+```
+
+- Requires at least 2 incoming transitions
+- Exactly 1 outgoing transition
+
+### GATEWAY_EXCLUSIVE_SPLIT
+
+A yes/no decision point where exactly one path is taken based on a condition.
+
+```
+                    ┌───▶ Yes path (condition = true)
+                    │
+───▶ [EXCLUSIVE] ───┤
+     [  SPLIT  ]    │
+                    └───▶ No path (default)
+```
+
+**Requirements:**
+- Exactly 2 outgoing transitions
+- One transition must have a condition
+- One transition must be marked as default
+
+**Example condition:**
+
+```jsonata
+__context__.customer.verified = true
+```
+
+### GATEWAY_INCLUSIVE_SPLIT
+
+A flexible decision point where multiple paths can be taken based on conditions.
+
+```
+                    ┌───▶ Path A (if condition A)
+                    │
+───▶ [INCLUSIVE] ───┼───▶ Path B (if condition B)
+     [  SPLIT  ]    │
+                    └───▶ Default path
+```
+
+**Use case:** Send different notifications based on user attributes:
+- If user is new → send onboarding email
+- If user is premium → send perks notification
+- If both conditions are true → do both
+
+## Step configuration
+
+All steps share these base properties:
+
+| Property | Description |
+|----------|-------------|
+| `id` | Unique identifier within the workflow |
+| `type` | The step type |
+| `name` | Human-readable label |
+| `outputSchema` | JSON Schema for step output validation |
+| `group` | Grouping metadata (groupId, order) |
+| `activationPolicy` | Default runtime activation state |
+| `ui.reactFlow.position` | Visual editor coordinates (x, y) |
+
+## Step groups
+
+Steps can be organized into logical groups for UI presentation:
+
+```json
+{
+  "stepGroups": [
+    {
+      "id": "group-verification",
+      "name": "Verification",
+      "stepIds": ["step-1", "step-2", "step-3"]
+    }
+  ]
+}
+```
+
+<Warning>
+START, END, and gateway steps cannot be added to groups. Only human and system steps can be grouped.
+</Warning>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Creating workflows" icon="hammer" href="/engine/workflow-builder/guides/creating-workflows">
+    Step-by-step workflow creation guide
+  </Card>
+  <Card title="Definition types" icon="code" href="/engine/workflow-builder/reference/definition-types">
+    Technical reference for step definitions
+  </Card>
+</CardGroup>
+

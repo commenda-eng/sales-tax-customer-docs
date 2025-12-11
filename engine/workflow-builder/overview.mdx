@@ -1,14 +1,89 @@
 ---
 title: 'Workflow Builder'
-description: 'Create and manage automated workflows'
+description: 'Build automated workflows to orchestrate complex business processes and streamline operations'
 icon: 'diagram-project'
 ---
 
-## Overview
+The Workflow Builder is a powerful visual tool for creating and managing automated workflows that orchestrate your business processes. It enables you to define complex multi-step processes, handle conditional logic, and integrate with external systems.
 
-The Workflow Builder allows you to create automated workflows to streamline your sales tax compliance processes.
+## What is Workflow Builder?
 
-## Getting Started
+Workflow Builder allows you to:
 
-Get started by creating your first workflow in the dashboard.
+- **Design visual workflows** using a drag-and-drop canvas interface
+- **Define step types** including human tasks, system operations, and decision gateways
+- **Create conditional logic** with exclusive and inclusive branching
+- **Orchestrate sub-workflows** for modular, reusable process design
+- **Manage versions** with draft, published, and active states
 
+## Key concepts
+
+<CardGroup cols={2}>
+  <Card title="Steps" icon="circle-nodes">
+    Individual units of work in a workflow, including start/end points, human tasks, system tasks, and gateways.
+  </Card>
+  <Card title="Transitions" icon="arrow-right">
+    Connections between steps that define the flow of execution, optionally with conditions.
+  </Card>
+  <Card title="Templates" icon="file-lines">
+    Reusable workflow definitions that can be versioned and activated.
+  </Card>
+  <Card title="Executions" icon="play">
+    Running instances of workflow templates that track progress and state.
+  </Card>
+</CardGroup>
+
+## Workflow architecture
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                    Workflow Template                        │
+│  ┌─────────┐    ┌──────────┐    ┌─────────┐    ┌─────────┐ │
+│  │  START  │───▶│  Task 1  │───▶│ Gateway │───▶│   END   │ │
+│  └─────────┘    └──────────┘    └────┬────┘    └─────────┘ │
+│                                      │                      │
+│                                      ▼                      │
+│                                ┌──────────┐                 │
+│                                │  Task 2  │                 │
+│                                └──────────┘                 │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Step types
+
+| Type | Description |
+|------|-------------|
+| **START** | Entry point of the workflow (exactly one required) |
+| **END** | Terminal point of the workflow (exactly one required) |
+| **HUMAN_CONFIRM** | Waits for human confirmation before continuing |
+| **SYS_SUB_WORKFLOW** | Triggers child workflows (single or batch mode) |
+| **GATEWAY_PARALLEL_SPLIT** | Branches into multiple parallel paths |
+| **GATEWAY_PARALLEL_JOIN** | Waits for all parallel branches to complete |
+| **GATEWAY_EXCLUSIVE_SPLIT** | Yes/no decision point (one path taken) |
+| **GATEWAY_INCLUSIVE_SPLIT** | Multiple paths based on conditions |
+
+## Workflow lifecycle
+
+1. **Create template** - Define a new workflow template with name and description
+2. **Add version** - Create a version in draft status
+3. **Design workflow** - Use the visual editor to add steps and transitions
+4. **Publish version** - Mark the version ready for activation
+5. **Activate version** - Set as the active version for new executions
+6. **Link triggers** - Connect to service request types or products
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Quickstart" icon="rocket" href="/engine/workflow-builder/quickstart">
+    Create your first workflow in minutes
+  </Card>
+  <Card title="Core concepts" icon="book" href="/engine/workflow-builder/concepts/core-concepts">
+    Deep dive into workflow concepts
+  </Card>
+  <Card title="Step types" icon="shapes" href="/engine/workflow-builder/concepts/step-types">
+    Learn about available step types
+  </Card>
+  <Card title="DSL reference" icon="code" href="/engine/workflow-builder/reference/dsl-types">
+    Technical reference for workflow DSL
+  </Card>
+</CardGroup>

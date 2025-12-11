@@ -1,0 +1,330 @@
+---
+title: 'Validation rules'
+description: 'Reference for workflow definition validation rules'
+icon: 'check'
+---
+
+This reference documents all validation rules applied to workflow definitions before they can be published.
+
+## Graph rules
+
+These rules validate the workflow graph structure and topology.
+
+### GRAPH_EXACTLY_ONE_START
+
+**Rule:** Workflow must have exactly 1 START step
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Validation counts START steps and fails if count ≠ 1.
+
+### GRAPH_EXACTLY_ONE_END
+
+**Rule:** Workflow must have exactly 1 END step
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Validation counts END steps and fails if count ≠ 1.
+
+### START_STEP_NO_INCOMING
+
+**Rule:** START step must not have any incoming transitions
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Checks incoming transitions for START steps.
+
+### END_STEP_SINGLE_INCOMING
+
+**Rule:** END step must have exactly 1 incoming transition
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Checks incoming count for END steps.
+
+### END_STEP_NO_OUTGOING
+
+**Rule:** END step must not have outgoing transitions
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Checks outgoing transitions for END steps.
+
+### TRANSITIONS_UNIQUE
+
+**Rule:** No duplicate (from, to) transition pairs
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Ensures no duplicate `(fromStepId, toStepId)` pairs.
+
+### NO_SELF_LOOPS
+
+**Rule:** Self-loop transitions are not allowed
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Checks that `fromStepId !== toStepId` for all transitions.
+
+### NO_ISOLATED_STEPS
+
+**Rule:** Steps with no incoming or outgoing transitions are isolated
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Checks for steps (excluding START/END) with 0 incoming and 0 outgoing transitions.
+
+### ONLY_SPLIT_GATEWAY_CAN_FAN_OUT
+
+**Rule:** Only split gateways may have more than one outgoing transition
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Non-split gateway steps cannot have >1 outgoing transitions.
+
+### JOIN_GATEWAY_MANY_IN_SINGLE_OUT
+
+**Rule:** Join gateway must have at least 2 incoming transitions and exactly 1 outgoing transition
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Applies to `GATEWAY_PARALLEL_JOIN` steps.
+
+### CONDITIONAL_SPLIT_SINGLE_DEFAULT
+
+**Rule:** Conditional split gateway must have exactly 1 default transition
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Applies to `GATEWAY_EXCLUSIVE_SPLIT` and `GATEWAY_INCLUSIVE_SPLIT`.
+
+### EXCLUSIVE_SPLIT_TWO_OUTGOING
+
+**Rule:** Exclusive gateway must have exactly 2 outgoing transitions (1 default, 1 conditional)
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Applies to `GATEWAY_EXCLUSIVE_SPLIT` steps.
+
+### ONLY_EXCLUSIVE_INCLUSIVE_STEP_HAVE_CONDITION
+
+**Rule:** Regular steps cannot have conditional transitions
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+Only exclusive/inclusive split gateways can have conditional transitions.
+
+### MISSING_BATCH_ITERATOR
+
+**Rule:** Batch workflow should have an iterator
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GRAPH_INVALID |
+
+BATCH mode sub-workflow steps must have an `iterable` property.
+
+## ID rules
+
+These rules ensure unique identifiers across workflow entities.
+
+### STEP_IDS_UNIQUE
+
+**Rule:** Step IDs must be unique
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | ID_INVALID |
+
+Ensures no duplicate step IDs in the workflow.
+
+### TRANSITION_IDS_UNIQUE
+
+**Rule:** Transition IDs must be unique
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | ID_INVALID |
+
+Ensures no duplicate transition IDs.
+
+### STEP_GROUP_IDS_UNIQUE
+
+**Rule:** Step group IDs must be unique
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | ID_INVALID |
+
+Ensures no duplicate step group IDs.
+
+## Group rules
+
+These rules validate step grouping and organization.
+
+### NO_GROUP_FOR_SPECIAL_NODES
+
+**Rule:** Start/end/gateways cannot be grouped
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GROUPING_INVALID |
+
+Only human nodes and system nodes can be grouped; START, END, and gateway steps cannot.
+
+### GROUP_STEP_IDS_EXISTS
+
+**Rule:** Step group contains stepIds that do not reference existing steps
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GROUPING_INVALID |
+
+All stepIds in a stepGroup must reference existing steps.
+
+### STEP_BELONGS_TO_ONLY_ONE_GROUP
+
+**Rule:** Each step can only belong to one group
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GROUPING_INVALID |
+
+Ensures each step appears in at most one stepGroup.
+
+### STEP_GROUP_CANNOT_BE_EMPTY
+
+**Rule:** Each step group must contain at least one step
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GROUPING_INVALID |
+
+Each stepGroup must have at least one stepId.
+
+### LEGACY_SERVICE_REQUEST_REQUIRES_STEP_GROUPS
+
+**Rule:** Workflow with legacyServiceRequestType must have at least one step group
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | GROUPING_INVALID |
+
+If `legacyServiceRequestType` is set, at least one stepGroup must exist.
+
+## Legacy service request rules
+
+These rules validate legacy service request mappings and compatibility.
+
+### LEGACY_SERVICE_REQUEST_TYPE_GROUP_TASK_UNIQUE
+
+**Rule:** Multiple steps share the same legacy combination (serviceRequestType, taskGroup, taskKey)
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | LEGACY_CONFIG_INVALID |
+
+The tuple `(serviceRequestType, taskGroupKey, taskKey)` must be unique across all steps.
+
+### LEGACY_SERVICE_REQUEST_TASK_GROUP_EXISTS_IN_TEMPLATE
+
+**Rule:** Step group with legacyServiceRequestTaskGroupKey does not exist in serviceRequestTemplate
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | LEGACY_CONFIG_INVALID |
+
+StepGroups with `legacyServiceRequestTaskGroupKey` must exist in the service request template.
+
+### LEGACY_SERVICE_REQUEST_TASK_EXISTS_IN_TEMPLATE
+
+**Rule:** Step with legacyServiceRequestTaskKey does not exist in the corresponding taskGroup template
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | LEGACY_CONFIG_INVALID |
+
+Steps with `legacyServiceRequestTaskKey` must exist in the corresponding taskGroup's tasks in the template.
+
+### LEGACY_SERVICE_REQUEST_TASK_ONLY_ON_HUMAN_STEP
+
+**Rule:** Only human steps can have legacyServiceRequestTask mapping
+
+| Property | Value |
+|----------|-------|
+| Severity | ERROR |
+| Error Code | LEGACY_CONFIG_INVALID |
+
+Only human node types can have `legacyServiceRequestTaskKey` set.
+
+## Error code summary
+
+| Error Code | Category |
+|------------|----------|
+| `GRAPH_INVALID` | Workflow graph structure issues |
+| `ID_INVALID` | Duplicate or missing identifiers |
+| `GROUPING_INVALID` | Step grouping issues |
+| `LEGACY_CONFIG_INVALID` | Legacy mapping issues |
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Service request integration" icon="link" href="/engine/workflow-builder/reference/service-request-integration">
+    Legacy service request mapping
+  </Card>
+  <Card title="Creating workflows" icon="hammer" href="/engine/workflow-builder/guides/creating-workflows">
+    Build your first workflow
+  </Card>
+</CardGroup>
+

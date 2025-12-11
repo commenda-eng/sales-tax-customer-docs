@@ -1,0 +1,291 @@
+---
+title: 'Creating workflows'
+description: 'Detailed guide for building workflows with Workflow Builder'
+icon: 'hammer'
+---
+
+This guide provides detailed instructions for creating effective workflows using the Workflow Builder.
+
+## Planning your workflow
+
+Before building, consider:
+
+1. **What process are you automating?** - Map out the business process
+2. **What are the steps involved?** - Identify each action or decision point
+3. **Who needs to act?** - Determine human vs. automated steps
+4. **What conditions exist?** - Identify branching logic
+5. **What data flows through?** - Plan data requirements
+
+## Accessing workflow management
+
+1. Navigate to the **Admin Portal**
+2. Click **Workflow Management** in the left sidebar
+3. You'll see all existing workflows listed
+
+## Creating a template
+
+1. Click **Create Workflow** (top right)
+2. Enter workflow details:
+   - **Name** - Descriptive identifier
+   - **Description** - Purpose and scope
+3. Click **Create**
+
+## Version management
+
+### Creating a version
+
+1. Open a workflow from the list
+2. Click **Add Version**
+3. Configure:
+   - **Version number** - Use semantic versioning (e.g., "1.0.0")
+   - **Starter version** - Optionally copy from existing version
+4. Click **Create** to open the editor
+
+### Version lifecycle
+
+```
+DRAFT → PUBLISHED → ACTIVE
+  │                    │
+  └── (edit allowed)   └── (in production)
+```
+
+## Using the workflow editor
+
+### Interface overview
+
+| Panel | Location | Purpose |
+|-------|----------|---------|
+| Steps Panel | Left | Available step types |
+| Canvas | Center | Visual workflow design |
+| Configuration | Right | Step settings |
+
+### Adding steps
+
+1. **Drag** a step type from the Steps Panel
+2. **Drop** it onto the Canvas
+3. **Click** the step to configure
+
+### Connecting steps
+
+1. Hover over a step to reveal handles
+2. **Drag** from the source handle
+3. **Drop** on the target step's input handle
+4. A transition line appears
+
+### Configuring steps
+
+When you select a step, the Configuration Panel shows:
+
+- **Basic info** - Name, ID, description
+- **Step-specific settings** - Varies by type
+- **Output schema** - Expected output structure
+- **Group assignment** - UI organization
+
+## Building step flows
+
+### Linear flow
+
+The simplest pattern - steps execute one after another:
+
+```
+START → Task 1 → Task 2 → Task 3 → END
+```
+
+### Conditional branching
+
+Use exclusive split for yes/no decisions:
+
+```
+START → Check Status → [EXCLUSIVE SPLIT]
+                              │
+                    ┌─────────┴─────────┐
+                    ▼                   ▼
+              (approved)           (rejected)
+                    │                   │
+                 Process             Notify
+                    │                   │
+                    └─────────┬─────────┘
+                              ▼
+                             END
+```
+
+**Configuration:**
+1. Add `GATEWAY_EXCLUSIVE_SPLIT`
+2. Create two outgoing transitions
+3. Set condition on one: `__context__.status = 'approved'`
+4. Mark the other as default
+
+### Parallel execution
+
+Run multiple paths simultaneously:
+
+```
+START → [PARALLEL SPLIT]
+              │
+    ┌─────────┼─────────┐
+    ▼         ▼         ▼
+  Task A   Task B    Task C
+    │         │         │
+    └─────────┼─────────┘
+              ▼
+       [PARALLEL JOIN] → END
+```
+
+**Configuration:**
+1. Add `GATEWAY_PARALLEL_SPLIT`
+2. Connect to all parallel tasks
+3. Connect all tasks to `GATEWAY_PARALLEL_JOIN`
+4. Connect join to next step
+
+### Sub-workflows
+
+Execute child workflows for modular design:
+
+#### Single sub-workflow
+
+```json
+{
+  "type": "SYS_SUB_WORKFLOW",
+  "mode": "SINGLE",
+  "childWorkflowTemplateVersionId": "child-version-id",
+  "inputMapping": [
+    {
+      "targetPath": "customerId",
+      "value": {
+        "type": "field",
+        "ref": { "source": "CONTEXT", "path": "customer.id" }
+      }
+    }
+  ]
+}
+```
+
+#### Batch sub-workflows
+
+For iterating over a collection:
+
+```json
+{
+  "type": "SYS_SUB_WORKFLOW",
+  "mode": "BATCH",
+  "childWorkflowTemplateVersionId": "child-version-id",
+  "iterable": {
+    "type": "EXPRESSION",
+    "expr": { "src": "__context__.directors" }
+  },
+  "inputMapping": [
+    {
+      "targetPath": "directorId",
+      "value": {
+        "type": "expr",
+        "expr": { "src": "__each__.id" }
+      }
+    }
+  ]
+}
+```
+
+## Working with data
+
+### Accessing context data
+
+Use `__context__` to access workflow context:
+
+```jsonata
+__context__.customer.email
+```
+
+### Accessing step outputs
+
+Use `__steps__` to access previous step results:
+
+```jsonata
+__steps__.verificationStep.approved
+```
+
+### Accessing datasources
+
+Use `__datasources__` after fetching data:
+
+```jsonata
+__datasources__.customerData.profile.name
+```
+
+### In batch iterations
+
+Use `__each__` to access the current item:
+
+```jsonata
+__each__.id
+```
+
+## Saving and publishing
+
+<Warning>
+**No autosave!** Save frequently using the **Save** button.
+</Warning>
+
+### Save workflow
+
+Click **Save** (top right) to preserve your work.
+
+### Publish version
+
+1. Review your workflow design
+2. Click **Publish**
+3. Status changes to **Published**
+
+### Activate version
+
+1. Return to the versions list
+2. Click **Activate Version** on your published version
+3. This version is now used for new executions
+
+## Setting up triggers
+
+### Service request triggers
+
+1. Go to **Workflow Links** tab
+2. Click **Add Link**
+3. Select:
+   - **Link Type**: Service Request Type
+   - **Identifier**: The service request type
+4. Save
+
+### Product triggers
+
+1. Go to **Workflow Links** tab
+2. Click **Add Link**
+3. Select:
+   - **Link Type**: Product ID
+   - **Identifier**: The product ID from billing
+4. Save
+
+## Best practices
+
+<CardGroup cols={2}>
+  <Card title="Start simple" icon="seedling">
+    Begin with a basic flow and add complexity incrementally.
+  </Card>
+  <Card title="Use groups" icon="layer-group">
+    Organize related steps into logical groups for clarity.
+  </Card>
+  <Card title="Name clearly" icon="tag">
+    Use descriptive names for steps and transitions.
+  </Card>
+  <Card title="Test thoroughly" icon="flask">
+    Test each version before publishing to production.
+  </Card>
+</CardGroup>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Local development" icon="laptop-code" href="/engine/workflow-builder/guides/local-development">
+    Set up local development environment
+  </Card>
+  <Card title="Validation rules" icon="check" href="/engine/workflow-builder/reference/validation-rules">
+    Understand workflow validation
+  </Card>
+</CardGroup>
+

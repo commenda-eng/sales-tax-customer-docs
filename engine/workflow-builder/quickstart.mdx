@@ -1,0 +1,118 @@
+---
+title: 'Quickstart'
+description: 'Create your first workflow in the Workflow Builder'
+icon: 'rocket'
+---
+
+This guide walks you through creating, publishing, and activating your first workflow.
+
+## Prerequisites
+
+- Access to the Admin Portal
+- Appropriate permissions for workflow management
+
+## Step 1: Access workflow management
+
+1. Go to the **Admin Portal**
+2. In the left sidebar, scroll to the bottom and click **Workflow Management**
+3. You'll see a page listing all existing workflows
+4. At the top right, you'll find two tabs:
+   - **Workflow Links** - Configure triggers
+   - **Create Workflow** - Create new templates
+
+## Step 2: Create a workflow template
+
+1. Click **Create Workflow**
+2. In the modal that appears, enter:
+   - **Workflow name** - A descriptive name for your workflow
+   - Other optional fields as needed
+3. Click **Create** to add the new workflow
+4. The new workflow appears in the workflows table
+
+## Step 3: Create a version
+
+1. Click any row in the workflow list to open the **Workflow Detail Page**
+2. Click **Add Version** (top right)
+3. In the modal, enter:
+   - **Version number** - Semantic version (e.g., "1.0.0")
+   - **Starter version** (optional) - Copy from an existing version
+4. Click **Create** to generate the new version
+5. The system opens the **Workflow Editor**
+
+## Step 4: Design your workflow
+
+Inside the editor, you'll see:
+
+- **Steps Panel** (left) - All available step types
+- **Canvas** (center) - Drag and drop steps here
+- **Configuration Panel** (right) - Appears when you click any step
+
+### Add steps
+
+1. Drag a step type from the Steps Panel onto the Canvas
+2. Click the step to configure it in the Configuration Panel
+3. Connect steps by dragging from output handles to input handles
+
+### Configure transitions
+
+1. Click on a transition line to select it
+2. For conditional gateways, set the condition expression
+3. Mark one transition as the default for exclusive/inclusive splits
+
+<Warning>
+There is no autosave. Save your progress frequently using the **Save** button (top right).
+</Warning>
+
+## Step 5: Publish your version
+
+1. Review your workflow design
+2. Click **Publish** (top right)
+3. The version status changes from **Draft** to **Published**
+
+<Note>
+Newly created versions start in **Draft** status. Publishing makes the version eligible to be activated.
+</Note>
+
+## Step 6: Activate the version
+
+1. Return to the workflow's versions list
+2. Find the published version
+3. Click **Activate Version**
+4. This version is now used whenever this workflow is triggered
+
+## Step 7: Create workflow links
+
+Workflow links determine how and when a workflow is triggered.
+
+### Access workflow links
+
+1. Go to the main workflow page
+2. Click the **Workflow Links** tab
+3. View, edit, or delete existing links
+
+### Create a new link
+
+1. Click **Add Link**
+2. In the modal, select:
+   - **Workflow Template** - Choose from all templates
+   - **Link Type**:
+     - **Service Request Type** - Trigger on specific service requests
+     - **Product ID** - Trigger when a product is purchased
+   - **Identifier** - The specific service request type or product ID
+3. Click **Save**
+
+<Tip>
+When a matching service request is created or a product with the specified ID is purchased, the system automatically generates and starts the workflow.
+</Tip>
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Core concepts" icon="book" href="/engine/workflow-builder/concepts/core-concepts">
+    Learn about workflow fundamentals
+  </Card>
+  <Card title="Step types" icon="shapes" href="/engine/workflow-builder/concepts/step-types">
+    Explore all available step types
+  </Card>
+</CardGroup>
+

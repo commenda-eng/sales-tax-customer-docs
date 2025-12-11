@@ -1,0 +1,177 @@
+---
+title: 'Local development'
+description: 'Set up your local environment for Workflow Builder development'
+icon: 'laptop-code'
+---
+
+This guide explains how to set up and run the Workflow Builder project locally for development.
+
+## Prerequisites
+
+- Node.js installed
+- Homebrew (for macOS)
+- Access to the commenda-temporal-dsl repository
+
+## Step 1: Install Temporal CLI
+
+Install the Temporal CLI using Homebrew:
+
+```bash
+brew install temporal
+```
+
+## Step 2: Clone the repository
+
+```bash
+git clone https://github.com/commenda-eng/commenda-temporal-dsl
+cd commenda-temporal-dsl
+```
+
+## Step 3: Configure environment variables
+
+Create a `.env` file in the project root with the following variables:
+
+```bash
+# API Keys for service communication
+COMMENDA_TEMPORAL_BACKEND_API_KEY=your-temporal-backend-api-key
+COMMENDA_LOGICAL_BACKEND_API_KEY=your-logical-backend-api-key
+COMMENDA_LOGICAL_BACKEND_API_URL=http://localhost:8000/api/v1
+
+# Temporal configuration
+TEMPORAL_NAMESPACE=default
+TEMPORAL_WORKER_ROLE=DSL_ENGINE
+TEMPORAL_TASK_QUEUE=dsl-engine
+TEMPORAL_WORKER_BUILD_ID=1
+
+# Required only for staging/production
+# TEMPORAL_API_KEY=xxxx
+# TEMPORAL_ADDRESS=xxxx
+
+# AWS configuration (same as Commenda Logical Backend)
+AWS_ACCESS_KEY_ID=your-aws-access-key
+AWS_SECRET_ACCESS_KEY=your-aws-secret-key
+AWS_REGION=ap-south-1
+
+# Server configuration
+PORT=8001
+NODE_ENV=development
+```
+
+## Step 4: Configure logical backend
+
+In the Commenda Logical Backend, add these environment variables:
+
+```bash
+COMMENDA_TEMPORAL_BACKEND_API_KEY=your-temporal-backend-api-key
+COMMENDA_TEMPORAL_BACKEND_URL=http://localhost:8001
+TEMPORAL_BACKEND_CLIENT_KEY=your-logical-backend-api-key
+```
+
+<Warning>
+**API Key matching is critical:**
+- `COMMENDA_LOGICAL_BACKEND_API_KEY` (temporal) must match `COMMENDA_TEMPORAL_BACKEND_API_KEY` (logical)
+- `TEMPORAL_BACKEND_CLIENT_KEY` (logical) must match `COMMENDA_LOGICAL_BACKEND_API_KEY` (temporal)
+</Warning>
+
+## Step 5: Start the services
+
+Start the services in this order:
+
+### 1. Start Temporal server
+
+```bash
+npm run temporal:dev
+```
+
+This starts the Temporal server at `http://localhost:8233`. A `temporal.db` file is created in the root directory to store executions.
+
+### 2. Start the Node.js server
+
+```bash
+npm run start:dev
+```
+
+This starts the backend server on port 8001.
+
+### 3. Start the Temporal worker
+
+```bash
+npm run temporal:worker
+```
+
+This starts the worker that executes your workflow code.
+
+## Service architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                    Local Development                     │
+│                                                          │
+│  ┌──────────────┐    ┌──────────────┐    ┌───────────┐ │
+│  │   Temporal   │    │  Node.js     │    │  Temporal │ │
+│  │   Server     │◀──▶│  Server      │◀──▶│  Worker   │ │
+│  │  :8233       │    │  :8001       │    │           │ │
+│  └──────────────┘    └──────────────┘    └───────────┘ │
+│         │                   │                           │
+│         │                   ▼                           │
+│         │            ┌──────────────┐                   │
+│         │            │   Logical    │                   │
+│         │            │   Backend    │                   │
+│         │            │   :8000      │                   │
+│         │            └──────────────┘                   │
+│         ▼                                               │
+│  ┌──────────────┐                                       │
+│  │ temporal.db  │                                       │
+│  └──────────────┘                                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+## Temporal UI
+
+Access the Temporal UI at `http://localhost:8233` to:
+
+- View workflow executions
+- Inspect workflow history
+- Debug execution issues
+- Monitor worker activity
+
+## Updating environment variables
+
+<Note>
+When modifying environment variables:
+1. Update them locally in `.env`
+2. Add to GitHub secrets
+3. Update `deploy-app.yaml` for deployments
+</Note>
+
+## Troubleshooting
+
+### Temporal server won't start
+
+- Check if port 8233 is available
+- Verify Temporal CLI installation: `temporal --version`
+- Check for existing `temporal.db` corruption (delete and restart)
+
+### Worker not connecting
+
+- Ensure Temporal server is running first
+- Verify `TEMPORAL_TASK_QUEUE` matches across services
+- Check network connectivity between services
+
+### API key errors
+
+- Double-check key matching between services
+- Ensure no whitespace in key values
+- Verify keys are properly exported in environment
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Data models" icon="database" href="/engine/workflow-builder/reference/data-models">
+    Understand the database schema
+  </Card>
+  <Card title="DSL types" icon="code" href="/engine/workflow-builder/reference/dsl-types">
+    Learn the workflow DSL type system
+  </Card>
+</CardGroup>
+

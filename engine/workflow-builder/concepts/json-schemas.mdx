@@ -1,0 +1,242 @@
+---
+title: 'JSON schemas'
+description: 'Define and validate data structures using JSON Schema'
+icon: 'brackets-curly'
+---
+
+JSON Schema is used in Workflow Builder to define the expected structure of step outputs and validate data throughout workflow execution.
+
+## What is JSON?
+
+JSON (JavaScript Object Notation) is a structured way to represent information that computers can easily understand.
+
+**Human language:** "A person has a name Ravi and age 26."
+
+**JSON version:**
+
+```json
+{
+  "name": "Ravi",
+  "age": 26
+}
+```
+
+## Data types
+
+### Objects
+
+Containers for multiple fields using `{ }` with key-value pairs:
+
+```json
+{
+  "name": "Ravi",
+  "age": 26
+}
+```
+
+<Warning>
+Keys must be wrapped in double quotes. This is invalid:
+```json
+{ name: "Ravi" }
+```
+</Warning>
+
+### Numbers
+
+Numeric values without quotes:
+
+```json
+{
+  "age": 26,
+  "price": 99.99
+}
+```
+
+### Strings
+
+Text values wrapped in double quotes:
+
+```json
+{
+  "name": "Ravi",
+  "city": "Mumbai"
+}
+```
+
+### Booleans
+
+Simple true/false values:
+
+```json
+{
+  "isActive": true,
+  "isVerified": false
+}
+```
+
+### Arrays
+
+Lists of values using `[ ]`:
+
+```json
+{
+  "fruits": ["apple", "banana", "orange"],
+  "numbers": [1, 2, 3]
+}
+```
+
+### Null
+
+Empty or undefined values:
+
+```json
+{
+  "middleName": null
+}
+```
+
+## What is JSON Schema?
+
+A JSON Schema defines the rules and structure that data must follow. Think of it as a blueprint that tells the system:
+
+- What fields are expected
+- What type each field should be
+- Which fields are required
+
+### Example schema
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "age": { "type": "number" },
+    "gender": { 
+      "type": "string", 
+      "enum": ["male", "female", "other"] 
+    }
+  },
+  "required": ["name"]
+}
+```
+
+This schema says:
+- Expect an object with `name`, `age`, and `gender` fields
+- `name` must be a string and is required
+- `age` must be a number
+- `gender` must be one of the allowed values
+
+## Key schema properties
+
+| Property | Description |
+|----------|-------------|
+| `type` | The data type (object, array, string, number, boolean) |
+| `properties` | Field definitions for objects |
+| `required` | Array of required field names |
+| `enum` | Allowed values for a field |
+| `items` | Schema for array elements |
+
+## Using schemas in workflows
+
+### Output schemas
+
+Define the expected output structure for steps:
+
+```json
+{
+  "type": "SYS_SUB_WORKFLOW",
+  "name": "Verify Customer",
+  "outputSchema": {
+    "type": "object",
+    "properties": {
+      "verified": { "type": "boolean" },
+      "verificationId": { "type": "string" }
+    },
+    "required": ["verified"]
+  }
+}
+```
+
+### Validation
+
+Output schemas are used for:
+
+- **Validation** - Ensure step outputs match expected structure
+- **Tooling** - Help the editor infer available data fields
+- **Documentation** - Self-documenting workflow definitions
+
+## JSON Schema builder
+
+For non-developers, Workflow Builder includes a visual JSON Schema Builder that lets you create schemas without writing code:
+
+1. Add a field
+2. Choose its type (text, number, boolean, date)
+3. Mark if it's required
+4. Set allowed values (for enums)
+
+The builder converts your choices into proper JSON Schema automatically.
+
+## Common patterns
+
+### Nested objects
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "customer": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "email": { "type": "string" }
+      }
+    }
+  }
+}
+```
+
+### Arrays of objects
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "quantity": { "type": "number" }
+        }
+      }
+    }
+  }
+}
+```
+
+### Optional fields with defaults
+
+```json
+{
+  "type": "object",
+  "properties": {
+    "status": { 
+      "type": "string",
+      "default": "pending"
+    }
+  }
+}
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="DSL types" icon="code" href="/engine/workflow-builder/reference/dsl-types">
+    Learn about the workflow DSL type system
+  </Card>
+  <Card title="Validation rules" icon="check" href="/engine/workflow-builder/reference/validation-rules">
+    Understand workflow validation
+  </Card>
+</CardGroup>
+

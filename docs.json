@@ -28,7 +28,34 @@
           {
             "group": "Workflow Builder",
             "pages": [
-              "engine/workflow-builder/overview"
+              "engine/workflow-builder/overview",
+              "engine/workflow-builder/quickstart",
+              {
+                "group": "Concepts",
+                "pages": [
+                  "engine/workflow-builder/concepts/core-concepts",
+                  "engine/workflow-builder/concepts/step-types",
+                  "engine/workflow-builder/concepts/json-schemas"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "engine/workflow-builder/guides/creating-workflows",
+                  "engine/workflow-builder/guides/local-development"
+                ]
+              },
+              {
+                "group": "Reference",
+                "pages": [
+                  "engine/workflow-builder/reference/dsl-types",
+                  "engine/workflow-builder/reference/definition-types",
+                  "engine/workflow-builder/reference/runtime-types",
+                  "engine/workflow-builder/reference/data-models",
+                  "engine/workflow-builder/reference/validation-rules",
+                  "engine/workflow-builder/reference/service-request-integration"
+                ]
+              }
             ]
           },
           {

@@ -1,0 +1,281 @@
+---
+title: 'Data models'
+description: 'Database schema reference for Workflow Builder'
+icon: 'database'
+---
+
+This reference documents the database models used by Workflow Builder in the Commenda Logical Backend.
+
+## WorkflowTemplate
+
+Stores workflow template definitions:
+
+```prisma
+model WorkflowTemplate {
+  id          String  @id @default(cuid())
+  name        String
+  description String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ActiveVersion   WorkflowTemplateVersion? @relation(
+    fields: [activeVersionId], 
+    references: [id], 
+    name: "active_workflow_template_version"
+  )
+  activeVersionId String? @unique
+
+  Versions WorkflowTemplateVersion[] @relation("workflow_template_has_version")
+  WorkflowTemplateLinks WorkflowTemplateLink[]
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique identifier |
+| `name` | Template name |
+| `description` | Optional description |
+| `activeVersionId` | Currently active version |
+| `Versions` | All versions of this template |
+| `WorkflowTemplateLinks` | Trigger configurations |
+
+## WorkflowTemplateVersion
+
+Stores versions of workflow templates:
+
+```prisma
+enum WorkflowTemplateVersionStatus {
+  DRAFT
+  PUBLISHED
+  DEPRECATED
+}
+
+model WorkflowTemplateVersion {
+  id String @id @default(cuid())
+
+  WorkflowTemplate   WorkflowTemplate @relation(
+    fields: [workflowTemplateId], 
+    references: [id], 
+    onDelete: Cascade, 
+    name: "workflow_template_has_version"
+  )
+  workflowTemplateId String
+
+  version     String
+  versionNote String?
+  definition  Json
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  status WorkflowTemplateVersionStatus @default(DRAFT)
+
+  ActiveWorkflowTemplate WorkflowTemplate? @relation(
+    name: "active_workflow_template_version"
+  )
+
+  WorkflowExecutions WorkflowExecution[]
+
+  @@unique([workflowTemplateId, version])
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique identifier |
+| `workflowTemplateId` | Parent template reference |
+| `version` | Semantic version (e.g., "1.0.0") |
+| `versionNote` | Changelog for this version |
+| `definition` | JSON workflow definition |
+| `status` | DRAFT, PUBLISHED, or DEPRECATED |
+
+### Version status lifecycle
+
+```
+DRAFT → PUBLISHED → (activate) → Active
+  │                      │
+  │                      └──→ DEPRECATED
+  │
+  └── (edit allowed)
+```
+
+- **DRAFT** - Can be edited, not yet ready for production
+- **PUBLISHED** - Ready to be activated, cannot be edited
+- **DEPRECATED** - No longer recommended for use
+
+<Note>
+Only one version can be linked as the active version for a template at a time.
+</Note>
+
+## WorkflowTemplateLink
+
+Defines how workflows are triggered:
+
+```prisma
+enum WorkflowLinkType {
+  SERVICE_CATALOG
+  PRODUCT
+}
+
+model WorkflowTemplateLink {
+  id String @id @default(cuid())
+
+  WorkflowTemplate   WorkflowTemplate @relation(
+    fields: [workflowTemplateId], 
+    references: [id], 
+    onDelete: Cascade
+  )
+  workflowTemplateId String
+
+  entityType WorkflowLinkType
+  entityId   String
+
+  @@unique([entityType, entityId])
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `workflowTemplateId` | Template to trigger |
+| `entityType` | SERVICE_CATALOG or PRODUCT |
+| `entityId` | Service request type or product ID |
+
+### Link types
+
+| Type | Trigger condition |
+|------|-------------------|
+| `SERVICE_CATALOG` | When a specific service request type is created |
+| `PRODUCT` | When a specific product is purchased (from billing) |
+
+When a matching entity is created/purchased and a workflow link exists, the active version of the linked template is automatically instantiated.
+
+## WorkflowExecution
+
+Represents a running workflow instance:
+
+```prisma
+enum WorkflowExecutionStatus {
+  CREATED
+  STARTED
+  FAILED_TO_START
+  COMPLETED
+}
+
+model WorkflowExecution {
+  id   String @id @default(cuid())
+  name String
+
+  WorkflowTemplateVersion   WorkflowTemplateVersion @relation(
+    fields: [workflowTemplateVersionId], 
+    references: [id]
+  )
+  workflowTemplateVersionId String
+
+  createdAt DateTime @default(now())
+
+  ParentWorkflowExecution   WorkflowExecution? @relation(
+    fields: [parentWorkflowExecutionId], 
+    references: [id], 
+    onDelete: Cascade, 
+    name: "parent_workflow_execution"
+  )
+  parentWorkflowExecutionId String?
+
+  RootWorkflowExecution   WorkflowExecution? @relation(
+    fields: [rootWorkflowExecutionId], 
+    references: [id], 
+    onDelete: Cascade, 
+    name: "root_workflow_execution"
+  )
+  rootWorkflowExecutionId String?
+
+  context Json?
+  status  WorkflowExecutionStatus @default(CREATED)
+
+  ChildWorkflowExecutions WorkflowExecution[] @relation("parent_workflow_execution")
+  DescendantWorkflowExecutionsFromRoot WorkflowExecution[] @relation("root_workflow_execution")
+
+  ServiceRequest          ServiceRequest?
+  ServiceRequestTaskGroup ServiceRequestTaskGroup?
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `id` | Unique execution identifier |
+| `name` | Execution name |
+| `workflowTemplateVersionId` | Template version being executed |
+| `parentWorkflowExecutionId` | Parent execution (for sub-workflows) |
+| `rootWorkflowExecutionId` | Root execution (for correlation) |
+| `context` | Metadata and global context |
+| `status` | Execution lifecycle status |
+
+### Execution status
+
+| Status | Description |
+|--------|-------------|
+| `CREATED` | Instance created, not yet started |
+| `STARTED` | Execution has begun |
+| `FAILED_TO_START` | Execution failed to start |
+| `COMPLETED` | Execution finished successfully |
+
+<Warning>
+The `status` field tracks the database record lifecycle, not the runtime status. Runtime status is tracked in Temporal.
+</Warning>
+
+### Context field
+
+The `context` field stores:
+
+- **Workflow metadata** - e.g., `directorId` for DSC workflows
+- **Global context** - Accessible via `__context__` in expressions
+
+Note: This context is separate from the Temporal runtime context.
+
+### Hierarchy relationships
+
+```
+Root Execution
+    │
+    ├── Child Execution 1 (parentWorkflowExecutionId = root)
+    │       │
+    │       └── Grandchild Execution (rootWorkflowExecutionId = root)
+    │
+    └── Child Execution 2 (parentWorkflowExecutionId = root)
+```
+
+- `parentWorkflowExecutionId` - Direct parent
+- `rootWorkflowExecutionId` - Ultimate ancestor (for correlation)
+
+## Entity relationships
+
+```
+┌──────────────────┐
+│ WorkflowTemplate │
+└────────┬─────────┘
+         │ 1:N
+         ▼
+┌────────────────────────┐      ┌─────────────────────┐
+│ WorkflowTemplateVersion│──────│ WorkflowTemplateLink│
+└────────┬───────────────┘      └─────────────────────┘
+         │ 1:N
+         ▼
+┌───────────────────┐
+│ WorkflowExecution │──┐
+└───────────────────┘  │
+         ▲             │ (parent/child)
+         └─────────────┘
+```
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Validation rules" icon="check" href="/engine/workflow-builder/reference/validation-rules">
+    Definition validation rules
+  </Card>
+  <Card title="Service request integration" icon="link" href="/engine/workflow-builder/reference/service-request-integration">
+    Legacy service request mapping
+  </Card>
+</CardGroup>
+
