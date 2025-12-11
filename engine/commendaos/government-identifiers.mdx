@@ -1,0 +1,254 @@
+---
+title: 'Government identifiers API'
+description: 'Manage official government identification numbers for business entities'
+icon: 'id-card'
+---
+
+## Overview
+
+The Government Identifiers API manages official identification numbers issued by government authorities, such as EINs, VAT numbers, tax IDs, and company registration numbers across 50+ countries.
+
+## Core endpoints
+
+### List government identifiers
+
+Get all government identifiers for a business entity.
+
+```http
+GET /business-entity/:businessEntityId/government-identifiers
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Query parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `extend` | string[] | Optional fields to include: `supportingDocument` |
+
+**Response**
+
+```json
+{
+  "governmentIdentifiers": [
+    {
+      "id": "gi_abc123",
+      "type": "EIN",
+      "value": "12-3456789",
+      "country": "US",
+      "jurisdiction": "FEDERAL",
+      "issuedDate": "2020-01-15",
+      "expiryDate": null,
+      "status": "ACTIVE",
+      "supportingDocument": {
+        "fileId": "file_xyz789",
+        "fileName": "EIN_Letter.pdf"
+      }
+    }
+  ],
+  "count": 1
+}
+```
+
+### Get government identifier
+
+Retrieve a single government identifier by ID.
+
+```http
+GET /business-entity/:businessEntityId/government-identifiers/:governmentIdentifierId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `governmentIdentifierId` | string | Government identifier ID |
+
+**Response**
+
+```json
+{
+  "id": "gi_abc123",
+  "type": "EIN",
+  "value": "12-3456789",
+  "country": "US",
+  "jurisdiction": "FEDERAL",
+  "issuedDate": "2020-01-15",
+  "expiryDate": null,
+  "status": "ACTIVE",
+  "purpose": "TAXATION",
+  "supportingDocument": {
+    "fileId": "file_xyz789",
+    "fileName": "EIN_Letter.pdf"
+  }
+}
+```
+
+### Create government identifier
+
+Add a new government identifier to a business entity.
+
+```http
+POST /business-entity/:businessEntityId/government-identifiers
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Request body**
+
+```json
+{
+  "type": "EIN",
+  "value": "12-3456789",
+  "country": "US",
+  "jurisdiction": "FEDERAL",
+  "issuedDate": "2020-01-15",
+  "status": "ACTIVE",
+  "supportingDocument": {
+    "fileId": "file_xyz789",
+    "description": "EIN confirmation letter from IRS"
+  }
+}
+```
+
+**Response**
+
+```json
+{
+  "governmentIdentifier": {
+    "id": "gi_abc123"
+  }
+}
+```
+
+### Update government identifier
+
+Update an existing government identifier.
+
+```http
+POST /business-entity/:businessEntityId/government-identifiers/:governmentIdentifier
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `governmentIdentifier` | string | Government identifier ID |
+
+**Request body**
+
+```json
+{
+  "value": "12-3456789",
+  "issuedDate": "2020-01-15",
+  "expiryDate": "2025-01-15",
+  "status": "ACTIVE",
+  "supportingDocument": {
+    "fileId": "file_xyz789",
+    "description": "Updated EIN letter"
+  }
+}
+```
+
+**Response**
+
+Returns `200 OK` on success.
+
+## Supported identifier types
+
+### United States
+
+| Type | Description | Format | Jurisdiction |
+|------|-------------|--------|--------------|
+| `EIN` | Employer Identification Number | `XX-XXXXXXX` | Federal |
+| `STATE_ENTITY_NUMBER` | State entity registration number | Varies by state | State-level |
+
+### India
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `PAN` | Permanent Account Number | `[A-Z]{5}[0-9]{4}[A-Z]` |
+| `TAN` | Tax Deduction Account Number | `[A-Z]{4}[0-9]{5}[A-Z]` |
+| `GSTIN` | Goods and Services Tax ID | `[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9][Z][0-9A-Z]` |
+| `CIN` | Corporate Identity Number | `[LU][0-9]{5}[A-Z]{2}[0-9]{4}[A-Z]{3}[0-9]{6}` |
+| `LLPIN` | Limited Liability Partnership ID | `[A-Z]{3}-[0-9]{4}` |
+
+### United Kingdom
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `COMPANY_REGISTRATION_NUMBER` | Companies House number | `[A-Z0-9]{8}` |
+| `UTR` | Unique Taxpayer Reference | `[0-9]{10}` |
+| `VAT_NUMBER` | VAT registration number | `GB[0-9]{9}` |
+| `PAYE_NUMBER` | Pay As You Earn reference | `[0-9]{3}/[A-Z0-9]+` |
+
+### Canada
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `BUSINESS_NUMBER` | CRA Business Number | `[0-9]{9}` |
+| `CORPORATION_NUMBER` | Federal corporation number | `[0-9]{7}` |
+| `COMPANY_KEY` | Provincial company key | Varies by province |
+
+### Singapore
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `UEN` | Unique Entity Number | `[0-9]{9}[A-Z]` or `[0-9]{10}[A-Z]` |
+| `GST_NUMBER` | GST registration number | `M[0-9]{8}[A-Z]` |
+| `CPF_SUBMISSION_NUMBER` | CPF submission number | `[0-9]{8}[A-Z]` |
+
+### United Arab Emirates
+
+| Type | Description |
+|------|-------------|
+| `LICENSE_NUMBER` | Trade license number |
+| `TRN` | Tax Registration Number |
+
+### Australia
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `ACN` | Australian Company Number | `[0-9]{9}` |
+| `ABN` | Australian Business Number | `[0-9]{11}` |
+| `TFN` | Tax File Number | `[0-9]{9}` |
+| `GST_NUMBER` | GST registration number | `[0-9]{11}` |
+
+### Germany
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `HRB_NUMBER` | Commercial register number | `HRB [0-9]+` |
+| `STEUERNUMMER` | Tax number | Varies by state |
+| `VAT_NUMBER` | VAT identification number | `DE[0-9]{9}` |
+
+### France
+
+| Type | Description | Format |
+|------|-------------|--------|
+| `SIREN` | Business identification number | `[0-9]{9}` |
+| `CORPORATE_TAX_NUMBER` | Corporate tax number | `[0-9]{13}` |
+| `TVA_NUMBER` | VAT number | `FR[0-9A-Z]{2}[0-9]{9}` |
+
+## Validation rules
+
+Government identifiers are validated using jurisdiction-specific regex patterns. Invalid formats will return a `400 Bad Request` error.
+
+## Supporting documents
+
+Each government identifier can have an associated supporting document (e.g., EIN letter, tax registration certificate). Upload the file first using the Files API, then reference the `fileId` when creating or updating the identifier.
+
+## Related resources
+
+- [Business Entity API](/engine/commendaos/business-entity) - Manage parent business entities
+- [Registrations API](/engine/commendaos/registrations) - Link identifiers to registrations
