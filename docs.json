@@ -86,7 +86,11 @@
               {
                 "group": "Incident Response SOP",
                 "pages": [
-                  "product/indirect-tax/incident-response-sop/overview"
+                  "product/indirect-tax/incident-response-sop/overview",
+                  "product/indirect-tax/incident-response-sop/scenarios",
+                  "product/indirect-tax/incident-response-sop/remediation",
+                  "product/indirect-tax/incident-response-sop/templates",
+                  "product/indirect-tax/incident-response-sop/assessment"
                 ]
               },
               {
