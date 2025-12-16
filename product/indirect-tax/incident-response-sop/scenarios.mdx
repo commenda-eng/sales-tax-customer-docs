@@ -1,0 +1,424 @@
+---
+title: 'Scenario classification'
+description: 'Detailed breakdown of incident types and patterns'
+---
+
+## Overview
+
+This page provides detailed classification of the five primary incident scenarios, including risk profiles, common patterns, and recommended remedies.
+
+## Scenario 1: Low-dollar, low-visibility issues
+
+### Pattern characteristics
+
+- Small under- or over-collections per transaction (typically a few dollars)
+- Spread across many customers
+- No amended returns filed yet
+- Often invisible to tax authorities unless discovered on audit
+
+### Example situations
+
+- Rounding errors affecting multiple transactions
+- Minor rate discrepancies in small jurisdictions
+- Temporary calculation delays causing small under-collections
+- Address resolution issues affecting low-value transactions
+
+### Risk profile
+
+**Aggregate exposure**: Can be non-trivial when summed across all transactions
+
+**Discovery likelihood**: Low - only found if specific taxpayer is audited
+
+**Customer recovery friction**: High - low yield relative to effort required
+
+**Compliance risk**: Low to moderate - depends on jurisdiction and audit patterns
+
+### Recommended remedy
+
+#### 1. Acknowledge and document internally
+
+Quantify total exposure and document:
+- Root cause analysis
+- Time window affected
+- Number of transactions and customers
+- Jurisdictions involved
+- Whether issue is resolved
+
+#### 2. Inform the client
+
+Explain what happened, estimated exposure, and why customer tax recovery is impractical:
+
+- Frame as audit-risk issue, not current cash issue
+- Emphasize low dollars per customer make recovery uneconomical
+- Provide documentation for their records
+- Confirm issue is resolved going forward
+
+#### 3. No proactive customer tax recovery
+
+Do not advise large-scale re-billing for trivial amounts. Position as: "We've corrected the issue; if this ever comes up on audit, we'll help support the position."
+
+#### 4. Support in event of audit
+
+Be prepared to provide:
+- Detailed calculations and documentation
+- Timeline of issue and resolution
+- Supporting evidence for audit defense
+- Fee credits per service agreement terms
+
+### Decision criteria
+
+Use this remedy when:
+- Per-transaction exposure < $10
+- Total exposure < $5,000
+- No single customer exposure > $500
+- Issue is historical and resolved
+- No filings affected yet
+
+## Scenario 2: Under-collection
+
+### Pattern characteristics
+
+- Engine, integration, or configuration issue causes under-collection of tax
+- Liability ultimately still owed to the jurisdiction
+- Often limited set of transactions, but dollars per transaction can be material
+- Client failed to collect full tax reimbursement from their customer
+
+### Example situations
+
+- Address hierarchy logic error (billing used instead of shipping)
+- Integration connector regression
+- Nexus configuration error
+- Product taxability mapping issue
+- Rate table not updated timely
+- Exemption logic misfiring
+
+### Risk profile
+
+**Client liability**: Client remains liable to jurisdiction even if they failed to collect from customer
+
+**Timing sensitivity**: Recent issues are easier to fix than ones discovered years later
+
+**Customer relationship impact**: Late tax charges can strain customer relationships
+
+**Audit exposure**: Moderate to high if filings already submitted
+
+### Recommended remedy
+
+#### 1. Have the client go back to their customers
+
+Advise client to re-bill end customers for under-collected tax, or request documentation that customer has self-reported the use tax (affidavit).
+
+#### 2. Provide a template notice
+
+Supply a letter/email template explaining:
+- There was a tax calculation issue
+- Sales tax is a reimbursable tax and remains the buyer's obligation
+- The seller is a conduit obligated to collect and remit to the state
+- The buyer can either:
+  - Pay the tax to the seller (who remits it), or
+  - Provide an affidavit that they have already paid the use tax directly
+
+#### 3. Use XYZ letter-style documentation
+
+Especially in California, leverage an "XYZ letter" style affidavit where buyer certifies whether they:
+- Were exempt from the transaction
+- Self-accrued and paid use tax
+- Still owe the tax
+
+#### 4. Escalation based on materiality
+
+For larger exposures:
+- Offer higher-touch support (calls with client and, if authorized, with their customer)
+- Consider discounted/no-charge "customer tax recovery" services
+- Help them reach out to customers and reduce net liability
+- Provide detailed transaction lists and jurisdiction breakdowns
+
+### Decision criteria
+
+Use this remedy when:
+- Per-transaction exposure > $50
+- Total exposure > $1,000
+- Limited number of customers affected (< 50)
+- Issue is recent (within 2-3 months)
+- Client has contractual right to re-bill
+
+### Special considerations
+
+#### No registrations filed yet
+
+If affected jurisdictions haven't been filed yet, you can adjust the narrative:
+
+"Our tax engine didn't collect tax because you weren't authorized to collect the tax at that time. Your customer still owes the tax. Now that we've determined you are required to collect the tax for that reporting period, your customer either needs to sign an affidavit that they paid the use tax, or be willing to be billed for the tax."
+
+This is technically accurate when registrations are being backdated.
+
+#### Multiple reporting periods
+
+If issue spans multiple reporting periods:
+- Prioritize most recent period first
+- Consider statute of limitations for older periods
+- Assess whether older periods are worth pursuing
+
+## Scenario 3: Over-collection
+
+### Pattern characteristics
+
+- Tax engine or rule error leads to over-collecting from end customers
+- Tax may have already been remitted to jurisdiction, or still sitting on client's books
+- Customer complaints and potential reputational harm
+- Operational friction of refunding customers and amending returns
+
+### Example situations
+
+- Rate table error (wrong rate applied)
+- Exemption logic failure (exempt customer charged tax)
+- Jurisdiction boundary error
+- Product taxability error (non-taxable item taxed)
+- Duplicate tax calculation
+
+### Risk profile
+
+**Customer complaints**: High - customers notice when overcharged
+
+**Reputational harm**: Moderate to high if not handled promptly
+
+**Regulatory scrutiny**: Low to moderate - depends on jurisdiction
+
+**Operational complexity**: High - refunding and amending is time-consuming
+
+### Recommended remedy
+
+#### 1. Explain obligations clearly to the client
+
+Over-collected tax generally must be:
+- Refunded to the customer, or
+- Remitted and managed via claim for refund, depending on jurisdiction rules
+
+#### 2. Assist with returning tax to customers
+
+Provide process guidance or, for key clients, hands-on support:
+- Identifying impacted transactions
+- Calculating over-collected tax per customer
+- Generating lists/letters offering refunds or credits
+- Determining whether to issue credits or cash refunds
+
+#### 3. Handle filings and amendments
+
+Where tax was already remitted:
+- Assist with amended returns and claims for refund
+- Flag that these processes can be slow and may increase audit visibility
+- Provide supporting documentation and schedules
+- Track refund status by jurisdiction
+
+#### 4. Differentiate by materiality
+
+**For small individual amounts across many customers:**
+- Client may provide credits on future invoices
+- Or, where allowed, decide not to pursue individual refunds but ensure they are not unjustly enriched (remit the tax to the state)
+
+**For large amounts or few customers:**
+- Direct refunds are typically required
+- More formal communication and documentation
+- May require executive involvement
+
+### Decision criteria
+
+Use this remedy when:
+- Any amount of over-collection is detected
+- Customer complaints received
+- Filings may or may not be affected
+- Client has obligation to make customers whole
+
+### Special considerations
+
+#### Already remitted to jurisdiction
+
+If tax was already remitted, the process becomes more complex:
+- File amended returns with claims for refund
+- Process can take 3-6 months or longer
+- Some jurisdictions require specific documentation
+- May trigger audit or additional scrutiny
+
+#### Not yet remitted
+
+If tax hasn't been remitted yet:
+- Simply refund customers and adjust reporting
+- Much cleaner process
+- Lower visibility to tax authorities
+
+## Scenario 4: Wrong jurisdiction
+
+### Pattern characteristics
+
+- Tax correctly calculated in aggregate, but collected and remitted to wrong jurisdiction
+- Often caused by bad address sourcing or hierarchy logic
+- One jurisdiction has money it shouldn't have; correct jurisdiction is shorted
+- Visibility risk if/when either jurisdiction audits
+
+### Example situations
+
+- Address hierarchy logic error (billing address used when shipping should have been)
+- Geocoding service error
+- Jurisdiction boundary data error
+- State vs. local misallocation
+- Cross-state sourcing error
+
+### Risk profile
+
+**Dual jurisdiction exposure**: Both jurisdictions may have questions
+
+**Audit visibility**: Moderate to high - amendments draw attention
+
+**Operational complexity**: High - requires coordination across jurisdictions
+
+**Customer impact**: Low if net tax amount was correct
+
+### Recommended remedy
+
+#### 1. Reconstruct correct sourcing
+
+Identify affected transactions and where tax should have been sourced:
+- Review address data used
+- Verify correct sourcing rules
+- Calculate correct jurisdiction for each transaction
+- Quantify over/under remittance by jurisdiction
+
+#### 2. Two sets of amendments
+
+File:
+- **Refund/amended returns** in the jurisdiction that incorrectly received the tax
+- **Underpayment/amended returns** in the jurisdiction that should have received the tax
+
+#### 3. Minimize client friction
+
+Provide clear schedules and workpapers supporting:
+- Original remittances by jurisdiction
+- Corrected sourcing analysis
+- Net effect by jurisdiction
+- Timeline for amendments and refunds
+
+#### 4. Address root cause
+
+Review and fix:
+- Address hierarchy logic
+- Integration address mapping
+- Geocoding service configuration
+- Jurisdiction boundary data
+
+### Decision criteria
+
+Use this remedy when:
+- Tax was calculated correctly but sourced to wrong jurisdiction
+- Affects any dollar amount (all mis-sourcing should be corrected)
+- May affect filed or unfiled returns
+- Root cause is identified and fixed
+
+### Special considerations
+
+#### Timing of corrections
+
+- If returns not yet filed: Simply file correctly
+- If returns already filed: Amendments required in both jurisdictions
+- Consider statute of limitations for older periods
+
+#### Jurisdiction cooperation
+
+Some jurisdictions are more cooperative than others:
+- Document all communications
+- Provide clear audit trail
+- Be prepared for questions from both jurisdictions
+
+## Scenario 5: Tardy exemption certificate
+
+### Pattern characteristics
+
+- Customer is (or claims to be) exempt, but exemption certificate is provided late
+- Delay in uploading/applying exemption certificates in the system
+- Transactions may have been billed tax-inclusive but never fully collected, and/or reported as taxable on prior returns
+
+### Example situations
+
+- Customer provides exemption certificate after invoice issued
+- Exemption certificate received but not uploaded timely
+- Integration delay in syncing exemption status
+- Manual exemption application backlog
+- Exemption certificate validation delays
+
+### Risk profile
+
+**Over-reporting of tax**: Tax reported but not actually due
+
+**Operational complexity**: Separating billing vs. reporting issues
+
+**Client expectations**: May expect Commenda to resolve when caused by our processing delays
+
+**Audit exposure**: Low - correcting over-reporting is generally welcomed
+
+### Recommended remedy
+
+#### 1. Clarify sequence of events
+
+Determine:
+- When was the transaction taxed and reported?
+- When was the exemption certificate received?
+- When was it applied in the system?
+- Was tax billed, collected, or just reported?
+
+#### 2. Correct prior filings where appropriate
+
+For certificates that are valid for the sale:
+- File amended returns to remove the now-exempt tax from prior periods
+- Provide supporting documentation (copy of exemption certificate)
+- Track refund or credit from jurisdiction
+
+#### 3. Separate billing vs. reporting
+
+Distinguish:
+- **Over-billing that was never collected but was reported**: Amend return only
+- **Tax that was billed, collected, and reported**: Amend return and refund customer
+
+Adjust future invoices, issue credits, or refunds to reconcile.
+
+#### 4. Tighten exemption workflows
+
+Encourage clients to:
+- Route exemption certificates through defined intake channel
+- Minimize lag between receipt and application
+- Set up automated exemption validation where possible
+- Establish SLAs for exemption processing
+
+Where Commenda's processing delays contribute, consider service gestures (fee credits, prioritized support) depending on impact.
+
+### Decision criteria
+
+Use this remedy when:
+- Valid exemption certificate received after transaction
+- Tax was reported but customer was actually exempt
+- Any dollar amount (all incorrect exemption treatment should be corrected)
+- Certificate is valid for the transaction date
+
+### Special considerations
+
+#### Retroactive exemption certificates
+
+Some jurisdictions allow retroactive application, others don't:
+- Verify jurisdiction rules
+- Document certificate validity period
+- Ensure certificate covers transaction date
+
+#### Partial period exemptions
+
+If customer became exempt mid-period:
+- Separate exempt vs. taxable transactions
+- Apply exemption only to qualifying transactions
+- Document effective date of exemption
+
+## Summary comparison
+
+| Scenario | Core issue | Primary remedy | Urgency |
+|----------|-----------|----------------|---------|
+| **Low-dollar, low-visibility** | Trivial amounts per transaction, many txns | Document, inform client, treat as audit risk | Low |
+| **Under-collection** | Tax under-billed/under-collected | Have client re-bill or get affidavits | High |
+| **Over-collection** | Customer overcharged tax | Refund/credit customers, amend returns | High |
+| **Wrong jurisdiction** | Tax remitted to wrong place | Amend in both jurisdictions | Moderate |
+| **Tardy exemption** | Late/slow exemption application | Amend returns, align billing/collections | Moderate |
