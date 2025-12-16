@@ -83,6 +83,7 @@
           {
             "group": "Indirect Tax",
             "pages": [
+              "product/indirect-tax/guarantees",
               {
                 "group": "Incident Response SOP",
                 "pages": [
