@@ -1,0 +1,75 @@
+---
+title: 'Calculation'
+description: 'Calculation behavior checklist for integrations'
+---
+
+__Calculation tab__
+
+This tab will be used as the base source of truth for all the calculations behaviors for the supported integrations.
+
+1. Shipping (how to store shipping related taxes)
+2. Handling (If it exists as a specific field), and how tax calculated on that will be stored.
+3. Discount
+	1. Calculating taxes when discount on line item
+	2. Calculating taxes on Pro-rata when discount on line item level
+	3. Tax calculation when discounts are applicable on line item as well as on invoice level
+4. Vouchers
+	1. Type of vouchers supported for calculation
+	2. Refund vouchers
+	3. Partial vouchers
+5. What’s the trigger for calculating the taxes on the invoice in the real time
+6. If an invoice is locked, will the tax amount be updated when updating the invoice, if not what we are flagging to the client and how
+7. GL Account
+	1. Tax amount should be mapped with the appropriate tax authority
+	2. Tax amount should be mapped with the appropriate tax classes in case of marketplace.
+8. Overwriting of Taxes
+	1. Storing taxes in ERP (separate line item, on the line item, etc.)
+	2. Negative amount handling
+	3. Disable/enable tax calculation should work
+	4. Adding the same SKU as different line items with different values should display different taxes at the line item level.
+	5. Check if the calculation output is getting updated based on PTC.
+	6. Tax calculated can get rounded by the ERP (like Netsuite), if it happens document it.
+	7. Displaying Error message
+	8. Updating a locked invoice: Behavior and how to reflect the error
+	9. Wrong address has been passed or an empty string has been passed: Behavior and error message
+	10. Which time zone Calculation start date is following
+	11. Set  the calculation start date as 1st january, create an invoice for 2nd jan, the tax should be calculated. Then update the calculation start date to 5st January, then we update the invoice we created on 2nd, what should happen in this case?
+	12. What is the trigger to initiate the calculation on the invoices also what’s an average time for it to calculate
+	13. The action if we manually override the tax rate or amount in the ERP
+	14. How can a customer mark a line item as exempted. Same for marking the entire transaction as exempted.
+
+		__For example:__ In NetSuite, TRX asked us to give a checkbox with, "mark as exempted", which when clicked, the tax rate for every line item should have 0% tax rate. Customers could also ask for a special tax code they can use to mark a line item as non taxable for a particular transaction.
+
+	15. Tax Calculation on the Fees and which PTC should we link the fees to
+	16. Calculation of taxes should be triggered irrespective of the administrative access of ERP
+
+9. **Address**
+
+   a. **Address fallback hierarchy**
+
+      <Card title="Address Resolution Hierarchy" icon="hierarchy">
+      The system follows this hierarchy when resolving addresses for calculations:
+
+      **1.** Invoice Shipping  
+      **↓**  
+      **2.** Customer Shipping (default)  
+      **↓**  
+      **3.** Customer Shipping (any)  
+      **↓**  
+      **4.** Invoice Billing  
+      **↓**  
+      **5.** Customer Billing (default)  
+      **↓**  
+      **6.** Customer Billing (any)  
+      **↓**  
+      **7.** Payment Metadata address  
+      **↓**  
+      **8.** IP Address
+
+      The system selects the first available address in this order.
+      </Card>
+
+10. **Customer Exemption**
+	1. If applied, Pass the reason "Customer is exempted"
+	2. Exemption work through our ECM portal and not the Exemption checkbox on the ERP portal (Flag it to customer as well)
+11. How to identify and disable calculation of taxes on the marketplace sales.

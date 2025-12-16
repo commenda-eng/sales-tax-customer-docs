@@ -1,0 +1,61 @@
+---
+title: 'Sales Tax Address Resolution Hierarchy'
+description: 'Sales tax address resolution hierarchy'
+---
+
+# Sales Tax Address Resolution Hierarchy
+
+## Purpose
+
+This document defines the __hierarchy for address resolution__ used by the Sales Tax Engine when determining the applicable tax jurisdiction for a transaction.
+
+The hierarchy ensures: - Deterministic and auditable address selection - Consistent behavior across integrations - Graceful fallback when preferred address data is unavailable
+
+The engine __must evaluate addresses strictly in the order defined below__ and select the __first available address__ encountered. If an address at a given level is unavailable or invalid, the engine proceeds to the next level.
+
+## Address Resolution Order (Highest → Lowest Priority)
+
+### 1. Invoice Shipping Address
+
+- Explicit shipping address provided at invoice level
+- Considered the most accurate representation of where goods/services are delivered
+
+### 2. Customer Shipping Address (Default or Single)
+
+- Use the customer’s __default shipping address if available__
+- If no default is set, but __only one shipping address exists__, use that address
+- If multiple shipping addresses exist and no default is defined, skip this level
+
+### 3. Invoice Billing Address
+
+- Billing address explicitly attached to the invoice
+
+### 4. Customer Shipping Address (Any – Arbitrary)
+
+- Select __any available shipping address__
+- Used only when no invoice-level or default shipping address is available but there are few shipping address associated with the customer, just take the first one.
+
+### 5. Customer Billing Address (Default or Single)
+
+- Use the customer’s __default billing address__
+- If no default is set, but __only one billing address exists__, use that address
+- If multiple billing addresses exist and no default is defined, skip this level
+
+### 6. Payment Metadata Address
+
+__Source:__ Payment provider metadata
+
+- Address obtained from payment instruments (e.g., card billing address)
+- Considered lower confidence due to potential mismatch with delivery location
+
+### 7. Customer Billing Address (Any – Arbitrary)
+
+__Source:__ Customer profile
+
+- Select __any available billing address __associated with the customer.
+
+### 8. IP Address (Geolocation)
+
+- Infer location via IP-based geolocation
+- Lowest confidence signal
+- Should be used __only when no explicit address data is availab__

@@ -1,0 +1,24 @@
+---
+title: 'Shopify'
+description: 'Shopify integration behaviors'
+---
+
+Commenda does not support tax calculations in Shopify, the following doc refers only to their sync flow.
+
+**Shopify Transactions **(ECOMMERCE_TRANSACTIONS in Rootfi)
+
+We follow this hierarchy to pick the first non-null address (with no validity checks other than whether the address is null or not):
+
+- Shopify’s transaction shipping address (from raw data)
+- Shopify’s transaction billing address (from raw data)
+
+We don’t seem to fall back to a customer-level address if those fields are missing
+
+**Shopify Customers** (ECOMMERCE_CUSTOMERS in rootfi)
+
+We follow this hierarchy to pick the first valid address:
+
+- Rootfi SHIPPING address
+- Rootfi BILLING address
+
+We select exactly one of these addresses, geocode it, and sync it to the sales tax API.

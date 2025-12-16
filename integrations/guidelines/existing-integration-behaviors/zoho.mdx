@@ -1,0 +1,24 @@
+---
+title: 'Zoho'
+description: 'Zoho integration behaviors'
+---
+
+Zoho supports both calculations and sync. The address implementation looks identical to Quickbooks.
+
+There are two different code paths for Zoho address resolution, one for calculations and one for sync. They are currently implemented differently in a way that may be error-prone, and this should be reviewed.
+
+## Sync:
+
+**Zoho Transactions**: INVOICES, INVOICE_CREDIT_NOTES, CASH_REFUNDS
+
+We use addresses directly from Rootfi. We use the invoice-level shipping address if present, if it is null, we fall back to the invoice-level billing address. We do not do any validation checks on the shipping address, so if it’s non-null but incomplete we will still propagate it forwards.
+
+ Customer-level addresses are not considered.
+
+**Zoho Contacts: **CONTACTS
+
+We record the shipping and billing addresses on the contact, synced through Rootfi.
+
+## Calculations:
+
+We retrieve the transaction from rootfi's passthrough API and then only consider the shipping address, calculating based on it no matter what.

@@ -1,0 +1,57 @@
+---
+title: 'Guide'
+description: 'Hub for integration testing, behaviors, and address/tax logic.'
+---
+
+## Integration Guidelines Guide
+
+Use this hub to jump into the most important integration docs: checklists, per‑integration behaviors, and address/tax logic.
+
+<CardGroup cols={2}>
+  <Card
+    title="Integration Checklist"
+    icon="checklist"
+    href="/integrations/guidelines/integration-checklist/general-behaviors"
+  >
+    Baseline checklist to validate whether an integration is working end‑to‑end.
+    Start here when testing a new or updated integration.
+  </Card>
+
+  <Card
+    title="Existing Integration Behaviors"
+    icon="integrations"
+    href="/integrations/guidelines/existing-integration-behaviors/stripe"
+  >
+    Stripe, Shopify, Xero, NetSuite, QuickBooks, and Zoho behavior notes:
+    how we sync, calculate, and resolve addresses today.
+  </Card>
+
+  <Card
+    title="Fallback Address Resolver"
+    icon="map-pin"
+    href="/integrations/guidelines/fallback-address-resolver"
+  >
+    How the logical backend walks through fallback addresses and how to
+    enable or adjust that behavior.
+  </Card>
+
+  <Card
+    title="Sales Tax Address Resolution Hierarchy"
+    icon="hierarchy"
+    href="/integrations/guidelines/sales-tax-address-resolution-hierarchy"
+  >
+    The authoritative address hierarchy used for sales tax decisions
+    across integrations.
+  </Card>
+
+  <Card
+    title="Shipping Tax Calculations"
+    icon="truck"
+    href="/integrations/guidelines/shipping-tax-calculations"
+  >
+    How shipping charges and their taxes are calculated, stored, and
+    synced across systems.
+  </Card>
+</CardGroup>
+
+
