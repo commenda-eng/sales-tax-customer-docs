@@ -97,6 +97,7 @@
               {
                 "group": "Integrations",
                 "pages": [
+                  "integrations/supported-integrations",
                   {
                     "group": "Integration Guidelines",
                     "pages": [
