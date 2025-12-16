@@ -78,48 +78,29 @@
         ]
       },
       {
-        "tab": "Integrations",
+        "tab": "Product",
         "groups": [
           {
-            "group": "Stripe",
+            "group": "Indirect Tax",
             "pages": [
-              "integrations/stripe/overview"
-            ]
-          },
-          {
-            "group": "Shopify",
-            "pages": [
-              "integrations/shopify/overview"
-            ]
-          },
-          {
-            "group": "Xero",
-            "pages": [
-              "integrations/xero/overview"
-            ]
-          },
-          {
-            "group": "Zoho",
-            "pages": [
-              "integrations/zoho/overview"
-            ]
-          },
-          {
-            "group": "WooCommerce",
-            "pages": [
-              "integrations/woocommerce/setup"
-            ]
-          },
-          {
-            "group": "QuickBooks",
-            "pages": [
-              "integrations/quickbooks/overview"
-            ]
-          },
-          {
-            "group": "NetSuite",
-            "pages": [
-              "integrations/netsuite/overview"
+              {
+                "group": "Incident Response SOP",
+                "pages": [
+                  "product/indirect-tax/incident-response-sop/overview"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "pages": [
+                  "integrations/stripe/overview",
+                  "integrations/shopify/overview",
+                  "integrations/xero/overview",
+                  "integrations/zoho/overview",
+                  "integrations/woocommerce/setup",
+                  "integrations/quickbooks/overview",
+                  "integrations/netsuite/overview"
+                ]
+              }
             ]
           }
         ]
