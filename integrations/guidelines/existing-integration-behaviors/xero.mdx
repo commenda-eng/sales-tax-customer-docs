@@ -1,0 +1,36 @@
+---
+title: 'Xero'
+description: 'Xero integration behaviors'
+---
+
+Xero supports both calculations and sync.
+
+We think Xero only has customer-level addresses, but Aryan thinks that Avalara has invoice-level address support for Xero. We need some more research here.
+
+There are two different code paths for Xero address resolution, one for calculations and one for sync. These should be merged so the implementations don’t diverge, which would lead to bugs that get caught when our back calcs don’t match forward calcs.
+
+## Sync:
+
+**Xero payment vouchers:** (INVOICES / INVOICE_CREDIT_NOTES / CASH_REFUNDS in Rootfi):
+
+Fetch the linked contact using the Rootfi passthrough API, and then check for:
+
+- Raw data STREET address → treated as shipping
+- Raw data POBOX address → treated as billing
+
+We choose the shipping address if it’s non-null, and the billing address if the shipping address is null.
+
+**Xero contacts **(CONTACTS in rootfi):
+
+Read contact-level addresses from Raw Data (bypassing a Rootfi bug that switches STREET and POBOX addresses), and follow the following hierarchy:
+
+- Raw data STREET address → treated as shipping
+- Raw data POBOX address → treated as billing
+
+We choose the shipping address if it’s non-null, and the billing address if the shipping address is null.
+
+## Calculations:
+
+This pipeline is mostly similar with one exception: It check whether any of the fields are set on the shipping address, and if not it falls back to the billing address.
+
+Like on Stripe invoices, an address is considered valid if any of its fields are set (if it has a street, OR a city, OR a zip, OR a country).

@@ -1,0 +1,85 @@
+---
+title: 'Shipping Tax Calculations'
+description: 'Shipping tax calculations'
+---
+
+__Assumptions:__
+
+Shipping should not be done by the company itself. If the company is shipping the products themselves, then the tax applicability rules are very different. We will assume all the shipping is done through a common carrier.
+
+__Acceptable behaviors:__
+
+- Shipping can be on the line item level
+- Shipping can be on the invoice level
+
+__Unacceptable behaviors:__
+
+- Shipping can’t be on both line item and invoice level
+
+__Calculation behaviors:__
+
+1. __If the shipping is on the invoice level__
+	1. In such cases, the base rates 3* of the jurisdictions are applied to the shipping line item. Below are the exact steps.
+	2. Treat shipping as a separate line item. This means while passing it to the sales tax backend, you will have to pass this as a separate line item with tax code “SRV_SHIPPING”. (Explicitly mentioning that we shouldn’t distribute this to every line item, that is wrong).
+	3. First calculate taxable amounts for every other line item in the transaction. This should give you the total taxable amount and total non taxable amount on the invoice level.
+	4. Check which product rules apply for `SRV_SHIPPING`. There are two possibilities
+		1. EXEMPT : In which case the tax on this line item will be zero.
+		2. PROPORTIONAL: There are a few steps to calculate proportional tax. Look below
+		3. No product rule is present
+	5. Calculate proportional tax on line item:
+		1. Figure out the base adjustment factor. This is the “taxable amount / total amount”.
+		2. Adjust the tax base for shipping. Adjusted base is “base adjustment factor * amount”.
+		3. Calculate the tax. For this you can now pass the amount to the calculateTaxOnLineItem function with applyProductRules = false and applyTransactionRules = false. This way you will prevent reapplying the “EXEMPTION” and “PROPORTIONAL” rules as they are already applied.
+		4. The resultant effective tax rate is the tax we should calculate on this shipping line item (invoice level shipping).
+	6. If no product rule is present, then shipping is taxable as a normal line item.
+2. __If the shipping is on the line item level__
+	1. First we will have to check what are the product rules applied on SRV_SHIPPING for this state. There are three possibilities
+		1. EXEMPT
+		2. PROPORTIONAL
+		3. TAXABLE (This is when product rules are missing)
+	2. EXEMPT : This is the easiest case. No matter if the line item is taxable or not, the shipping tax amount will be zero.
+	3. PROPORTIONAL: In this case, we simply use the product rate to calculate the shipping tax amount.
+	4. TAXABLE: In this case, there are two scenarios
+		1. If the product rate is zero > Then use the base rates to calculate the shipping tax amount.
+		2. If the product rates are non zero > Use the product rates to calculate the shipping tax amount.
+	5. Calculate the tax on the line item without considering shipping. This should also give you the base rates for all the jurisdictions applicable on this line item.
+	6. Add the shipping tax to the line item tax and then return the totals.
+		1. NOTE: Now the tax rates will seem inflated. This is fine from a reporting perspective (Just confirmed this with Phani that none of the states asks for tax collected on shipping explicitly) .
+		2. But we won’t be able to give accurate reasoning for this to the customer. It will just look like our rates are wrong. But maybe this is fine? The alternative is that just like “tax_type” we add another field on the tax breakdowns to reflect the extra charges collected by our engine.
+		3. The third option is to give a separate column called “shipping_tax_amount” on the API response from the calculation engine.
+
+__Integration behaviors:__
+
+1. __Allows invoice level shipping. __
+	1. Allows invoice level shipping tax amount
+		1. This is the ideal case. You will pass SRV_SHIPPING as a separate line item. The tax engine will explicitly tell the tax amount on this line item. That tax amount will be applied on the invoice level shipping tax amount.
+	2. Doesn’t allow invoice level shipping tax amount
+		1. This is the common case. In such a case, we will pass SRV_SHIPPING as a separate line item on which the tax amount will be returned by the tax engine. Now there are two approaches
+			1. Take the shipping tax amount and add it as a separate line item on the invoice. Label it as a tax item so we don’t calculate tax on it during re processing of the invoice. (This is a bad approach).
+			2. Take the shipping tax amount and distribute it proportionally to all the physical positive non tax line items 1*. If no physical goods are found, then proportionally distribute the shipping tax amount among all the positive line items.
+				1. Weird weird scenario : All the line items are negative. This shouldn’t happen.
+2. __Allows line item level shipping__
+	1. Allows line item level shipping tax amount
+		1. This case is very rare from an accounting software perspective. But right now the tax engine will give the shipping tax amount included in the line item tax amount. Right now we don’t support it.
+			1. NEW FEATURE: Explicitly return the calculated shipping tax amount from the calculation engine.
+	2. Doesn’t allow line item level shipping tax amount
+		1. This is the real world case. This will work perfectly. The shipping tax amount will come included in the line item tax amount and that will be reflected on the only “tax amount” field available on the line item.
+
+__Shipping storage behavior on sales tax (integration -> logical backend -> sales tax):__
+
+1. __Invoice level shipping__
+
+If the shipping amount is on the invoice level we will create a new line item on the sales tax backend. This line item will have a tax code as “SRV_SHIPPING”. The amounts and taxes will act as they do on a normal line item.
+
+1. __Line item level shipping__
+
+If the shipping amount is on the line item itself, we can pass the shipping amount simply to the sales tax backend. Right now the shipping will be available as an explicit field on the line item. Reminder that based on the current behavior, sub total is “unit price * quantity + shipping - discount”. And total is “sub total + tax collected”.
+
+__Glossary:__
+
+1. Non-tax line items are all the line items except a line item that reflects “tax”. In quickbooks tax amount is added as a separate line item with certain code.
+2. After looking at years of TRX data, we barely find invoices where the overall invoice is positive and individual line items are negative. In GAP accountants prefer to create a separate credit invoice to reflect negative line items.
+
+__Things to think about:__
+
+1. If a line item has a shipping amount, Avalara will link a second record (probably a record called Taxes) that is linked to the original line item. This Tax record contains the tax type, in this case it will be shipping. But I think the original tax that is applicable on the line item level is also stored as a separate record on this Tax table. That means, the tax table will look like [{taxOn: “shipping”, taxAmount: $25, taxType: “sales_tax”, taxAuthority: “United States”}]

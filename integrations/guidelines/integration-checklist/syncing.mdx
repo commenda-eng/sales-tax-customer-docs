@@ -1,0 +1,83 @@
+---
+title: 'Syncing'
+description: 'Syncing behavior checklist for integrations'
+---
+
+__Syncing__
+
+This tab provides the checklist required for checking all the syncing behavior for this integration.
+
+1. Shipping
+	1. Syncing on Line item/Invoice level
+	2. Syncing the taxes collected on the Shipping Value
+2. Handling
+	1. How to sync handling amounts
+	2. How to sync tax calculated on that
+3. Discounts
+	1. Line item level discounts
+	2. Invoice level discounts
+4. Vouchers
+	1. Type of vouchers supported for syncing
+	2. Refund vouchers
+	3. Partial vouchers
+5. What’s the trigger for syncing the invoice (Like the status: like we don’t sync DRAFT invoices)
+6. Order status updated for an invoice (Order status to Refund, define the behavior)
+	1. LOCKED: Add a different Refund invoice
+	2. UNLOCKED: Update the same invoice
+7. Mapping on Commenda
+	1. If we are able to map all the types of Invoices: One-time purchases, Recurring, etc.
+	2. Is it possible to pass 0 quantity with positive amount and if yes, how to sync it
+	3. How does the One-time good and Subscription items get synced
+	4. Also allowing the sync for card address or IP address, if it’s a marketplace to get enough fallbacks to support
+	5. Invoice number on Commenda should be same as Document ID on ERP
+	6. What should be mapped if SKUs not available in that ERP
+	7. Negative amount handling
+	8. Syncing behavior for the Fees added and the tax calculated on it
+8. **Address**
+
+   a. **Address fallback hierarchy**
+
+      <Card title="Address Resolution Hierarchy" icon="hierarchy">
+      
+      The system follows this hierarchy when resolving addresses for syncing:
+
+      **1.** Invoice Shipping  
+      **↓**  
+      **2.** Customer Shipping (default)  
+      **↓**  
+      **3.** Customer Shipping (any)  
+      **↓**  
+      **4.** Invoice Billing  
+      **↓**  
+      **5.** Customer Billing (default)  
+      **↓**  
+      **6.** Customer Billing (any)  
+      **↓**  
+      **7.** Payment Metadata address  
+      **↓**  
+      **8.** IP Address
+
+      The system selects the first available address in this order.
+      </Card>
+
+   b. **Updating the address on ERP**
+
+      i. Behavior when the invoice is unlocked (Recorded):
+
+         - It should update the address  
+         - It should take it out of the Holding Pen
+
+      ii. Behavior when the invoice is Locked
+
+   c. **If the GeoEncoding fails to parse the address**, pass the next possible address
+
+   d. **Some softwares** (like NetSuite and Stripe) will always populate the country code on the customer level by default. This will look like the address is actually populated on the code level but it isn't. Make sure we parse the next possible address if this address is not complete. Check [netsuite.handler.ts](http://netsuite.handler.ts) for more information around this.
+
+9. Product
+	1. Handling behaviors where SKUs are absent especially accounting softwares
+	2. SKU updated on the invoice in ERP should be synced in Commenda
+10. How to identify and handle Marketplace sales.
+11. Deletion of Invoices:
+	1. When it is not Locked
+	2. When it is Locked
+

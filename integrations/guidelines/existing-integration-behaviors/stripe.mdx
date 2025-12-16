@@ -1,0 +1,54 @@
+---
+title: 'Stripe'
+description: 'Stripe integration behaviors'
+---
+
+We have a calculations flow which is somewhat broken and unused. The following documentation ignores that flow, and only refers to the sync flow, which is implemented in a totally separate way. The sync flow’s implementation should be merged with the calculation implementation - both should use the exact same code for processing invoices to identify and geocode the transaction address.
+
+**Invoices ** (PAYMENT_INVOICES in rootfi)
+
+We extract addresses from the raw_data field directly from Stripe, instead of relying on the Rootfi mapping.
+
+We follow this hierarchy to pick the first valid shipping address AND the first “Valid” billing address.
+
+1. Invoice-level shipping address
+2. Invoice-level “Customer shipping address”
+3. Customer-level shipping address
+4. Invoice-level billing address (invoice.customer_address)
+5. Customer-level billing address (customer.address)
+6. Customer’s payment method billing address (payment_method.billing_details.address)
+	1. only if the ‘fallbackToPaymentMethodAddressEnabled’ setting is set to true
+
+“Valid” is defined as having ANY field set - country, city, zip, address line 1, or state.
+
+We take the highest-ranked shipping and billing addresses in the above hierarchy. We select only one of those addresses - the shipping address, if available, otherwise the billing address.
+
+Then we geocode it → write it into the “Ship To …” columns of the Transactions CSV → upload that CSV to the Sales Tax API.
+
+Notes:
+
+invoice level 'customer address' field is not always the same as the customer-level 'address' field, it gets locked when the invoice is finalized
+
+Address is considered valid if any of its fields are set (if it has a street, OR a city, OR a zip, OR a country).
+
+**Stripe Customers** (PAYMENT_CUSTOMERS in rootfi)
+
+We follow this hierarchy to pick the first valid address:
+
+- Rootfi SHIPPING address
+- Rootfi BILLING address
+- Payment method billing address, retrieved via the pass-through API
+	- only if the ‘fallbackToPaymentMethodAddressEnabled’ setting is set to true
+
+We select exactly one of these addresses, geocode it, and sync it to the sales tax API.
+
+**Stripe Credit Notes **(PAYMENT_CREDIT_NOTES in rootfi)
+
+We follow this hierarchy to pick the first valid address:
+
+- Rootfi SHIPPING address
+- Rootfi BILLING address
+- Payment method billing address, retrieved via the pass-through API
+	- only if the ‘fallbackToPaymentMethodAddressEnabled’ setting is set to true
+
+We select exactly one of these addresses, geocode it, and sync it to the sales tax API.

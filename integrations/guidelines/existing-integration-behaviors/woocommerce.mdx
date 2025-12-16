@@ -1,0 +1,44 @@
+---
+title: 'WooCommerce'
+description: 'WooCommerce integration behaviors'
+---
+
+WooCommerce supports both calculations and sync.
+
+WooCommerce calculations are not implemented in the commenda logical backend, we built a plugin that each customer needs to install.
+
+WooCommerce sync is a work in progress, not launched yet.
+
+## Sync:
+
+**Transactions**: ECOMMERCE_ORDERS
+
+We extract the order-level shipping and billing addresses, if not null, and pass them along.
+
+If either one is missing, we retrieve the customer from the Rootfi pass-through API.
+
+If the order-level shipping address is missing and the customer has a shipping address, we pass along the customer-level shipping address instead.
+
+If the order-level billing address is missing and the customer has a billing address, we pass along the customer-level billing address instead.
+
+Finally, we pick the available shipping address, or the billing address if there is none.
+
+**Customers**: ECOMMERCE_CUSTOMERS
+
+We record the shipping and billing addresses on the contact, synced through Rootfi.
+
+## Calculations:
+
+The WooCommerce plugin has two code paths to calculate tax, one based on an in-progress cart (Before the order is complete) and the other based on an order.
+
+The two paths have different behaviors.
+
+The in-progress cart path calculates on the cart-level shipping address, if available, arbitrarily choosing the first shipping destination if there is more than one. Otherwise, it falls back to the customer-level billing address:
+
+Cart/checkout calculation (commenda_cart_tax)
+
+- Primary: first shipping package destination: WC()->shipping->get_packages()[0]['destination']
+- Fallback: customer billing fields from WC()->customer
+
+The order path calculates on the order-level shipping address, and will fall back to the customer shipping address if not set. Customer-level fields are ignored.
+

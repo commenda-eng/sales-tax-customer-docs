@@ -1,0 +1,71 @@
+---
+title: 'Fallback Address Resolver'
+description: 'Fallback address resolver documentation'
+---
+
+## __Enabling fallback Address resolver on Commenda Logical backend__
+
+### __Current Behavior__
+
+For each transaction, the system selects __only the first available address__ based on the defined hierarchy and sends it for geocoding.
+If geocoding fails to resolve this address, the __entire transaction fails__ and is moved to the __holding pen__, even if other valid addresses are available for the transaction.
+
+### __Impact__
+
+- Transactions get blocked unnecessarily
+
+- Valid fallback addresses are ignored
+
+- Increased manual intervention due to holding-pen accumulation
+
+## __Expected Behavior__
+
+For each transaction, the system should __attempt calling a geocoding api using all available addresses in hierarchical order__, instead of failing immediately on the first failure.
+
+### __Address Resolution Logic__
+
+1. Identify all available addresses for the transaction.
+
+2. Sort them according to the predefined hierarchy
+
+	- Example hierarchy:
+ __Customer Shipping > Invoice Billing > Customer Billing > Card Information
+__
+3. Attempt geocoding using the highest-priority address.
+
+4. If geocoding fails:
+
+	- __Do not fail the transaction
+__
+	- Automatically attempt the __next address in the hierarchy
+__
+5. Mark the transaction as failed __only if all available addresses fail to resolve__.
+
+## __Example__
+
+__Available addresses:__
+
+- Customer Shipping
+
+- Invoice Billing
+
+__Hierarchy:
+__ Customer Shipping > Invoice Billing
+
+__Flow:__
+
+1. Attempt geocoding with Customer Shipping address
+
+2. If it fails, retry using Invoice Billing address
+
+3. Transaction proceeds successfully if Invoice Billing resolves
+
+4. Transaction moves to holding pen __only if both addresses fail__
+
+## __Acceptance Criteria__
+
+- System iterates through all available addresses in hierarchical order
+
+- Transaction does __not__ fail on the first geocoding failure
+
+- Transaction is sent to holding pen only when __no address resolves successfully__
