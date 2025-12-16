@@ -6,9 +6,117 @@ icon: 'triangle-exclamation'
 
 ## Overview
 
-This document outlines the standard operating procedures for responding to incidents related to indirect tax operations.
+This document outlines the standard operating procedures for responding to incidents related to indirect tax operations. These procedures ensure consistent, effective handling of tax calculation errors, service outages, and compliance issues.
 
-## Coming soon
+## Core principles
 
-Detailed incident response procedures will be documented here.
+### Always inform the customer
+
+As a service provider, always inform customers of issues that affect their tax calculations, regardless of dollar amount or visibility. Customers discovering issues after the fact undermines trust in the entire system.
+
+### Tax reimbursement is contractual
+
+Sales tax in the U.S. is a reimbursable tax. The buyer owes the tax to the jurisdiction, and the seller acts as a conduit to collect and remit it. When tax is under-collected, the liability remains with the buyer, not the seller.
+
+### Timeliness matters
+
+The customer's willingness to adjust tax reimbursement diminishes over time. Issues discovered and addressed within the same reporting period are significantly easier to resolve than those discovered years later.
+
+### We don't pay tax
+
+Commenda's liability is limited to service fees paid, not tax amounts. We provide support, documentation, and remediation assistance, but do not reimburse customers for tax liabilities.
+
+## When to use this SOP
+
+Use these procedures when:
+
+- Tax calculation errors are detected (over-collection, under-collection, or mis-sourcing)
+- Service outages affect tax calculations
+- Integration issues cause incorrect tax treatment
+- Exemption certificate processing delays impact transactions
+- Address hierarchy or sourcing logic produces incorrect results
+
+## Response framework
+
+All incidents follow a standard response framework:
+
+1. **Detect and classify** - Identify the issue type, scope, and severity
+2. **Assess impact** - Determine financial exposure, compliance risk, and customer impact
+3. **Execute remedy** - Follow the appropriate remediation playbook
+4. **Communicate** - Notify affected customers with clear, actionable guidance
+5. **Document** - Record root cause, resolution, and lessons learned
+
+## Incident classification
+
+Incidents are classified into five primary categories:
+
+### 1. Low-dollar, low-visibility issues
+
+Small amounts per transaction spread across many customers. Treated as audit risk rather than immediate remediation.
+
+### 2. Under-collection
+
+Tax under-charged to end customers. Requires customer to re-bill or obtain affidavits.
+
+### 3. Over-collection
+
+Tax over-charged to end customers. Requires refunds and potential amended returns.
+
+### 4. Wrong jurisdiction
+
+Tax collected and remitted to incorrect jurisdiction. Requires amendments in both jurisdictions.
+
+### 5. Tardy exemption certificate
+
+Late or delayed exemption application. Requires amended returns and billing adjustments.
+
+## Escalation thresholds
+
+### Account manager discretion
+
+- Single customer impact
+- Exposure < $5,000
+- No filings affected
+- Recent issue (within current reporting period)
+
+### Executive involvement required
+
+- Multiple customer impact
+- Exposure > $10,000
+- Filed returns affected
+- Issue spans multiple reporting periods
+- Customer threatens legal action
+
+### SWAT team activation
+
+- Platform-wide impact
+- Exposure > $100,000
+- Real-time reporting jurisdictions affected
+- Cascading downstream effects
+- Regulatory inquiry received
+
+## Service guarantees and limitations
+
+### What we provide
+
+- Root cause analysis and documentation
+- Customer communication templates
+- Remediation guidance and support
+- Account credits for service fees (at discretion)
+- Assistance with amended returns
+- Customer tax recovery support (for key accounts)
+
+### What we don't provide
+
+- Direct payment of tax liabilities
+- Payment of penalties or interest (except in specific guarantee scenarios)
+- Legal representation
+- Guarantee beyond service fees paid
+
+## Related documentation
+
+- [Scenario classification](/product/indirect-tax/incident-response-sop/scenarios) - Detailed breakdown of incident types
+- [Remediation playbook](/product/indirect-tax/incident-response-sop/remediation) - Step-by-step procedures
+- [Communication templates](/product/indirect-tax/incident-response-sop/templates) - Customer notification templates
+- [Assessment framework](/product/indirect-tax/incident-response-sop/assessment) - Incident evaluation criteria
 
