@@ -74,6 +74,15 @@
             "pages": [
               "engine/form-builder/overview"
             ]
+          },
+          {
+            "group": "Address API",
+            "pages": [
+              "engine/address-api/overview",
+              "engine/address-api/authorization",
+              "engine/address-api/geocode",
+              "engine/address-api/ingestion"
+            ]
           }
         ]
       },
