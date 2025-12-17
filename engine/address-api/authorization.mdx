@@ -1,0 +1,95 @@
+---
+title: Authorization
+description: API key-based authentication for the Address API
+---
+
+The Address API uses API key-based authentication with role-based access control.
+
+## API key authentication
+
+All requests to the Address API (except health checks) require an API key passed in the `x-commenda-key` header.
+
+```bash
+curl -X POST https://address-api.in.commenda.io/geocode \
+  -H "x-commenda-key: your-api-key-here" \
+  -H "Content-Type: application/json" \
+  -d '{"address": "94108, CA, US"}'
+```
+
+## Roles
+
+API keys are assigned specific roles that determine which endpoints they can access:
+
+| Role | Description | Endpoints |
+|------|-------------|-----------|
+| `GEOCODE` | Access to geocoding functionality | `/geocode` |
+| `MANAGE_CONTENT` | Access to content ingestion | `/ingest/*` |
+
+## Getting permission
+
+To obtain an API key with the necessary roles:
+
+1. Contact your Commenda administrator or developer
+2. Request the specific role(s) you need (`GEOCODE` or `MANAGE_CONTENT`)
+3. The administrator will generate an API key with the appropriate permissions
+4. Store the API key securely and include it in the `x-commenda-key` header for all requests
+
+## Error responses
+
+If authentication fails, you'll receive one of these error responses:
+
+### Missing API key
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Missing API key.",
+    "status": 401,
+    "instance": "/geocode",
+    "detail": {
+      "description": "The x-commenda-key header is required for authentication."
+    },
+    "errors": [
+      {
+        "pointer": "x-commenda-key",
+        "details": "API key must be provided in the x-commenda-key header."
+      }
+    ]
+  }
+}
+```
+
+### Invalid API key
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Invalid API key.",
+    "status": 401,
+    "instance": "/geocode",
+    "detail": {
+      "description": "The provided API key is invalid or does not exist."
+    }
+  }
+}
+```
+
+### Missing role
+
+If your API key doesn't have the required role for an endpoint:
+
+```json
+{
+  "error": {
+    "type": "CLIENT_FORBIDDEN",
+    "title": "Missing required role.",
+    "status": 403,
+    "instance": "/geocode",
+    "detail": {
+      "description": "Your API key does not have the GEOCODE role required for this endpoint."
+    }
+  }
+}
+```
