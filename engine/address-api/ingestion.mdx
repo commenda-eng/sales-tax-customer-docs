@@ -1,0 +1,194 @@
+---
+title: Content ingestion
+description: Ingest ISO 3166 subdivision data
+---
+
+The Content Ingestion API allows you to populate and update the ISO 3166 subdivision database, which is used for address validation and standardization.
+
+## What is ISO 3166?
+
+ISO 3166 is an international standard for country codes and their subdivisions (states, provinces, regions, etc.). The Address API uses this data to validate and standardize address components.
+
+## Endpoint
+
+```
+POST /ingest/iso-3166
+```
+
+**Required role**: `MANAGE_CONTENT`
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `x-commenda-key` | Yes | Your API key with `MANAGE_CONTENT` role |
+| `Content-Type` | Yes | Must be `application/json` |
+
+### Body
+
+```json
+{
+  "items": [
+    {
+      "country_code": "US",
+      "subdivision_code": "CA",
+      "subdivision_name": "California",
+      "subdivision_local_variant": null
+    },
+    {
+      "country_code": "US",
+      "subdivision_code": "NY",
+      "subdivision_name": "New York",
+      "subdivision_local_variant": null
+    }
+  ]
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `items` | array | Yes | Array of subdivision records to ingest (minimum 1 item) |
+| `items[].country_code` | string | Yes | ISO 3166-1 alpha-2 country code (exactly 2 characters) |
+| `items[].subdivision_code` | string | Yes | ISO 3166-2 subdivision code (maximum 3 characters) |
+| `items[].subdivision_name` | string \| null | Yes | Full name of the subdivision (can be null) |
+| `items[].subdivision_local_variant` | string \| null | Yes | Local language variant of the name (can be null) |
+
+## Response
+
+### Success response (200 OK)
+
+```json
+{
+  "data": {
+    "upserted": 2
+  }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `upserted` | number | Number of records inserted or updated |
+
+## How ingestion works
+
+The ingestion process uses an **upsert** strategy:
+
+1. **Uniqueness**: Each record is identified by the combination of `country_code` and `subdivision_code`
+2. **Insert or update**: If a record with the same country/subdivision combination exists, it's updated. Otherwise, a new record is created
+3. **Duplicate detection**: The API validates that no duplicates exist within a single request
+4. **Batch processing**: All items in the request are processed in a single transaction
+
+## Example requests
+
+### Ingest US states
+
+```bash
+curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
+  -H "x-commenda-key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "country_code": "US",
+        "subdivision_code": "CA",
+        "subdivision_name": "California",
+        "subdivision_local_variant": null
+      },
+      {
+        "country_code": "US",
+        "subdivision_code": "TX",
+        "subdivision_name": "Texas",
+        "subdivision_local_variant": null
+      }
+    ]
+  }'
+```
+
+### Ingest Canadian provinces
+
+```bash
+curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
+  -H "x-commenda-key: your-api-key" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "items": [
+      {
+        "country_code": "CA",
+        "subdivision_code": "ON",
+        "subdivision_name": "Ontario",
+        "subdivision_local_variant": null
+      },
+      {
+        "country_code": "CA",
+        "subdivision_code": "QC",
+        "subdivision_name": "Quebec",
+        "subdivision_local_variant": "Québec"
+      }
+    ]
+  }'
+```
+
+## Error responses
+
+### Invalid request body (400)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_BAD_REQUEST",
+    "title": "Invalid request body.",
+    "status": 400,
+    "instance": "/ingest/iso-3166",
+    "detail": {
+      "description": "The request body is invalid or missing required fields."
+    }
+  }
+}
+```
+
+### Duplicate records (400)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_BAD_REQUEST",
+    "title": "ISO 3166 ingestion validation failed.",
+    "status": 400,
+    "instance": "/ingest/iso-3166",
+    "detail": {
+      "description": "Validation errors occurred during ISO 3166 ingestion."
+    },
+    "errors": [
+      {
+        "pointer": "items[1]",
+        "details": "Duplicate (country_code, subdivision_code) within the same request."
+      }
+    ]
+  }
+}
+```
+
+### Missing role (403)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_FORBIDDEN",
+    "title": "Missing required role.",
+    "status": 403,
+    "instance": "/ingest/iso-3166",
+    "detail": {
+      "description": "Your API key does not have the MANAGE_CONTENT role."
+    }
+  }
+}
+```
+
+## Best practices
+
+- **Batch your requests**: Send multiple items in a single request to reduce API calls
+- **Validate data**: Ensure country codes are valid ISO 3166-1 alpha-2 codes
+- **Handle errors**: Check for duplicate records and validation errors in your ingestion pipeline
+- **Update regularly**: Re-run ingestion when subdivision data changes (new states, name changes, etc.)
