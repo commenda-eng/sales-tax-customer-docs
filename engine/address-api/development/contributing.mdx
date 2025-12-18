@@ -190,109 +190,104 @@ Expected output:
 PASS: TestYourNewFeature
 ```
 
-### 6. Add database migrations (if needed)
+### 6. Make SQL changes (if needed)
 
-If your feature requires database changes:
+If your feature requires database changes, follow the [Working with SQL](/engine/address-api/development/working-with-sql) guide:
 
-```bash
-# Create a new migration
-atlas migrate diff your_migration_name \\\n  --dir "file://database/migrations" \\\n  --dev-url "docker://postgres/15/dev?search_path=public" \\\n  --to "file://database/schema.sql"
-```
+**Step 1: Update schema**
 
-This creates a new migration file in `database/migrations/`.
-
-**Update `database/schema.sql`** with your schema changes:
+Edit `database/schema.sql`:
 
 ```sql
--- Add your table or column changes
-ALTER TABLE your_table ADD COLUMN new_column text;
+CREATE TABLE "your_table" (
+  "id" serial PRIMARY KEY,
+  "name" text NOT NULL
+);
 ```
 
-### 7. Generate database code (if needed)
+**Step 2: Write SQL queries**
 
-If you added new SQL queries:
-
-**Step 1: Add queries to SQL file**
-
-Edit or create `internal/your_feature/sql/queries.sql`:
+Create `internal/your_feature/sql/queries.sql`:
 
 ```sql
 -- name: GetYourData :one
 SELECT * FROM your_table WHERE id = $1;
 
 -- name: InsertYourData :one
-INSERT INTO your_table (field1, field2)
-VALUES ($1, $2)
+INSERT INTO your_table (name)
+VALUES ($1)
 RETURNING *;
 ```
 
-**Step 2: Update `sqlc.json`**
-
-Add your SQL directory to `sqlc.json`:
-
-```json
-{
-  "version": "2",
-  "sql": [
-    {
-      "schema": "database/schema.sql",
-      "queries": "internal/your_feature/sql/queries.sql",
-      "engine": "postgresql",
-      "gen": {
-        "go": {
-          "package": "your_feature_dao",
-          "out": "internal/your_feature/dao",
-          "sql_package": "pgx/v5"
-        }
-      }
-    }
-  ]
-}
-```
-
-**Step 3: Generate code**
+**Step 3: Generate Go code**
 
 ```bash
 sqlc generate
 ```
 
-### 8. Run all checks locally
-
-Before creating a PR, run all checks that will run in CI:
+**Step 4: Generate migration**
 
 ```bash
-# Format code
-goimports -w -local github.com/commenda/addresses-api .
-
-# Lint
-golangci-lint run --timeout=5m
-
-# Run tests
-go test -v ./...
-
-# Check build
-go build $(go list ./... | grep -v /tests/)
-
-# Check migrations
-atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\\n  --dir file://database/migrations \\\n  --dev-url docker://postgres/15/dev?search_path=public \\\n  --to file://database/schema.sql
+./scripts/generate.sh --name add_your_table
 ```
 
-### 9. Commit your changes
+**Step 5: Apply migration locally**
+
+```bash
+./scripts/apply.sh
+```
+
+### 7. Create error handlers (if needed)
+
+Create `internal/your_feature/handler_errors.go`:
+
+```go
+package your_feature
+
+import (
+    "net/http"
+    "github.com/commenda/addresses-api/internal/common/clients"
+)
+
+const (
+    YOUR_CUSTOM_ERROR = "YOUR_CUSTOM_ERROR"
+)
+
+func YOUR_CUSTOM_ERROR_FUNC(path string) clients.ErrorWithStatusCode {
+    statusCode := http.StatusBadRequest
+
+    errorBody := &clients.Error_RFC9457{
+        Type:    clients.CLIENT_INVALID_PARAMS,
+        SubType: YOUR_CUSTOM_ERROR,
+        Title:   "Your error title.",
+        Detail: clients.Error_Description{
+            Description: "Detailed error message.",
+        },
+        Status:   statusCode,
+        Instance: path,
+    }
+
+    return clients.ErrorWithStatusCode{ErrorCode: statusCode, ErrorBody: *errorBody}
+}
+```
+
+See [Error handling](/engine/address-api/development/error-handling) for more details.
+
+### 8. Commit your changes
+
+Lefthook will automatically run pre-commit checks:
+
+- **goimports**: Formats your code
+- **golangci-lint**: Lints your code
+
+If checks fail, fix the issues and commit again.
 
 ```bash
 git add .
 git commit -m "feat: add your feature description"
 ```
 
-Commit message conventions:
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `refactor:` - Code refactoring
-- `docs:` - Documentation changes
-- `test:` - Test changes
-- `chore:` - Build/tooling changes
-
-### 10. Push and create a pull request
+### 9. Push and create a pull request
 
 ```bash
 git push origin feature/your-feature-name
@@ -305,7 +300,7 @@ Go to GitHub and create a pull request against `main`.
 When you create a PR, the following checks run automatically:
 
 | Check | Description | Must pass |
-|-------|-------------|-----------|
+|-------|-------------|-----------| 
 | **Go Lint** | Code quality and style checks | ✅ Yes |
 | **Go Format** | Code formatting with goimports | ✅ Yes |
 | **Check Build** | Ensures code compiles | ✅ Yes |
@@ -315,26 +310,13 @@ When you create a PR, the following checks run automatically:
 
 ### Common check failures
 
-#### Go Format Check fails
-
-**Error**: "The following files are not formatted correctly"
-
-**Fix**:
-```bash
-goimports -w -local github.com/commenda/addresses-api .
-git add .
-git commit -m "fix: format code"
-git push
-```
-
 #### Migrations Lint fails
 
 **Error**: "Missing schema migration"
 
 **Fix**: You modified `database/schema.sql` but didn't create a migration:
 ```bash
-atlas migrate diff your_change_description \\\n  --dir "file://database/migrations" \\\n  --dev-url "docker://postgres/15/dev?search_path=public" \\\n  --to "file://database/schema.sql"
-
+./scripts/generate.sh --name your_change_description
 git add database/migrations/
 git commit -m "feat: add migration for your changes"
 git push
@@ -373,23 +355,41 @@ After your PR is merged, you need to create a release to deploy:
 GitHub Actions will automatically:
 - Build Docker image
 - Push to ECR
-- Deploy to staging
+- Deploy to staging ECS
+- Run database migrations
 - Run smoke tests
 
 ### Deploy to production
 
-1. Go to **Releases** → **Create a new release**
-2. Tag: `v0.1.0` (same version without `-rc.X`)
-3. **Do NOT check** "Set as a pre-release"
-4. Click: **Publish release**
+1. Go to the staging release
+2. Click: **Edit release**
+3. Check: **Set as the latest release**
+4. Uncheck: **Set as a pre-release**
+5. Click: **Update release**
 
 GitHub Actions will deploy to production.
+
+## Git hooks with Lefthook
+
+Lefthook automatically runs checks before commits and pushes:
+
+### Pre-commit hooks
+
+- **goimports-fix**: Automatically formats staged Go files
+- **goimports-check**: Verifies all files are formatted
+- **go-lint**: Runs golangci-lint
+
+### Pre-push hooks
+
+- **go-build**: Ensures code compiles
+
+If hooks fail, fix the issues before committing/pushing.
 
 ## Best practices
 
 ### Code style
 
-- Follow Go conventions (use `gofmt` and `goimports`)
+- Follow Go conventions (Lefthook enforces this)
 - Use meaningful variable names
 - Add comments for complex logic
 - Keep functions small and focused
@@ -399,7 +399,7 @@ GitHub Actions will deploy to production.
 - Write tests before implementation (TDD)
 - Test both success and error cases
 - Use table-driven tests for multiple scenarios
-- Mock external dependencies in unit tests
+- Prioritize integration tests over unit tests
 
 ### Database
 
@@ -407,12 +407,6 @@ GitHub Actions will deploy to production.
 - Never modify existing migrations
 - Test migrations on a local database first
 - Use transactions for data consistency
-
-### Error handling
-
-- Return structured errors using the error types in `internal/common/clients/errors.go`
-- Log errors with context using zerolog
-- Don't expose internal errors to clients
 
 ### Security
 
@@ -429,5 +423,7 @@ GitHub Actions will deploy to production.
 
 ## Next steps
 
+- [Working with SQL](/engine/address-api/development/working-with-sql)
+- [Error handling](/engine/address-api/development/error-handling)
 - [Deployment process](/engine/address-api/operations/deployment)
 - [Debugging guide](/engine/address-api/operations/debugging)
