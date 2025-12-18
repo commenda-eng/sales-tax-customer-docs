@@ -1,0 +1,422 @@
+---
+title: Common failures
+description: Common failure scenarios and how to fix them
+---
+
+This guide covers common failure scenarios in the Address API and how to resolve them.
+
+## Failed migration
+
+### Scenario
+
+A database migration fails during deployment, preventing the application from starting.
+
+### Example: Duplicate records violating unique constraint
+
+You add a unique constraint to a table that already has duplicate records:
+
+```sql
+-- Migration fails because duplicates exist
+ALTER TABLE "iso_3166" ADD CONSTRAINT "iso_3166_country_subdivision_unique"
+  UNIQUE ("country_code", "subdivision_code");
+```
+
+### How to fix
+
+**Step 1: Connect to the database**
+
+Follow the [Database connection](/engine/address-api/operations/database-connection) guide to connect via bastion host.
+
+**Step 2: Identify the problem**
+
+```sql
+-- Check for duplicates
+SELECT country_code, subdivision_code, COUNT(*)
+FROM iso_3166
+GROUP BY country_code, subdivision_code
+HAVING COUNT(*) > 1;
+```
+
+**Step 3: Fix the data**
+
+```sql
+-- Option 1: Delete duplicates (keep the first one)
+DELETE FROM iso_3166 a
+USING iso_3166 b
+WHERE a.id > b.id
+  AND a.country_code = b.country_code
+  AND a.subdivision_code = b.subdivision_code;
+
+-- Option 2: Update duplicates to make them unique
+UPDATE iso_3166
+SET subdivision_code = subdivision_code || '_' || id
+WHERE id IN (
+  SELECT id FROM (
+    SELECT id, ROW_NUMBER() OVER (
+      PARTITION BY country_code, subdivision_code
+      ORDER BY id
+    ) as rn
+    FROM iso_3166
+  ) t WHERE rn > 1
+);
+```
+
+**Step 4: Update the atlas_schema_revisions table**
+
+```sql
+-- Check current migration status
+SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC;
+
+-- If the migration is marked as failed, you may need to manually mark it as applied
+-- after fixing the data and applying the constraint manually
+```
+
+**Step 5: Apply the constraint manually**
+
+```sql
+ALTER TABLE "iso_3166" ADD CONSTRAINT "iso_3166_country_subdivision_unique"
+  UNIQUE ("country_code", "subdivision_code");
+```
+
+**Step 6: Redeploy**
+
+Create a new release to redeploy the application.
+
+### Prevention
+
+- Test migrations on a copy of production data
+- Check for data issues before adding constraints
+- Use migrations that handle existing data gracefully
+
+## Google API issues
+
+### Scenario 1: Missing environment variable
+
+The `GOOGLE_GEOCODING_API_KEY` environment variable is not set.
+
+### Symptoms
+
+- Application fails to start
+- Error in logs: "GOOGLE_GEOCODING_API_KEY is required"
+
+### How to fix
+
+**Step 1: Update secrets in AWS Secrets Manager**
+
+```bash
+# Get current secrets
+aws secretsmanager get-secret-value \\
+  --secret-id staging-address-api-secrets \\
+  --region ap-south-1
+
+# Update with new key
+aws secretsmanager update-secret \\
+  --secret-id staging-address-api-secrets \\
+  --secret-string '{"GOOGLE_GEOCODING_API_KEY":"your-new-key","RDS_USERNAME":"...","RDS_PASSWORD":"..."}' \\
+  --region ap-south-1
+```
+
+**Step 2: Redeploy the application**
+
+```bash
+# Force new deployment to pick up new secrets
+aws ecs update-service \\
+  --cluster staging-ecs-cluster \\
+  --service address-api \\
+  --force-new-deployment \\
+  --region ap-south-1
+```
+
+### Scenario 2: Google API is down
+
+Google's Geocoding API is unavailable or returning errors.
+
+### Symptoms
+
+- Geocoding requests fail with 500 errors
+- Error in logs: "Failed to call Google Geocoding API"
+- Cached addresses still work
+
+### How it behaves
+
+1. **Cache hit**: If the address is in cache, the request succeeds
+2. **Cache miss**: If the address is not in cache, the request fails
+
+### How to fix
+
+**Short-term**: Wait for Google to resolve the issue. Cached addresses will continue to work.
+
+**Long-term**: Consider implementing:
+- Retry logic with exponential backoff
+- Circuit breaker pattern
+- Alternative geocoding provider as fallback
+
+### Monitoring
+
+Check Google API status:
+- [Google Cloud Status Dashboard](https://status.cloud.google.com/)
+- Monitor error rates in Better Stack
+- Check CloudWatch logs for Google API errors
+
+## RDS issues
+
+### Scenario: Database is down
+
+The RDS instance is unavailable or not responding.
+
+### Symptoms
+
+- Health check endpoint (`/healthz`) returns 500 or times out
+- All API requests fail
+- Better Stack alerts fire
+- Error in logs: "could not ping the database"
+
+### How to diagnose
+
+**Step 1: Check RDS status**
+
+```bash
+aws rds describe-db-instances \\
+  --db-instance-identifier staging-address-api-db \\
+  --region ap-south-1 \\
+  --query 'DBInstances[0].DBInstanceStatus'
+```
+
+**Step 2: Check RDS events**
+
+```bash
+aws rds describe-events \\
+  --source-identifier staging-address-api-db \\
+  --source-type db-instance \\
+  --region ap-south-1
+```
+
+**Step 3: Check CloudWatch metrics**
+
+1. Go to [RDS Console](https://ap-south-1.console.aws.amazon.com/rds/home?region=ap-south-1)
+2. Select your database
+3. Check **Monitoring** tab for:
+   - CPU utilization
+   - Database connections
+   - Disk space
+
+### How to fix
+
+**If database is stopped**:
+
+```bash
+aws rds start-db-instance \\
+  --db-instance-identifier staging-address-api-db \\
+  --region ap-south-1
+```
+
+**If database is out of storage**:
+
+1. Go to RDS Console
+2. Select your database
+3. Click **Modify**
+4. Increase **Allocated storage**
+5. Apply changes
+
+**If too many connections**:
+
+```sql
+-- Connect to database
+-- See: /engine/address-api/operations/database-connection
+
+-- Check active connections
+SELECT COUNT(*) FROM pg_stat_activity WHERE datname = 'address_api';
+
+-- Kill idle connections
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'address_api'
+  AND state = 'idle'
+  AND state_change < NOW() - INTERVAL '10 minutes';
+```
+
+**If database is unresponsive**:
+
+```bash
+# Reboot database (last resort)
+aws rds reboot-db-instance \\
+  --db-instance-identifier staging-address-api-db \\
+  --region ap-south-1
+```
+
+### Prevention
+
+- Monitor database metrics
+- Set up CloudWatch alarms for high CPU/connections
+- Implement connection pooling (already done)
+- Regular database maintenance
+
+## ISO 3166 content issues
+
+### Scenario: Missing state code
+
+Google returns a state code (e.g., "CA") that doesn't exist in the `iso_3166` table.
+
+### How it behaves
+
+The API does NOT fail. Instead:
+
+1. Google returns the short name (e.g., "CA")
+2. API looks up the full name in `iso_3166` table
+3. If not found, API returns the short name from Google
+4. Request succeeds with partial data
+
+### Example response
+
+```json
+{
+  "data": {
+    "state": null,
+    "state_code": "CA",
+    "country": "United States",
+    "country_code": "US"
+  }
+}
+```
+
+### How to fix
+
+**Step 1: Identify missing codes**
+
+Check logs for warnings about missing state codes (if logging is implemented).
+
+**Step 2: Add missing codes**
+
+```bash
+curl -X POST https://address-api.in.staging.commenda.io/api/v1/internal/iso_3166/ingest/json \\
+  -H "x-commenda-key: your-api-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "items": [
+      {
+        "country_code": "US",
+        "subdivision_code": "CA",
+        "subdivision_name": "California",
+        "subdivision_local_variant": null
+      }
+    ]
+  }'
+```
+
+### Prevention
+
+- Regularly update ISO 3166 content
+- Monitor for missing codes
+- Implement logging for lookup failures
+
+## Deployment failures
+
+### Scenario: ECS task fails to start
+
+The ECS task starts but immediately stops.
+
+### Symptoms
+
+- Deployment workflow fails at "Wait for ECS deployment"
+- Task status shows "STOPPED"
+- Health check fails
+
+### How to diagnose
+
+**Step 1: Check task logs**
+
+```bash
+# Get stopped task ARN
+aws ecs list-tasks \\
+  --cluster staging-ecs-cluster \\
+  --service-name address-api \\
+  --desired-status STOPPED \\
+  --region ap-south-1
+
+# Describe task
+aws ecs describe-tasks \\
+  --cluster staging-ecs-cluster \\
+  --tasks TASK_ARN \\
+  --region ap-south-1
+```
+
+**Step 2: Check CloudWatch logs**
+
+```bash
+aws logs tail /ecs/staging-address-api \\
+  --since 10m \\
+  --region ap-south-1
+```
+
+### Common causes
+
+1. **Missing environment variables**: Check ECS task definition
+2. **Database connection failure**: Verify RDS is running and accessible
+3. **Port conflict**: Ensure port 8080 is not already in use
+4. **Out of memory**: Increase task memory in Terraform
+5. **Failed health check**: Verify `/healthz` endpoint works
+
+### How to fix
+
+Fix the underlying issue and redeploy.
+
+## High latency
+
+### Scenario: Requests are slow
+
+API response times are higher than normal.
+
+### Symptoms
+
+- P95 latency > 2000ms
+- Better Stack alerts fire
+- Users report slow responses
+
+### How to diagnose
+
+**Step 1: Check CloudWatch logs**
+
+```
+fields @timestamp, path, duration_ms
+| filter duration_ms > 1000
+| sort duration_ms desc
+| limit 20
+```
+
+**Step 2: Check database performance**
+
+```sql
+-- Check slow queries
+SELECT query, calls, mean_exec_time, max_exec_time
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+```
+
+**Step 3: Check external API latency**
+
+Look for slow Google API calls in logs.
+
+### How to fix
+
+**If database is slow**:
+- Add indexes to frequently queried columns
+- Optimize slow queries
+- Increase RDS instance size
+
+**If Google API is slow**:
+- Implement caching (already done)
+- Add timeout configuration
+- Consider alternative providers
+
+**If high traffic**:
+- Scale ECS tasks horizontally
+- Implement rate limiting
+- Add caching layer (Redis)
+
+## Next steps
+
+- [Debugging](/engine/address-api/operations/debugging)
+- [Monitoring](/engine/address-api/operations/monitoring)
+- [Database connection](/engine/address-api/operations/database-connection)
+- [Deployment](/engine/address-api/operations/deployment)
