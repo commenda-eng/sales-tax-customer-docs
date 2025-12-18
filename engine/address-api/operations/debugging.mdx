@@ -1,70 +1,78 @@
 ---
-title: Debugging
+title: Debugging and logs
 description: How to debug issues and check logs for the Address API
 ---
 
-This guide explains how to debug issues in the Address API using CloudWatch logs and other AWS tools.
+This guide explains how to debug issues using CloudWatch logs and other AWS tools.
 
-## CloudWatch Logs
-
-The Address API logs all requests, responses, and errors to AWS CloudWatch.
+## CloudWatch logs
 
 ### Log groups
 
-**TODO: Specify the exact log group name**
+| Environment | Log group | Description |
+|-------------|-----------|-------------|
+| Staging | `/ecs/staging/address-api` | All staging logs |
+| Production | `/ecs/prod/address-api` | All production logs |
 
-| Environment | Log Group | Region |
-|-------------|-----------|--------|
-| Staging | `/ecs/staging-address-api` (?) | ap-south-1 |
-| Production | `/ecs/prod-address-api` (?) | ap-south-1 |
+### Log streams
 
-### Viewing logs in AWS Console
+Each ECS task creates two log streams:
 
-1. Go to [CloudWatch Logs](https://ap-south-1.console.aws.amazon.com/cloudwatch/home?region=ap-south-1#logsV2:log-groups)
-2. Search for the log group (e.g., `/ecs/address-api`)
-3. Click on the log group
-4. Click on a log stream (usually named by task ID)
-5. View logs
+| Stream prefix | Description |
+|---------------|-------------|
+| `ecs-init/` | Database migration logs |
+| `ecs/` | Application logs |
 
-### Viewing logs with AWS CLI
+## Viewing logs in AWS Console
 
-#### Tail logs in real-time
+1. Go to **CloudWatch** → **Log groups**
+2. Select `/ecs/{env}/address-api`
+3. Click on a log stream
+4. Use the search bar to filter logs
+
+### Useful filters
+
+**Filter by log level**:
+```
+{ $.level = "error" }
+```
+
+**Filter by endpoint**:
+```
+{ $.message = "*geoencode*" }
+```
+
+**Filter by status code**:
+```
+{ $.status = 500 }
+```
+
+## Viewing logs with AWS CLI
+
+### Tail logs in real-time
 
 ```bash
-# Staging
-aws logs tail /ecs/staging-address-api \\
+aws logs tail /ecs/staging/address-api \\
   --follow \\
-  --region ap-south-1
+  --region ap-south-1 \\
+  --profile staging
+```
 
-# Production
-aws logs tail /ecs/prod-address-api \\
-  --follow \\
+### Search logs
+
+```bash
+aws logs filter-log-events \\
+  --log-group-name /ecs/staging/address-api \\
+  --filter-pattern "error" \\
+  --start-time $(date -u -d '1 hour ago' +%s)000 \\
   --region ap-south-1
 ```
 
-#### Search logs
-
-```bash
-# Search for errors
-aws logs filter-log-events \\
-  --log-group-name /ecs/staging-address-api \\
-  --filter-pattern "ERROR" \\
-  --start-time $(date -u -d '1 hour ago' +%s)000 \\
-  --region ap-south-1
-
-# Search for specific request
-aws logs filter-log-events \\
-  --log-group-name /ecs/staging-address-api \\
-  --filter-pattern "geoencode" \\
-  --start-time $(date -u -d '1 hour ago' +%s)000 \\
-  --region ap-south-1
-```
-
-#### Get logs for specific time range
+### Get logs for specific time range
 
 ```bash
 aws logs filter-log-events \\
-  --log-group-name /ecs/staging-address-api \\
+  --log-group-name /ecs/staging/address-api \\
   --start-time 1734518400000 \\
   --end-time 1734522000000 \\
   --region ap-south-1
@@ -72,9 +80,7 @@ aws logs filter-log-events \\
 
 ## Log format
 
-The Address API uses [zerolog](https://github.com/rs/zerolog) for structured JSON logging.
-
-### Log structure
+The Address API uses structured JSON logging with zerolog:
 
 ```json
 {
@@ -84,9 +90,8 @@ The Address API uses [zerolog](https://github.com/rs/zerolog) for structured JSO
   "method": "POST",
   "path": "/api/v1/geoencode",
   "status": 200,
-  "duration_ms": 245,
-  "ip": "203.0.113.1",
-  "user_agent": "curl/7.68.0"
+  "duration_ms": 145,
+  "ip": "203.0.113.1"
 }
 ```
 
@@ -94,328 +99,213 @@ The Address API uses [zerolog](https://github.com/rs/zerolog) for structured JSO
 
 | Level | Description | When to use |
 |-------|-------------|-------------|
-| `debug` | Detailed debugging information | Development only |
-| `info` | General informational messages | Normal operations |
+| `debug` | Detailed information | Development only |
+| `info` | General information | Normal operations |
 | `warn` | Warning messages | Potential issues |
-| `error` | Error messages | Errors that need attention |
-| `fatal` | Fatal errors | Application crashes |
+| `error` | Error messages | Failures that need attention |
+| `fatal` | Fatal errors | Server crashes |
 
-### Common log patterns
+## Common log patterns
 
-#### Successful request
+### Successful geocoding request
 
 ```json
 {
   "level": "info",
   "time": 1734518400,
-  "message": "request completed",
-  "method": "POST",
-  "path": "/api/v1/geoencode",
-  "status": 200,
-  "duration_ms": 245
+  "message": "geocoding request",
+  "address": "94108, CA, US",
+  "cached": false,
+  "duration_ms": 234
 }
 ```
 
-#### Failed request
+### Failed geocoding request
 
 ```json
 {
   "level": "error",
   "time": 1734518400,
-  "message": "request failed",
-  "method": "POST",
-  "path": "/api/v1/geoencode",
-  "status": 500,
-  "error": "database connection failed",
-  "duration_ms": 5000
+  "message": "geocoding failed",
+  "address": "invalid address",
+  "error": "ZERO_RESULTS",
+  "provider": "google"
 }
 ```
 
-#### Database query
+### Database connection error
 
 ```json
 {
-  "level": "debug",
+  "level": "error",
   "time": 1734518400,
-  "message": "database query executed",
-  "query": "SELECT * FROM address_cache WHERE address = $1",
-  "duration_ms": 12
+  "message": "database connection failed",
+  "error": "connection refused",
+  "host": "staging-address-api-postgres.xxxxx.rds.amazonaws.com"
 }
 ```
 
-## Unified logging schema
-
-**TODO: Define a unified logging schema**
-
-Currently, there is no unified logging schema across services. We should establish one that includes:
-
-- Standard fields (timestamp, level, message, service, environment)
-- Request context (request_id, user_id, api_key_id)
-- Performance metrics (duration, database_time, external_api_time)
-- Error details (error_code, error_type, stack_trace)
-
-Proposed schema:
+### Migration logs
 
 ```json
 {
-  "timestamp": "2024-12-18T12:00:00Z",
   "level": "info",
-  "service": "address-api",
-  "environment": "staging",
-  "version": "v0.1.0",
-  "request_id": "req_abc123",
-  "message": "request completed",
-  "http": {
-    "method": "POST",
-    "path": "/api/v1/geoencode",
-    "status": 200,
-    "duration_ms": 245,
-    "ip": "203.0.113.1",
-    "user_agent": "curl/7.68.0"
-  },
-  "auth": {
-    "api_key_id": 123,
-    "organization": "Acme Corp"
-  },
-  "performance": {
-    "database_ms": 45,
-    "external_api_ms": 180,
-    "total_ms": 245
-  }
+  "time": 1734518400,
+  "message": "applying migration",
+  "version": "20251217091243",
+  "description": "initializing_iso_3166"
 }
 ```
 
 ## CloudWatch Insights queries
 
-Use CloudWatch Insights for advanced log analysis.
+### Top error messages
 
-### Query examples
-
-#### Count requests by status code
-
-```
-fields @timestamp, status
-| stats count() by status
-| sort count desc
-```
-
-#### Average response time
-
-```
-fields @timestamp, duration_ms
-| stats avg(duration_ms) as avg_duration, max(duration_ms) as max_duration
-| sort avg_duration desc
-```
-
-#### Error rate
-
-```
-fields @timestamp, level
+```sql
+fields @timestamp, message, error
 | filter level = "error"
-| stats count() as error_count by bin(5m)
+| stats count() by message
+| sort count desc
+| limit 10
 ```
 
-#### Slow requests
+### Request latency percentiles
 
-```
-fields @timestamp, path, duration_ms
-| filter duration_ms > 1000
-| sort duration_ms desc
-| limit 20
+```sql
+fields @timestamp, duration_ms
+| filter ispresent(duration_ms)
+| stats avg(duration_ms), pct(duration_ms, 50), pct(duration_ms, 95), pct(duration_ms, 99)
 ```
 
-#### Requests by endpoint
+### Requests by endpoint
 
-```
-fields @timestamp, path
-| stats count() by path
+```sql
+fields @timestamp, path, status
+| filter ispresent(path)
+| stats count() by path, status
 | sort count desc
 ```
 
-## Debugging common issues
+### Error rate over time
 
-### Issue: High response times
-
-**Steps**:
-
-1. Check CloudWatch logs for slow requests:
-   ```
-   fields @timestamp, path, duration_ms
-   | filter duration_ms > 1000
-   | sort duration_ms desc
-   ```
-
-2. Check database connection pool:
-   ```bash
-   curl https://address-api.in.staging.commenda.io/healthz
-   ```
-
-3. Check external API (Google) latency in logs
-
-4. Check RDS performance metrics in AWS Console
-
-### Issue: 500 errors
-
-**Steps**:
-
-1. Search for error logs:
-   ```bash
-   aws logs filter-log-events \\
-     --log-group-name /ecs/staging-address-api \\
-     --filter-pattern "ERROR" \\
-     --region ap-south-1
-   ```
-
-2. Check error message and stack trace
-
-3. Verify database connectivity:
-   ```bash
-   # Connect to database
-   # See: /engine/address-api/operations/database-connection
-   ```
-
-4. Check environment variables in ECS task definition
-
-### Issue: 401/403 errors
-
-**Steps**:
-
-1. Verify API key exists:
-   ```sql
-   SELECT * FROM api_key WHERE key = 'your-api-key';
-   ```
-
-2. Check API key roles:
-   ```sql
-   SELECT key, roles FROM api_key WHERE key = 'your-api-key';
-   ```
-
-3. Verify endpoint requires correct role
-
-### Issue: Application not starting
-
-**Steps**:
-
-1. Check ECS task logs:
-   ```bash
-   # Get task ARN
-   aws ecs list-tasks \\
-     --cluster staging-ecs-cluster \\
-     --service-name address-api \\
-     --region ap-south-1
-
-   # Describe task
-   aws ecs describe-tasks \\
-     --cluster staging-ecs-cluster \\
-     --tasks TASK_ARN \\
-     --region ap-south-1
-   ```
-
-2. Check CloudWatch logs for startup errors
-
-3. Verify environment variables
-
-4. Check database connectivity
-
-## ECS debugging
-
-### Check service status
-
-```bash
-aws ecs describe-services \\
-  --cluster staging-ecs-cluster \\
-  --services address-api \\
-  --region ap-south-1
+```sql
+fields @timestamp, level
+| stats count() as total, sum(level = "error") as errors by bin(5m)
+| fields @timestamp, (errors / total * 100) as error_rate
 ```
 
-### Check task status
+## Better Stack monitoring
 
+Better Stack provides external monitoring and alerting.
+
+### Metrics tracked
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| **API calls** | Total requests per minute | - |
+| **Status codes** | Distribution of HTTP status codes | 5xx > 5% |
+| **Response time** | Average response time | > 1000ms |
+| **Uptime** | Service availability | < 99.9% |
+
+### Accessing Better Stack
+
+1. Go to [Better Stack dashboard](https://betterstack.com)
+2. Select the Address API project
+3. View metrics and alerts
+
+### Alert channels
+
+Alerts are sent to:
+- **Slack**: #engineering-alerts channel
+- **Email**: engineering@commenda.io
+- **PagerDuty**: On-call engineer (production only)
+
+## ECS Exec for live debugging
+
+ECS Exec allows you to run commands inside running containers.
+
+### Enable ECS Exec
+
+ECS Exec is already enabled for the Address API service.
+
+### Connect to a running task
+
+1. **List running tasks**:
 ```bash
-# List tasks
 aws ecs list-tasks \\
   --cluster staging-ecs-cluster \\
   --service-name address-api \\
   --region ap-south-1
-
-# Describe task
-aws ecs describe-tasks \\
-  --cluster staging-ecs-cluster \\
-  --tasks TASK_ARN \\
-  --region ap-south-1
 ```
 
-### Check task logs
-
+2. **Connect to a task**:
 ```bash
-# Get log stream name from task description
-aws logs get-log-events \\
-  --log-group-name /ecs/staging-address-api \\
-  --log-stream-name ecs/address-api/TASK_ID \\
-  --region ap-south-1
+aws ecs execute-command \\
+  --cluster staging-ecs-cluster \\
+  --task <task-id> \\
+  --container address-api \\
+  --interactive \\
+  --command "/bin/sh"
 ```
 
-### Force new deployment
-
+3. **Run commands**:
 ```bash
-aws ecs update-service \\
-  --cluster staging-ecs-cluster \\
-  --service address-api \\
-  --force-new-deployment \\
-  --region ap-south-1
+# Check environment variables
+env | grep RDS
+
+# Test database connection
+psql $DATABASE_URL -c "SELECT 1"
+
+# Check disk usage
+df -h
+
+# View running processes
+ps aux
 ```
 
 ## Performance monitoring
 
-### Check RDS metrics
+### RDS Performance Insights
 
-1. Go to [RDS Console](https://ap-south-1.console.aws.amazon.com/rds/home?region=ap-south-1)
-2. Select your database instance
-3. Click **Monitoring** tab
-4. Check:
-   - CPU utilization
-   - Database connections
-   - Read/Write IOPS
-   - Freeable memory
+1. Go to **RDS** → **Databases**
+2. Select `{env}-address-api-postgres`
+3. Click **Performance Insights** tab
 
-### Check ECS metrics
+**Metrics available**:
+- Top SQL queries
+- Database load
+- Wait events
+- Connection count
 
-1. Go to [ECS Console](https://ap-south-1.console.aws.amazon.com/ecs/home?region=ap-south-1)
-2. Select your cluster
-3. Select your service
-4. Click **Metrics** tab
-5. Check:
-   - CPU utilization
-   - Memory utilization
-   - Task count
+### ECS Service metrics
 
-## Best practices
+1. Go to **ECS** → **Clusters** → `{env}-ecs-cluster`
+2. Select **address-api** service
+3. Click **Metrics** tab
 
-### Logging
+**Metrics available**:
+- CPU utilization
+- Memory utilization
+- Network in/out
+- Task count
 
-- Use structured logging (JSON)
-- Include request IDs for tracing
-- Log at appropriate levels
-- Don't log sensitive data (passwords, API keys)
-- Include context in error logs
+## Debugging checklist
 
-### Debugging
+When investigating an issue:
 
-- Start with recent logs
-- Use CloudWatch Insights for analysis
-- Check metrics alongside logs
-- Reproduce issues in staging first
-- Document findings
-
-### Performance
-
-- Monitor response times
-- Set up alerts for slow requests
-- Optimize database queries
-- Cache frequently accessed data
-- Use connection pooling
+- [ ] Check CloudWatch logs for errors
+- [ ] Review CloudWatch alarms
+- [ ] Check ECS service health
+- [ ] Verify RDS is running
+- [ ] Check Better Stack metrics
+- [ ] Review recent deployments
+- [ ] Test endpoints manually
+- [ ] Check security group rules
+- [ ] Verify secrets are correct
+- [ ] Review Performance Insights
 
 ## Next steps
 
-- [Monitoring](/engine/address-api/operations/monitoring)
 - [Common failures](/engine/address-api/operations/common-failures)
 - [Database connection](/engine/address-api/operations/database-connection)
+- [Deployment guide](/engine/address-api/operations/deployment)
