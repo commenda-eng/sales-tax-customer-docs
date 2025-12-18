@@ -1,0 +1,420 @@
+---
+title: GitHub workflows
+description: CI/CD workflows and checks
+---
+
+The Address API uses GitHub Actions for continuous integration and deployment.
+
+## Workflow files
+
+| Workflow | File | Trigger |
+|----------|------|---------|
+| PR Checks | `.github/workflows/pr-checks.yml` | Pull request |
+| Deploy Staging | `.github/workflows/deploy-staging.yml` | Pre-release |
+| Deploy Production | `.github/workflows/deploy-prod.yml` | Full release |
+| Deploy App (reusable) | `.github/workflows/deploy-app.yml` | Called by deploy workflows |
+
+## PR checks workflow
+
+Runs on every pull request to ensure code quality.
+
+### Jobs
+
+#### 1. Go Lint
+
+**Purpose**: Check code quality and style
+
+**Tool**: golangci-lint
+
+**Configuration**: `.golangci.yml`
+
+**Runs**:
+```bash
+golangci-lint run --timeout=5m --only-new-issues
+```
+
+**Common failures**:
+- Unused variables
+- Missing error checks
+- Code complexity issues
+- Inefficient code patterns
+
+#### 2. Go Format Check
+
+**Purpose**: Ensure code is properly formatted
+
+**Tool**: goimports
+
+**Runs**:
+```bash
+goimports -l -local github.com/commenda/addresses-api .
+```
+
+**Fix locally**:
+```bash
+goimports -w -local github.com/commenda/addresses-api .
+```
+
+#### 3. Check Build
+
+**Purpose**: Verify code compiles
+
+**Runs**:
+```bash
+go build $(go list ./... | grep -v /tests/)
+```
+
+**Common failures**:
+- Syntax errors
+- Missing imports
+- Type errors
+
+#### 4. Sqlc Lint
+
+**Purpose**: Validate SQL queries
+
+**Tool**: sqlc
+
+**Runs**:
+```bash
+sqlc diff  # Check for schema changes
+sqlc vet   # Validate queries
+```
+
+**Common failures**:
+- SQL syntax errors
+- Schema mismatches
+- Invalid query patterns
+
+#### 5. Migrations Lint
+
+**Purpose**: Validate database migrations
+
+**Tool**: Atlas
+
+**Steps**:
+1. Checkout target branch (base)
+2. Apply migrations to test database
+3. Checkout PR branch (head)
+4. Check for out-of-order migrations
+5. Check for missing migrations
+
+**Runs**:
+```bash
+# Check for missing migrations
+atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\\n  --dir file://database/migrations \\\n  --dev-url docker://postgres/15/dev?search_path=public \\\n  --to file://database/schema.sql
+```
+
+**Common failures**:
+- Modified `database/schema.sql` without creating migration
+- Out-of-order migration timestamps
+- Migration conflicts
+
+#### 6. Integration Tests
+
+**Purpose**: Run full integration test suite
+
+**Environment**: staging (for secrets)
+
+**Runs**:
+```bash
+go test -v -timeout 2m ./tests/integration/...
+```
+
+**Requirements**:
+- Docker running (for testcontainers)
+- `GOOGLE_GEOCODING_API_KEY` secret
+
+**Common failures**:
+- Test failures
+- Docker not available
+- Timeout (slow tests)
+
+## Deploy staging workflow
+
+Triggers on pre-release creation.
+
+### Trigger
+
+```yaml
+on:
+  release:
+    types: [prereleased]
+```
+
+### Example
+
+Create a release with tag `v0.1.0-rc.1` and check "Set as a pre-release".
+
+### Calls
+
+```yaml
+jobs:
+  deploy-staging:
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      environment: staging
+      version: v0.1.0-rc.1
+      aws_account: "127214192604"
+    secrets: inherit
+```
+
+## Deploy production workflow
+
+Triggers on full release creation.
+
+### Trigger
+
+```yaml
+on:
+  release:
+    types: [released]
+```
+
+### Example
+
+Create a release with tag `v0.1.0` (do NOT check "Set as a pre-release").
+
+### Calls
+
+```yaml
+jobs:
+  deploy-prod:
+    uses: ./.github/workflows/deploy-app.yml
+    with:
+      environment: prod
+      version: v0.1.0
+      aws_account: "429032495558"
+    secrets: inherit
+```
+
+## Deploy app workflow (reusable)
+
+The main deployment workflow called by staging and production workflows.
+
+### Inputs
+
+| Input | Type | Description |
+|-------|------|-------------|
+| `environment` | string | Environment name (staging/prod) |
+| `version` | string | Version tag (e.g., v0.1.0) |
+| `aws_account` | string | AWS account ID |
+
+### Environment variables
+
+```yaml
+env:
+  AWS_REGION: ap-south-1
+  APP_NAME: address-api
+  TF_VERSION: "1.6.0"
+  GO_VERSION: "1.23"
+```
+
+### Steps
+
+#### 1. Checkout code
+
+```yaml
+- uses: actions/checkout@v4
+```
+
+#### 2. Setup Go
+
+```yaml
+- uses: actions/setup-go@v5
+  with:
+    go-version: "1.23"
+```
+
+#### 3. Setup Atlas
+
+```yaml
+- uses: ariga/setup-atlas@v0
+```
+
+#### 4. Run tests
+
+```yaml
+- name: Run tests
+  env:
+    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+  run: go test -v ./...
+```
+
+#### 5. Configure AWS credentials (Prod - for S3 backend)
+
+```yaml
+- uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: arn:aws:iam::429032495558:role/github-oidc
+    aws-region: ap-south-1
+```
+
+#### 6. Configure AWS credentials (Target Account)
+
+```yaml
+- uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: arn:aws:iam::${{ inputs.aws_account }}:role/tofu
+    aws-region: ap-south-1
+```
+
+#### 7. Login to ECR
+
+```yaml
+- id: login-ecr
+  uses: aws-actions/amazon-ecr-login@v2
+```
+
+#### 8. Create ECR repository
+
+```yaml
+- run: |
+    ECR_REPO="${{ inputs.environment }}/${{ env.APP_NAME }}"
+    aws ecr create-repository --repository-name "$ECR_REPO" || true
+```
+
+#### 9. Build and push Docker image
+
+```yaml
+- run: |
+    docker build -t $ECR_REGISTRY/$ECR_REPO:${{ inputs.version }} .
+    docker push $ECR_REGISTRY/$ECR_REPO:${{ inputs.version }}
+```
+
+#### 10. Terraform init
+
+```yaml
+- working-directory: infrastructure/modules/region
+  run: terraform init
+```
+
+#### 11. Select Terraform workspace
+
+```yaml
+- run: |
+    terraform workspace select ${{ inputs.environment }} || \\\n    terraform workspace new ${{ inputs.environment }}
+```
+
+#### 12. Terraform apply
+
+```yaml
+- env:
+    TF_VAR_app_image_tag: ${{ inputs.version }}
+    TF_VAR_app_secrets: >-
+      {
+        "GOOGLE_GEOCODING_API_KEY": "${{ secrets.GOOGLE_GEOCODING_API_KEY }}"
+      }
+  run: terraform apply -auto-approve
+```
+
+#### 13. Wait for ECS deployment
+
+```yaml
+- run: |
+    aws ecs wait services-stable \\\n      --cluster "${{ steps.tf.outputs.cluster_name }}" \\\n      --services "${{ env.APP_NAME }}"
+```
+
+#### 14. Smoke test
+
+```yaml
+- run: |
+    URL="https://${{ steps.tf.outputs.fqdn }}/healthz"
+    for i in {1..30}; do
+      if curl -sf "$URL" > /dev/null 2>&1; then
+        echo "Health check passed!"
+        exit 0
+      fi
+      sleep 10
+    done
+    exit 1
+```
+
+## Workflow permissions
+
+### OIDC authentication
+
+The workflows use OpenID Connect (OIDC) to authenticate with AWS without storing credentials.
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+```
+
+### IAM roles
+
+| Role | Account | Purpose |
+|------|---------|---------|
+| `github-oidc` | 429032495558 (prod) | Access S3 backend for Terraform state |
+| `tofu` | Target account | Deploy resources (ECS, ALB, etc.) |
+
+### Trust policy
+
+The `github-oidc` role trusts GitHub Actions from `commenda-eng/*` repositories:
+
+```json
+{
+  "StringLike": {
+    "token.actions.githubusercontent.com:sub": "repo:commenda-eng/*"
+  }
+}
+```
+
+## Secrets
+
+### Repository secrets
+
+| Secret | Description | Used by |
+|--------|-------------|---------|
+| `GOOGLE_GEOCODING_API_KEY` | Google Geocoding API key | Integration tests, deployment |
+
+### Environment secrets
+
+No environment-specific secrets are needed. The workflow uses IAM roles for AWS authentication.
+
+## Debugging workflows
+
+### View workflow runs
+
+1. Go to **Actions** tab in GitHub
+2. Select the workflow
+3. Click on a run to see details
+
+### View logs
+
+1. Click on a job (e.g., "Deploy App")
+2. Expand steps to see logs
+3. Download logs for offline analysis
+
+### Re-run failed workflows
+
+1. Go to the failed workflow run
+2. Click **Re-run jobs** → **Re-run failed jobs**
+
+### Cancel running workflows
+
+1. Go to the running workflow
+2. Click **Cancel workflow**
+
+## Best practices
+
+### For contributors
+
+- **Run checks locally** before pushing
+- **Fix linting issues** immediately
+- **Don't skip tests** - they catch bugs early
+- **Keep PRs small** - easier to review and test
+
+### For maintainers
+
+- **Monitor workflow runs** - catch failures early
+- **Update dependencies** regularly
+- **Review workflow changes** carefully
+- **Test workflow changes** in a fork first
+
+## Next steps
+
+- [Contributing guide](/engine/address-api/development/contributing)
+- [Deployment process](/engine/address-api/operations/deployment)
+- [Troubleshooting](/engine/address-api/operations/troubleshooting)
