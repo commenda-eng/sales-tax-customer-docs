@@ -1,0 +1,400 @@
+---
+title: Common failures
+description: Common failure scenarios and how to fix them
+---
+
+This guide covers common failure scenarios for the Address API and their solutions.
+
+## Failed migration
+
+### Symptoms
+
+- Init container fails during deployment
+- Logs show migration errors
+- New tasks never become healthy
+
+### Common causes
+
+#### 1. Duplicate records violating unique constraint
+
+**Example**: Adding a uniqueness filter to a table that has duplicate records.
+
+**Error message**:
+```
+ERROR: could not create unique index "iso_3166_country_subdivision_unique"
+DETAIL: Key (country_code, subdivision_code)=(US, CA) is duplicated.
+```
+
+**Solution**:
+
+1. **Connect to the database** (see [Database connection](/engine/address-api/operations/database-connection))
+
+2. **Find duplicates**:
+```sql
+SELECT country_code, subdivision_code, COUNT(*)
+FROM iso_3166
+GROUP BY country_code, subdivision_code
+HAVING COUNT(*) > 1;
+```
+
+3. **Remove duplicates** (keep the first record):
+```sql
+DELETE FROM iso_3166 a
+USING iso_3166 b
+WHERE a.id > b.id
+  AND a.country_code = b.country_code
+  AND a.subdivision_code = b.subdivision_code;
+```
+
+4. **Update Atlas migration table**:
+```sql
+-- Mark the failed migration as applied
+INSERT INTO atlas_schema_revisions (version, description, executed_at, execution_time, error)
+VALUES ('20251217100000', 'add_iso_3166_unique_country_subdivision', NOW(), 0, NULL)
+ON CONFLICT (version) DO UPDATE SET error = NULL;
+```
+
+5. **Redeploy** the service
+
+#### 2. Migration file syntax error
+
+**Error message**:
+```
+ERROR: syntax error at or near "CONSTRAINT"
+```
+
+**Solution**:
+
+1. **Fix the migration file** in the repository
+2. **Commit and push** the fix
+3. **Create a new release** to redeploy
+
+#### 3. Database connection timeout
+
+**Error message**:
+```
+ERROR: could not connect to database: connection timeout
+```
+
+**Solution**:
+
+1. **Check RDS status**: Go to RDS → Databases
+2. **Verify security groups**: Ensure ECS tasks can reach RDS
+3. **Check RDS Performance Insights**: Look for connection issues
+4. **Restart RDS** if necessary (last resort)
+
+## Google API issues
+
+### 1. Missing API key
+
+**Symptoms**:
+- Server fails to start
+- Logs show "GOOGLE_GEOCODING_API_KEY is required"
+
+**Error message**:
+```json
+{
+  "level": "fatal",
+  "error": "GOOGLE_GEOCODING_API_KEY is required",
+  "time": 1734518400,
+  "message": "missing required environment variables"
+}
+```
+
+**Solution**:
+
+1. **Add the API key to Secrets Manager**:
+```bash
+aws secretsmanager update-secret \\
+  --secret-id {env}-address-api-secrets \\
+  --secret-string "$(aws secretsmanager get-secret-value \\
+    --secret-id {env}-address-api-secrets \\
+    --query SecretString --output text | \\
+    jq '. + {\"GOOGLE_GEOCODING_API_KEY\": \"your-key-here\"}')" \\
+  --region ap-south-1
+```
+
+2. **Restart the ECS service**:
+```bash
+aws ecs update-service \\
+  --cluster {env}-ecs-cluster \\
+  --service address-api \\
+  --force-new-deployment \\
+  --region ap-south-1
+```
+
+### 2. Google API is down
+
+**Symptoms**:
+- Geocoding requests fail with 500 errors
+- Cached addresses still work
+- Logs show Google API errors
+
+**Error message**:
+```json
+{
+  "level": "error",
+  "message": "geocoding failed",
+  "error": "UNAVAILABLE",
+  "provider": "google"
+}
+```
+
+**Behavior**:
+- **Cached addresses**: Return successfully from cache
+- **New addresses**: Fail with 500 error
+
+**Solution**:
+
+1. **Check Google Cloud Status**: Visit [Google Cloud Status Dashboard](https://status.cloud.google.com/)
+2. **Monitor the situation**: Wait for Google to resolve the issue
+3. **Notify users**: If prolonged, inform users of the outage
+4. **Check API quotas**: Ensure you haven't exceeded quota limits
+
+**Prevention**:
+- Implement retry logic with exponential backoff
+- Consider a fallback geocoding provider
+- Increase cache hit rate by pre-caching common addresses
+
+## RDS issues
+
+### 1. Database is down
+
+**Symptoms**:
+- `/healthz` endpoint returns unhealthy
+- Better Stack alerts triggered
+- All API requests fail
+
+**Error message**:
+```json
+{
+  "level": "error",
+  "message": "database connection failed",
+  "error": "connection refused"
+}
+```
+
+**Solution**:
+
+1. **Check RDS status**:
+```bash
+aws rds describe-db-instances \\
+  --db-instance-identifier {env}-address-api-postgres \\
+  --region ap-south-1 \\
+  --query 'DBInstances[0].DBInstanceStatus'
+```
+
+2. **If stopped, start it**:
+```bash
+aws rds start-db-instance \\
+  --db-instance-identifier {env}-address-api-postgres \\
+  --region ap-south-1
+```
+
+3. **If failed, check RDS events**:
+```bash
+aws rds describe-events \\
+  --source-identifier {env}-address-api-postgres \\
+  --source-type db-instance \\
+  --region ap-south-1
+```
+
+4. **Restore from backup** if necessary:
+```bash
+aws rds restore-db-instance-to-point-in-time \\
+  --source-db-instance-identifier {env}-address-api-postgres \\
+  --target-db-instance-identifier {env}-address-api-postgres-restored \\
+  --restore-time 2024-12-18T10:00:00Z \\
+  --region ap-south-1
+```
+
+### 2. Connection pool exhausted
+
+**Symptoms**:
+- Slow response times
+- Timeouts on requests
+- Logs show "connection pool exhausted"
+
+**Error message**:
+```json
+{
+  "level": "error",
+  "message": "failed to acquire connection",
+  "error": "all connections in use"
+}
+```
+
+**Solution**:
+
+1. **Check connection pool metrics** in `/healthz`:
+```bash
+curl https://address.in.staging.commenda.io/healthz
+```
+
+2. **Increase max connections** in Terraform:
+```hcl
+# In variables.tf
+variable "db_max_connections" {
+  default = 100  # Increase from default
+}
+```
+
+3. **Scale up RDS instance** if needed:
+```hcl
+variable "db_instance_class" {
+  default = "db.t4g.large"  # Upgrade from db.t4g.medium
+}
+```
+
+4. **Check for connection leaks** in application code
+
+### 3. Storage full
+
+**Symptoms**:
+- Write operations fail
+- RDS status shows "storage-full"
+- CloudWatch alarm triggered
+
+**Solution**:
+
+1. **Check storage usage**:
+```bash
+aws rds describe-db-instances \\
+  --db-instance-identifier {env}-address-api-postgres \\
+  --query 'DBInstances[0].[AllocatedStorage,MaxAllocatedStorage]'
+```
+
+2. **Increase max allocated storage**:
+```hcl
+variable "db_max_allocated_storage" {
+  default = 1000  # Increase from 500
+}
+```
+
+3. **Clean up old data** if appropriate:
+```sql
+-- Delete old cache entries
+DELETE FROM address_cache WHERE cached_at < EXTRACT(EPOCH FROM NOW() - INTERVAL '90 days');
+```
+
+## ISO 3166 content issues
+
+### Missing state code
+
+**Symptoms**:
+- Geocoding returns state code but not full state name
+- No error, just incomplete data
+
+**Example response**:
+```json
+{
+  "state": null,
+  "state_code": "CA"
+}
+```
+
+**Behavior**:
+- The API doesn't fail
+- Returns the short name from Google
+- Logs a warning
+
+**Solution**:
+
+1. **Ingest the missing state**:
+```bash
+curl -X POST https://address.in.staging.commenda.io/api/v1/internal/iso_3166/ingest/json \\
+  -H "x-commenda-key: your-api-key" \\
+  -H "Content-Type: application/json" \\
+  -d '{
+    "items": [{
+      "country_code": "US",
+      "subdivision_code": "CA",
+      "subdivision_name": "California",
+      "subdivision_local_variant": null
+    }]
+  }'
+```
+
+2. **Verify the data**:
+```sql
+SELECT * FROM iso_3166 WHERE country_code = 'US' AND subdivision_code = 'CA';
+```
+
+## Deployment failures
+
+### 1. Circuit breaker triggered
+
+**Symptoms**:
+- Deployment fails
+- ECS automatically rolls back
+- New tasks fail health checks
+
+**Solution**:
+
+1. **Check CloudWatch logs** for errors
+2. **Verify environment variables** are correct
+3. **Test Docker image locally**:
+```bash
+docker run -p 8080:80 \\
+  -e RDS_USERNAME=test \\
+  -e RDS_PASSWORD=test \\
+  -e RDS_HOSTNAME=localhost \\
+  -e RDS_PORT=5432 \\
+  -e RDS_DBNAME=test \\
+  {image-uri}
+```
+4. **Fix the issue** and redeploy
+
+### 2. Terraform apply failed
+
+**Symptoms**:
+- GitHub Actions workflow fails at Terraform step
+- Infrastructure changes not applied
+
+**Solution**:
+
+1. **Review Terraform error** in GitHub Actions logs
+2. **Check for resource conflicts**
+3. **Manually apply** if needed:
+```bash
+cd infrastructure/modules/region
+terraform workspace select staging
+terraform plan
+terraform apply
+```
+
+## Health check failures
+
+### Symptoms
+
+- ALB marks tasks as unhealthy
+- Tasks are repeatedly replaced
+- Service is unstable
+
+**Common causes**:
+
+1. **Database connection issues**
+2. **Slow startup time** (exceeds grace period)
+3. **Application crashes**
+
+**Solution**:
+
+1. **Check health endpoint**:
+```bash
+curl -v https://address.in.staging.commenda.io/healthz
+```
+
+2. **Increase health check grace period**:
+```hcl
+resource "aws_ecs_service" "app" {
+  health_check_grace_period_seconds = 120  # Increase from 60
+}
+```
+
+3. **Fix application issues** causing slow startup
+
+## Next steps
+
+- [Debugging guide](/engine/address-api/operations/debugging)
+- [Database connection](/engine/address-api/operations/database-connection)
+- [Deployment guide](/engine/address-api/operations/deployment)

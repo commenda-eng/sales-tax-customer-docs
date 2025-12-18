@@ -100,13 +100,19 @@
                 "group": "Operations",
                 "pages": [
                   "engine/address-api/operations/deployment",
-                  "engine/address-api/operations/database-access",
+                  "engine/address-api/operations/database-connection",
                   "engine/address-api/operations/debugging",
-                  "engine/address-api/operations/monitoring",
-                  "engine/address-api/operations/troubleshooting"
+                  "engine/address-api/operations/common-failures",
+                  "engine/address-api/operations/workflows"
                 ]
               },
-              "engine/address-api/workflows",
+              {
+                "group": "Infrastructure",
+                "pages": [
+                  "engine/address-api/infrastructure/overview",
+                  "engine/address-api/infrastructure/base-infrastructure"
+                ]
+              },
               "engine/address-api/future-features"
             ]
           }

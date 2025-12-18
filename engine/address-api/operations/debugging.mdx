@@ -1,360 +1,311 @@
 ---
-title: Debugging
-description: Debug issues in the Address API
+title: Debugging and logs
+description: How to debug issues and check logs for the Address API
 ---
 
-This guide explains how to debug issues in the Address API using CloudWatch logs and other AWS tools.
+This guide explains how to debug issues using CloudWatch logs and other AWS tools.
 
 ## CloudWatch logs
 
-The Address API logs all requests and errors to CloudWatch Logs.
-
 ### Log groups
 
-| Environment | Log group |
-|-------------|-----------|
-| Staging | `/ecs/staging/address-api` |
-| Production | `/ecs/prod/address-api` |
+| Environment | Log group | Description |
+|-------------|-----------|-------------|
+| Staging | `/ecs/staging/address-api` | All staging logs |
+| Production | `/ecs/prod/address-api` | All production logs |
 
-### Viewing logs
+### Log streams
 
-#### Using AWS Console
+Each ECS task creates two log streams:
+
+| Stream prefix | Description |
+|---------------|-------------|
+| `ecs-init/` | Database migration logs |
+| `ecs/` | Application logs |
+
+## Viewing logs in AWS Console
 
 1. Go to **CloudWatch** → **Log groups**
-2. Search for `/ecs/staging/address-api` or `/ecs/prod/address-api`
-3. Click on the log group
-4. Select a log stream (one per ECS task)
-5. View logs
+2. Select `/ecs/{env}/address-api`
+3. Click on a log stream
+4. Use the search bar to filter logs
 
-#### Using AWS CLI
+### Useful filters
 
-```bash
-# Tail logs in real-time
-aws logs tail /ecs/staging/address-api --follow --region ap-south-1
-
-# View recent logs
-aws logs tail /ecs/staging/address-api --since 1h --region ap-south-1
-
-# Filter logs by pattern
-aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern "ERROR" \\\n  --region ap-south-1
+**Filter by log level**:
+```
+{ $.level = "error" }
 ```
 
-### Log format
+**Filter by endpoint**:
+```
+{ $.message = "*geoencode*" }
+```
+
+**Filter by status code**:
+```
+{ $.status = 500 }
+```
+
+## Viewing logs with AWS CLI
+
+### Tail logs in real-time
+
+```bash
+aws logs tail /ecs/staging/address-api \\
+  --follow \\
+  --region ap-south-1 \\
+  --profile staging
+```
+
+### Search logs
+
+```bash
+aws logs filter-log-events \\
+  --log-group-name /ecs/staging/address-api \\
+  --filter-pattern "error" \\
+  --start-time $(date -u -d '1 hour ago' +%s)000 \\
+  --region ap-south-1
+```
+
+### Get logs for specific time range
+
+```bash
+aws logs filter-log-events \\
+  --log-group-name /ecs/staging/address-api \\
+  --start-time 1734518400000 \\
+  --end-time 1734522000000 \\
+  --region ap-south-1
+```
+
+## Log format
 
 The Address API uses structured JSON logging with zerolog:
 
 ```json
 {
   "level": "info",
+  "time": 1734518400,
+  "message": "request completed",
   "method": "POST",
   "path": "/api/v1/geoencode",
   "status": 200,
-  "remote_ip": "10.0.1.45",
-  "time": 1734518400,
-  "message": "request"
+  "duration_ms": 145,
+  "ip": "203.0.113.1"
 }
 ```
 
 ### Log levels
 
-| Level | Description | Example |
-|-------|-------------|---------|
-| `info` | Normal operations | Request logs, server startup |
-| `warn` | Warnings | Deprecated features, slow queries |
-| `error` | Errors | Failed requests, database errors |
-| `fatal` | Fatal errors | Server startup failures |
+| Level | Description | When to use |
+|-------|-------------|-------------|
+| `debug` | Detailed information | Development only |
+| `info` | General information | Normal operations |
+| `warn` | Warning messages | Potential issues |
+| `error` | Error messages | Failures that need attention |
+| `fatal` | Fatal errors | Server crashes |
 
-### Common log patterns
+## Common log patterns
 
-#### Successful request
+### Successful geocoding request
 
 ```json
 {
   "level": "info",
-  "method": "POST",
-  "path": "/api/v1/geoencode",
-  "status": 200,
-  "remote_ip": "10.0.1.45",
   "time": 1734518400,
-  "message": "request"
+  "message": "geocoding request",
+  "address": "94108, CA, US",
+  "cached": false,
+  "duration_ms": 234
 }
 ```
 
-#### Failed request
+### Failed geocoding request
 
 ```json
 {
   "level": "error",
-  "method": "POST",
-  "path": "/api/v1/geoencode",
-  "status": 500,
-  "error": "geocoding failed",
-  "remote_ip": "10.0.1.45",
   "time": 1734518400,
-  "message": "request"
+  "message": "geocoding failed",
+  "address": "invalid address",
+  "error": "ZERO_RESULTS",
+  "provider": "google"
 }
 ```
 
-#### Database error
+### Database connection error
 
 ```json
 {
   "level": "error",
-  "error": "connection timeout",
   "time": 1734518400,
-  "message": "failed to acquire pg connection"
+  "message": "database connection failed",
+  "error": "connection refused",
+  "host": "staging-address-api-postgres.xxxxx.rds.amazonaws.com"
 }
 ```
 
-## Searching logs
+### Migration logs
 
-### Find errors in last hour
-
-```bash
-aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern '{ $.level = "error" }' \\\n  --start-time $(date -u -d '1 hour ago' +%s)000 \\\n  --region ap-south-1
+```json
+{
+  "level": "info",
+  "time": 1734518400,
+  "message": "applying migration",
+  "version": "20251217091243",
+  "description": "initializing_iso_3166"
+}
 ```
 
-### Find specific endpoint errors
+## CloudWatch Insights queries
 
-```bash
-aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern '{ $.path = "/api/v1/geoencode" && $.status >= 500 }' \\\n  --region ap-south-1
+### Top error messages
+
+```sql
+fields @timestamp, message, error
+| filter level = "error"
+| stats count() by message
+| sort count desc
+| limit 10
 ```
 
-### Find slow requests
+### Request latency percentiles
 
-```bash
-aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern '{ $.duration_ms > 1000 }' \\\n  --region ap-south-1
+```sql
+fields @timestamp, duration_ms
+| filter ispresent(duration_ms)
+| stats avg(duration_ms), pct(duration_ms, 50), pct(duration_ms, 95), pct(duration_ms, 99)
 ```
 
-## ECS debugging
+### Requests by endpoint
 
-### Check service status
-
-```bash
-aws ecs describe-services \\\n  --cluster staging-ecs-cluster \\\n  --services address-api \\\n  --region ap-south-1 \\\n  --query 'services[0].{status:status,runningCount:runningCount,desiredCount:desiredCount,deployments:deployments}'
+```sql
+fields @timestamp, path, status
+| filter ispresent(path)
+| stats count() by path, status
+| sort count desc
 ```
 
-### List running tasks
+### Error rate over time
 
-```bash
-aws ecs list-tasks \\\n  --cluster staging-ecs-cluster \\\n  --service-name address-api \\\n  --region ap-south-1
+```sql
+fields @timestamp, level
+| stats count() as total, sum(level = "error") as errors by bin(5m)
+| fields @timestamp, (errors / total * 100) as error_rate
 ```
 
-### Describe task
+## Better Stack monitoring
 
+Better Stack provides external monitoring and alerting.
+
+### Metrics tracked
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| **API calls** | Total requests per minute | - |
+| **Status codes** | Distribution of HTTP status codes | 5xx > 5% |
+| **Response time** | Average response time | > 1000ms |
+| **Uptime** | Service availability | < 99.9% |
+
+### Accessing Better Stack
+
+1. Go to [Better Stack dashboard](https://betterstack.com)
+2. Select the Address API project
+3. View metrics and alerts
+
+### Alert channels
+
+Alerts are sent to:
+- **Slack**: #engineering-alerts channel
+- **Email**: engineering@commenda.io
+- **PagerDuty**: On-call engineer (production only)
+
+## ECS Exec for live debugging
+
+ECS Exec allows you to run commands inside running containers.
+
+### Enable ECS Exec
+
+ECS Exec is already enabled for the Address API service.
+
+### Connect to a running task
+
+1. **List running tasks**:
 ```bash
-aws ecs describe-tasks \\\n  --cluster staging-ecs-cluster \\\n  --tasks <task-arn> \\\n  --region ap-south-1
+aws ecs list-tasks \\
+  --cluster staging-ecs-cluster \\
+  --service-name address-api \\
+  --region ap-south-1
 ```
 
-### Check stopped tasks
-
+2. **Connect to a task**:
 ```bash
-aws ecs list-tasks \\\n  --cluster staging-ecs-cluster \\\n  --service-name address-api \\\n  --desired-status STOPPED \\\n  --region ap-south-1
+aws ecs execute-command \\
+  --cluster staging-ecs-cluster \\
+  --task <task-id> \\
+  --container address-api \\
+  --interactive \\
+  --command "/bin/sh"
 ```
 
-### View stopped task reason
-
-```bash
-aws ecs describe-tasks \\\n  --cluster staging-ecs-cluster \\\n  --tasks <stopped-task-arn> \\\n  --region ap-south-1 \\\n  --query 'tasks[0].{stoppedReason:stoppedReason,containers:containers[0].{reason:reason,exitCode:exitCode}}'
-```
-
-## ECS Exec (SSH into container)
-
-ECS Exec allows you to execute commands inside running containers.
-
-### Prerequisites
-
-- ECS Exec must be enabled (it is by default)
-- Session Manager plugin installed
-
-### Connect to container
-
-```bash
-# Get task ID
-TASK_ID=$(aws ecs list-tasks \\\n  --cluster staging-ecs-cluster \\\n  --service-name address-api \\\n  --region ap-south-1 \\\n  --query 'taskArns[0]' \\\n  --output text | cut -d'/' -f3)
-
-# Execute shell
-aws ecs execute-command \\\n  --cluster staging-ecs-cluster \\\n  --task $TASK_ID \\\n  --container address-api \\\n  --interactive \\\n  --command "/bin/sh" \\\n  --region ap-south-1
-```
-
-### Useful commands inside container
-
+3. **Run commands**:
 ```bash
 # Check environment variables
 env | grep RDS
 
-# Check if database is reachable
-nc -zv $RDS_HOSTNAME $RDS_PORT
+# Test database connection
+psql $DATABASE_URL -c "SELECT 1"
 
-# Check disk space
+# Check disk usage
 df -h
 
-# Check memory usage
-free -m
-
-# View process list
+# View running processes
 ps aux
-
-# Check network connections
-netstat -an | grep ESTABLISHED
 ```
 
-## ALB debugging
+## Performance monitoring
 
-### Check target health
+### RDS Performance Insights
 
-```bash
-# Get target group ARN
-TG_ARN=$(aws elbv2 describe-target-groups \\\n  --names staging-address-api-tg \\\n  --region ap-south-1 \\\n  --query 'TargetGroups[0].TargetGroupArn' \\\n  --output text)
+1. Go to **RDS** → **Databases**
+2. Select `{env}-address-api-postgres`
+3. Click **Performance Insights** tab
 
-# Check target health
-aws elbv2 describe-target-health \\\n  --target-group-arn $TG_ARN \\\n  --region ap-south-1
-```
+**Metrics available**:
+- Top SQL queries
+- Database load
+- Wait events
+- Connection count
 
-### View ALB access logs
+### ECS Service metrics
 
-ALB access logs are stored in S3 (if enabled):
+1. Go to **ECS** → **Clusters** → `{env}-ecs-cluster`
+2. Select **address-api** service
+3. Click **Metrics** tab
 
-```bash
-aws s3 ls s3://staging-alb-logs/address-api/ --recursive
-```
+**Metrics available**:
+- CPU utilization
+- Memory utilization
+- Network in/out
+- Task count
 
-## Database debugging
+## Debugging checklist
 
-See [Database access](/engine/address-api/operations/database-access) for connecting to the database.
+When investigating an issue:
 
-### Check active queries
-
-```sql
-SELECT
-  pid,
-  now() - query_start AS duration,
-  state,
-  query
-FROM pg_stat_activity
-WHERE datname = 'address_api'
-  AND state != 'idle'
-ORDER BY duration DESC;
-```
-
-### Check slow queries
-
-```sql
-SELECT
-  calls,
-  total_exec_time,
-  mean_exec_time,
-  query
-FROM pg_stat_statements
-ORDER BY mean_exec_time DESC
-LIMIT 10;
-```
-
-### Check locks
-
-```sql
-SELECT
-  locktype,
-  relation::regclass,
-  mode,
-  granted,
-  pid
-FROM pg_locks
-WHERE NOT granted;
-```
-
-## Common issues
-
-### High CPU usage
-
-**Symptoms**: ECS tasks using >80% CPU
-
-**Debug**:
-1. Check CloudWatch metrics for CPU utilization
-2. Check logs for slow queries or infinite loops
-3. Use ECS Exec to check running processes
-
-**Fix**:
-- Optimize slow queries
-- Add database indexes
-- Scale up task CPU allocation
-
-### High memory usage
-
-**Symptoms**: ECS tasks using >80% memory
-
-**Debug**:
-1. Check CloudWatch metrics for memory utilization
-2. Check for memory leaks in logs
-3. Use ECS Exec to check memory usage
-
-**Fix**:
-- Fix memory leaks
-- Scale up task memory allocation
-- Add connection pool limits
-
-### Database connection errors
-
-**Symptoms**: "could not acquire connection" errors
-
-**Debug**:
-1. Check database connection pool metrics in health endpoint
-2. Check RDS metrics for connection count
-3. Check for long-running queries
-
-**Fix**:
-- Increase connection pool size
-- Optimize slow queries
-- Scale up RDS instance
-
-### Google API errors
-
-**Symptoms**: Geocoding requests failing
-
-**Debug**:
-1. Check logs for Google API errors
-2. Verify API key is valid
-3. Check Google Cloud Console for quota limits
-
-**Fix**:
-- Verify API key in Secrets Manager
-- Increase Google API quota
-- Implement retry logic
-
-## Performance profiling
-
-### Enable Go profiling
-
-Add pprof endpoints (for development only):
-
-```go
-import _ "net/http/pprof"
-
-// In main.go
-go func() {
-    log.Println(http.ListenAndServe("localhost:6060", nil))
-}()
-```
-
-### Collect CPU profile
-
-```bash
-# From inside container
-curl http://localhost:6060/debug/pprof/profile?seconds=30 > cpu.prof
-
-# Analyze
-go tool pprof cpu.prof
-```
-
-### Collect memory profile
-
-```bash
-curl http://localhost:6060/debug/pprof/heap > mem.prof
-go tool pprof mem.prof
-```
+- [ ] Check CloudWatch logs for errors
+- [ ] Review CloudWatch alarms
+- [ ] Check ECS service health
+- [ ] Verify RDS is running
+- [ ] Check Better Stack metrics
+- [ ] Review recent deployments
+- [ ] Test endpoints manually
+- [ ] Check security group rules
+- [ ] Verify secrets are correct
+- [ ] Review Performance Insights
 
 ## Next steps
 
-- [Monitoring](/engine/address-api/operations/monitoring)
-- [Troubleshooting](/engine/address-api/operations/troubleshooting)
-- [Database access](/engine/address-api/operations/database-access)
+- [Common failures](/engine/address-api/operations/common-failures)
+- [Database connection](/engine/address-api/operations/database-connection)
+- [Deployment guide](/engine/address-api/operations/deployment)
