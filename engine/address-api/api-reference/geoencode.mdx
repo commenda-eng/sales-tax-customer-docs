@@ -151,7 +151,7 @@ POST /api/v1/geoencode
 2. **Cache hit**: If found, returns the cached result immediately
 3. **Cache miss**: If not found, calls Google Geocoding API
 4. **Parse response**: Extracts address components from Google's response
-5. **Validate state**: Checks if the state code exists in the ISO 3166 content database
+5. **Validate state**: Checks if the state code is a valid ISO 3166 state code. If not, tries to match it against the subdivision name and then the subdivision local variant to pick the right ISO 3166 state code
 6. **Store in cache**: Saves the result for future requests
 7. **Return response**: Returns standardized address data
 
