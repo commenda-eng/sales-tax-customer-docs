@@ -10,7 +10,7 @@ The Address API is a geocoding service that converts addresses into geographic c
 The Address API provides two core capabilities:
 
 1. **Geocoding**: Convert address strings to geographic coordinates and standardized address components
-2. **Content ingestion**: Manage ISO 3166 subdivision data for address validation
+2. **Content ingestion**: Manage ISO 3166 subdivision data for address component standardization
 
 ## Tech stack
 
@@ -25,6 +25,9 @@ The Address API provides two core capabilities:
 | Logging | zerolog | v1.33.0 |
 | Validation | go-playground/validator | v10.25.0 |
 | Testing | testcontainers-go | v0.34.0 |
+| Git hooks | Lefthook | Latest |
+| Infrastructure as Code | Terraform | Latest |
+| CI/CD | GitHub Actions | - |
 | Geocoding provider | Google Geocoding API | - |
 
 ## Deployed URLs
@@ -40,7 +43,7 @@ The Address API provides two core capabilities:
 - **Address standardization**: Parse and normalize address components (city, state, country, postal code)
 - **Caching**: Automatic caching of geocoding results to reduce API costs and improve performance
 - **Provider transparency**: Access to both normalized results and raw provider responses
-- **ISO 3166 content management**: Ingest and manage subdivision data for address validation
+- **ISO 3166 content management**: Ingest and manage subdivision data to standardize state codes when Google returns local variants or subdivision names
 - **Role-based access control**: API key authentication with granular permissions
 - **Health monitoring**: Built-in health check endpoint with database connection pooling metrics
 

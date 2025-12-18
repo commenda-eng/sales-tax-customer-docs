@@ -5,6 +5,44 @@ description: Run tests for the Address API
 
 The Address API uses Go's built-in testing framework along with testcontainers for integration tests.
 
+## Testing philosophy: Test-Driven Development (TDD)
+
+We follow **Test-Driven Development (TDD)** for all microservices, including the Address API. This means:
+
+1. **Write tests first**: Before implementing a feature, write tests that define the expected behavior
+2. **Watch tests fail**: Run the tests and verify they fail (proving they're testing something)
+3. **Implement the feature**: Write the minimum code needed to make the tests pass
+4. **Refactor**: Clean up the code while keeping tests green
+
+### Why TDD for microservices?
+
+- **Clear requirements**: Tests document what the API should do
+- **Confidence in changes**: Refactor without fear of breaking things
+- **Better design**: Writing tests first leads to more testable, modular code
+- **Regression prevention**: Bugs become test cases that prevent future regressions
+- **Integration safety**: Microservices have many integration points - tests catch breaking changes
+
+### TDD workflow example
+
+```bash
+# 1. Write a failing test
+vim tests/integration/your_feature_test.go
+
+# 2. Run tests (they should fail)
+go run . tests
+
+# 3. Implement the feature
+vim internal/your_feature/handler.go
+
+# 4. Run tests again (they should pass)
+go run . tests
+
+# 5. Refactor if needed
+# 6. Commit
+git add .
+git commit -m "feat: add your feature"
+```
+
 ## Test structure
 
 ```
@@ -159,22 +197,60 @@ integration-tests:
       run: go test -v -timeout 2m ./tests/integration/...
 ```
 
-## Test best practices
+## Testing practices
 
-### Writing integration tests
+We follow these testing practices for the Address API:
 
-1. **Use testcontainers**: Always use real database containers
-2. **Clean up**: Ensure containers are destroyed after tests
-3. **Isolate tests**: Each test should be independent
-4. **Use transactions**: Roll back changes after each test if needed
-5. **Test error cases**: Don't just test happy paths
+### 1. Test-Driven Development (TDD)
 
-### Writing unit tests
+- Write tests before implementation
+- Start with the simplest test case
+- Add more complex scenarios incrementally
+- Refactor only when tests are green
 
-1. **Mock dependencies**: Use interfaces to mock external services
-2. **Test edge cases**: Empty strings, nil values, boundary conditions
-3. **Keep tests fast**: Unit tests should run in milliseconds
-4. **Use table-driven tests**: Test multiple scenarios with one test function
+### 2. Integration over unit tests
+
+For microservices, we prioritize **integration tests** over unit tests because:
+
+- They test the full request/response cycle
+- They catch integration issues with databases and external APIs
+- They provide more confidence in production behavior
+- They're closer to how the API is actually used
+
+### 3. Test real dependencies
+
+- Use testcontainers for PostgreSQL (not mocks)
+- Use real Google Geocoding API (with test key)
+- Test actual HTTP requests and responses
+- Verify database state after operations
+
+### 4. Test error scenarios
+
+Don't just test happy paths:
+
+- Missing required fields
+- Invalid data formats
+- Database failures
+- External API failures
+- Authorization failures
+
+### 5. Keep tests independent
+
+- Each test should set up its own data
+- Don't rely on test execution order
+- Clean up after tests (testcontainers handles this)
+
+### 6. Use descriptive test names
+
+```go
+// Good: Describes what is being tested
+func TestGeocodeEndpoint_WithValidAddress_ReturnsCoordinates(t *testing.T)
+func TestGeocodeEndpoint_WithMissingAPIKey_Returns401(t *testing.T)
+
+// Avoid: Vague names
+func TestGeocodeEndpoint(t *testing.T)
+func Test1(t *testing.T)
+```
 
 ### Example table-driven test
 

@@ -15,6 +15,8 @@ Before you begin, ensure you have the following installed:
 | PostgreSQL | 15 or higher | `psql --version` |
 | Docker | Latest | `docker --version` |
 | Git | Latest | `git --version` |
+| Atlas | Latest | `atlas version` |
+| sqlc | Latest | `sqlc version` |
 
 ## Step 1: Clone the repository
 
@@ -89,6 +91,7 @@ RDS_PASSWORD=your_password
 RDS_HOSTNAME=localhost
 RDS_PORT=5432
 RDS_DBNAME=address_api_dev
+DATABASE_URL=postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable
 
 # Google Geocoding API key (required for geocoding)
 GOOGLE_GEOCODING_API_KEY=your_google_api_key_here
@@ -102,9 +105,7 @@ GOOGLE_GEOCODING_API_KEY=your_google_api_key_here
 4. Go to **Credentials** → **Create Credentials** → **API Key**
 5. Copy the API key and add it to your `.env` file
 
-## Step 5: Run database migrations
-
-The project uses [Atlas](https://atlasgo.io/) for database migrations.
+## Step 5: Install development tools
 
 ### Install Atlas
 
@@ -119,11 +120,56 @@ curl -sSf https://atlasgo.sh | sh
 # Download from https://atlasgo.io/getting-started#installation
 ```
 
-### Apply migrations
+### Install sqlc
 
 ```bash
-# Apply all migrations
-atlas migrate apply \\\n  --dir "file://database/migrations" \\\n  --url "postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable"
+# macOS
+brew install sqlc
+
+# Linux/Windows
+# Download from https://docs.sqlc.dev/en/latest/overview/install.html
+```
+
+### Install Lefthook (Git hooks)
+
+```bash
+# macOS
+brew install lefthook
+
+# Linux/Windows
+go install github.com/evilmartians/lefthook@latest
+```
+
+Then install the hooks:
+
+```bash
+lefthook install
+```
+
+## Step 6: Make scripts executable
+
+```bash
+# Option 1: Use the Makefile
+make prepare
+
+# Option 2: Use make start (which calls prepare)
+make start
+```
+
+This makes all shell scripts in the `scripts/` directory executable.
+
+## Step 7: Run database migrations
+
+Apply all migrations using the provided script:
+
+```bash
+./scripts/apply.sh
+```
+
+The script reads `DATABASE_URL` from your `.env` file. Alternatively, pass the URL directly:
+
+```bash
+./scripts/apply.sh --url "postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable"
 ```
 
 ### Verify migrations
@@ -145,21 +191,9 @@ psql -U postgres -d address_api_dev
 \q
 ```
 
-## Step 6: Generate database code
+## Step 8: Generate database code
 
 The project uses [sqlc](https://sqlc.dev/) to generate type-safe Go code from SQL queries.
-
-### Install sqlc
-
-```bash
-# macOS
-brew install sqlc
-
-# Linux/Windows
-# Download from https://docs.sqlc.dev/en/latest/overview/install.html
-```
-
-### Generate code
 
 ```bash
 sqlc generate
@@ -167,14 +201,14 @@ sqlc generate
 
 This generates Go code in `database/generated_models/`.
 
-## Step 7: Install Go dependencies
+## Step 9: Install Go dependencies
 
 ```bash
 go mod download
 go mod tidy
 ```
 
-## Step 8: Start the server
+## Step 10: Start the server
 
 ```bash
 go run main.go serve
@@ -186,7 +220,7 @@ You should see:
 {"level":"info","port":"8080","time":1734518400,"message":"server started"}
 ```
 
-## Step 9: Verify the server is running
+## Step 11: Verify the server is running
 
 ### Test root endpoint
 
@@ -216,7 +250,7 @@ Expected response:
 }
 ```
 
-## Step 10: Create an API key for testing
+## Step 12: Create an API key for testing
 
 Connect to the database and insert a test API key:
 
@@ -229,10 +263,13 @@ INSERT INTO api_key (key, organization_name, roles)
 VALUES ('test-api-key-local', 'Local Development', ARRAY['GEOCODE', 'MANAGE_CONTENT']);
 ```
 
-## Step 11: Test the geocoding endpoint
+## Step 13: Test the geocoding endpoint
 
 ```bash
-curl -X POST http://localhost:8080/api/v1/geoencode \\\n  -H "x-commenda-key: test-api-key-local" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
+curl -X POST http://localhost:8080/api/v1/geoencode \
+  -H "x-commenda-key: test-api-key-local" \
+  -H "Content-Type: application/json" \
+  -d '{"address": "94108, CA, US"}'
 ```
 
 If successful, you'll receive a geocoded response with address components and coordinates.
@@ -282,11 +319,21 @@ sudo systemctl start postgresql
 
 **Fix**:
 ```bash
-atlas migrate apply \\\n  --dir "file://database/migrations" \\\n  --url "postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable"
+./scripts/apply.sh
+```
+
+### Error: "permission denied" when running scripts
+
+**Cause**: Scripts are not executable.
+
+**Fix**:
+```bash
+make prepare
 ```
 
 ## Next steps
 
 - [Environment configuration](/engine/address-api/development/environment-configuration)
+- [Working with SQL](/engine/address-api/development/working-with-sql)
 - [Running tests](/engine/address-api/development/testing)
 - [Contributing](/engine/address-api/development/contributing)

@@ -1,0 +1,475 @@
+---
+title: Error handling
+description: How to handle and return errors in the Address API
+---
+
+The Address API follows RFC 9457 (Problem Details for HTTP APIs) for structured error responses. This guide explains how to create and return errors consistently.
+
+## Error structure (RFC 9457)
+
+All errors follow the [RFC 9457](https://www.rfc-editor.org/rfc/rfc9457.html) standard:
+
+```json
+{
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "sub_type": "PRODUCT_DUPLICATE_SKU",
+    "doc_url": "https://docs.commenda.io/errors/duplicate-sku",
+    "title": "Invalid request body.",
+    "detail": {
+      "description": "One or more items are invalid."
+    },
+    "status": 400,
+    "instance": "/api/v1/geoencode",
+    "errors": [
+      {
+        "pointer": "items[0].country_code",
+        "details": "Country code must be exactly 2 characters."
+      }
+    ]
+  }
+}
+```
+
+### Error fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `type` | string | Yes | General error code (e.g., `CLIENT_INVALID_PARAMS`) |
+| `sub_type` | string | No | Endpoint-specific error code (e.g., `GEOCODING_API_NOT_CONFIGURED`) |
+| `doc_url` | string | No | Link to documentation about this error |
+| `title` | string | Yes | Short, human-readable summary |
+| `detail` | object | Yes | Detailed description with `description` field |
+| `status` | number | Yes | HTTP status code |
+| `instance` | string | Yes | The endpoint path that was called |
+| `errors` | array | No | Array of field-specific errors |
+
+## Error codes
+
+Error codes are defined in `internal/common/clients/errors.go`:
+
+### Server errors (5xx)
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `SERVER_INTERNAL_ERROR` | 500 | Generic server error |
+| `SERVER_FAILED_TO_READ_BODY` | 500 | Failed to read request body |
+| `SERVER_TIMED_OUT` | 504 | Request timed out |
+| `SERVER_NOT_IMPLEMENTED` | 501 | Feature not implemented |
+
+### Client errors (4xx)
+
+| Code | HTTP Status | Description |
+|------|-------------|-------------|
+| `CLIENT_BAD_REQUEST` | 400 | Generic bad request |
+| `CLIENT_MISSING_PARAMS` | 400 | Missing query parameters |
+| `CLIENT_INVALID_PARAMS` | 400 | Invalid query parameters |
+| `CLIENT_MISSING_REQUEST_BODY` | 400 | Request body is required but missing |
+| `CLIENT_INVALID_REQUEST_BODY` | 400 | Request body is malformed or invalid |
+| `CLIENT_UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `CLIENT_FORBIDDEN` | 403 | Missing required role |
+| `CLIENT_RESOURCE_NOT_FOUND` | 404 | Resource doesn't exist |
+| `CLIENT_CONFLICT` | 409 | Resource conflict (e.g., duplicate) |
+
+## Creating error handlers
+
+Each feature should have a `handler_errors.go` file that defines its specific errors.
+
+### Example: `internal/geoencode/handler_errors.go`
+
+```go
+package geoencode
+
+import (
+    "net/http"
+    "github.com/commenda/addresses-api/internal/common/clients"
+)
+
+const (
+    GEOCODING_API_NOT_CONFIGURED = "GEOCODING_API_NOT_CONFIGURED"
+)
+
+func GEOCODING_NOT_CONFIGURED_ERROR(path string) clients.ErrorWithStatusCode {
+    statusCode := http.StatusServiceUnavailable
+
+    errorBody := &clients.Error_RFC9457{
+        Type:    GEOCODING_API_NOT_CONFIGURED,
+        Doc_url: "",
+        Title:   "Geocoding API not configured.",
+        Detail: clients.Error_Description{
+            Description: "The Google Geocoding API key is not configured. Please contact the administrator.",
+        },
+        Status:   statusCode,
+        Instance: path,
+    }
+
+    return clients.ErrorWithStatusCode{ErrorCode: statusCode, ErrorBody: *errorBody}
+}
+```
+
+### Example: `internal/content_ingestion/handler_errors.go`
+
+```go
+package content_ingestion
+
+import (
+    "fmt"
+    "net/http"
+    "github.com/commenda/addresses-api/internal/common/clients"
+)
+
+var ISO3166_INGEST_VALIDATION_FAILED = func(path string, fieldErrors []clients.ClientError) clients.ErrorWithStatusCode {
+    statusCode := http.StatusBadRequest
+
+    errorBody := &clients.Error_RFC9457{
+        Type:    clients.CLIENT_INVALID_PARAMS,
+        Doc_url: "",
+        Title:   "Invalid request body.",
+        Detail: clients.Error_Description{
+            Description: "One or more items are invalid.",
+        },
+        Status:   statusCode,
+        Instance: path,
+        Errors:   &fieldErrors,
+    }
+
+    return clients.ErrorWithStatusCode{ErrorCode: statusCode, ErrorBody: *errorBody}
+}
+
+var ISO3166_INGEST_UPSERT_FAILED = func(path string, err error) clients.ErrorWithStatusCode {
+    statusCode := http.StatusInternalServerError
+
+    errorBody := &clients.Error_RFC9457{
+        Type:    clients.SERVER_INTERNAL_ERROR,
+        Doc_url: "",
+        Title:   "Failed to upsert iso_3166 rows.",
+        Detail: clients.Error_Description{
+            Description: fmt.Sprintf("Database upsert failed: %s", err.Error()),
+        },
+        Status:   statusCode,
+        Instance: path,
+    }
+
+    return clients.ErrorWithStatusCode{ErrorCode: statusCode, ErrorBody: *errorBody}
+}
+```
+
+## Returning errors in handlers
+
+### Basic error response
+
+```go
+func YourHandler(c internal_context.HandlerContext, store database.Store) error {
+    // Validate input
+    if someCondition {
+        return clients.SendError(c, YOUR_CUSTOM_ERROR(c.Request().URL.Path))
+    }
+
+    // Process request
+    // ...
+
+    return c.JSON(http.StatusOK, response)
+}
+```
+
+### Error with field validation
+
+```go
+func ValidateAndIngest(c internal_context.HandlerContext, store database.Store) error {
+    var req dto.IngestRequest
+    
+    if err := c.Bind(&req); err != nil {
+        return clients.SendError(c, INVALID_REQUEST_BODY(c.Request().URL.Path, err))
+    }
+
+    // Validate each item
+    var fieldErrors []clients.ClientError
+    for i, item := range req.Items {
+        if len(item.CountryCode) != 2 {
+            fieldErrors = append(fieldErrors, clients.ClientError{
+                Pointer: fmt.Sprintf("items[%d].country_code", i),
+                Details: "Country code must be exactly 2 characters.",
+            })
+        }
+    }
+
+    if len(fieldErrors) > 0 {
+        return clients.SendError(c, VALIDATION_FAILED(c.Request().URL.Path, fieldErrors))
+    }
+
+    // Process valid data
+    // ...
+
+    return c.JSON(http.StatusOK, response)
+}
+```
+
+### Error with database failure
+
+```go
+func InsertData(c internal_context.HandlerContext, store database.Store) error {
+    ctx := c.Request().Context()
+
+    result, err := store.Queries.InsertYourData(ctx, params)
+    if err != nil {
+        // Log the error for debugging
+        log.Error().Err(err).Msg("Failed to insert data")
+        
+        // Return user-friendly error
+        return clients.SendError(c, DATABASE_INSERT_FAILED(c.Request().URL.Path, err))
+    }
+
+    return c.JSON(http.StatusOK, result)
+}
+```
+
+## Error handling patterns
+
+### Pattern 1: Simple validation error
+
+```go
+const (
+    INVALID_EMAIL = "INVALID_EMAIL"
+)
+
+func INVALID_EMAIL_ERROR(path string) clients.ErrorWithStatusCode {
+    return clients.ErrorWithStatusCode{
+        ErrorCode: http.StatusBadRequest,
+        ErrorBody: clients.Error_RFC9457{
+            Type:    clients.CLIENT_INVALID_PARAMS,
+            SubType: INVALID_EMAIL,
+            Title:   "Invalid email address.",
+            Detail: clients.Error_Description{
+                Description: "The provided email address is not valid.",
+            },
+            Status:   http.StatusBadRequest,
+            Instance: path,
+        },
+    }
+}
+```
+
+### Pattern 2: Error with dynamic message
+
+```go
+var RESOURCE_NOT_FOUND = func(path string, resourceType string, resourceID string) clients.ErrorWithStatusCode {
+    return clients.ErrorWithStatusCode{
+        ErrorCode: http.StatusNotFound,
+        ErrorBody: clients.Error_RFC9457{
+            Type:  clients.CLIENT_RESOURCE_NOT_FOUND,
+            Title: fmt.Sprintf("%s not found.", resourceType),
+            Detail: clients.Error_Description{
+                Description: fmt.Sprintf("No %s found with ID: %s", resourceType, resourceID),
+            },
+            Status:   http.StatusNotFound,
+            Instance: path,
+        },
+    }
+}
+
+// Usage
+return clients.SendError(c, RESOURCE_NOT_FOUND(c.Request().URL.Path, "User", userID))
+```
+
+### Pattern 3: Multiple field errors
+
+```go
+func ValidateRequest(req YourRequest) []clients.ClientError {
+    var errors []clients.ClientError
+
+    if req.Email == "" {
+        errors = append(errors, clients.ClientError{
+            Pointer: "email",
+            Details: "Email is required.",
+        })
+    }
+
+    if req.Age < 18 {
+        errors = append(errors, clients.ClientError{
+            Pointer: "age",
+            Details: "Age must be at least 18.",
+        })
+    }
+
+    return errors
+}
+
+// In handler
+fieldErrors := ValidateRequest(req)
+if len(fieldErrors) > 0 {
+    return clients.SendError(c, VALIDATION_FAILED(c.Request().URL.Path, fieldErrors))
+}
+```
+
+## Best practices
+
+### 1. Use specific error codes
+
+```go
+// Good: Specific error code
+const GEOCODING_API_NOT_CONFIGURED = "GEOCODING_API_NOT_CONFIGURED"
+
+// Avoid: Generic error code
+const ERROR = "ERROR"
+```
+
+### 2. Provide actionable error messages
+
+```go
+// Good: Tells user what to do
+Description: "The Google Geocoding API key is not configured. Please contact the administrator."
+
+// Avoid: Vague message
+Description: "Something went wrong."
+```
+
+### 3. Don't expose internal details
+
+```go
+// Good: User-friendly message
+Description: "Failed to process request. Please try again later."
+
+// Avoid: Exposing internal errors
+Description: fmt.Sprintf("Database error: %s", err.Error())
+```
+
+### 4. Log internal errors separately
+
+```go
+// Log detailed error for debugging
+log.Error().
+    Err(err).
+    Str("user_id", userID).
+    Msg("Failed to fetch user from database")
+
+// Return user-friendly error
+return clients.SendError(c, DATABASE_ERROR(c.Request().URL.Path))
+```
+
+### 5. Use field pointers for validation errors
+
+```go
+// Good: Specific field pointer
+Pointer: "items[0].country_code"
+
+// Good: Nested field pointer
+Pointer: "address.postal_code"
+
+// Avoid: No pointer
+Pointer: ""
+```
+
+### 6. Include HTTP status in error struct
+
+```go
+// Always set status to match HTTP status code
+errorBody := &clients.Error_RFC9457{
+    Type:   clients.CLIENT_INVALID_PARAMS,
+    Status: http.StatusBadRequest,  // Must match ErrorCode
+    // ...
+}
+
+return clients.ErrorWithStatusCode{
+    ErrorCode: http.StatusBadRequest,  // Must match Status
+    ErrorBody: *errorBody,
+}
+```
+
+## Testing error responses
+
+```go
+func TestInvalidRequest(t *testing.T) {
+    e, store := setupTestServer(t)
+    defer store.ConnPool.Close()
+
+    req := httptest.NewRequest(http.MethodPost, "/api/v1/geoencode",
+        strings.NewReader(`{"invalid": "json"}`))
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-commenda-key", "test-key")
+
+    rec := httptest.NewRecorder()
+    e.ServeHTTP(rec, req)
+
+    // Assert status code
+    assert.Equal(t, http.StatusBadRequest, rec.Code)
+
+    // Parse response
+    var response map[string]interface{}
+    json.Unmarshal(rec.Body.Bytes(), &response)
+
+    // Assert error structure
+    errorBody := response["error"].(map[string]interface{})
+    assert.Equal(t, "CLIENT_INVALID_REQUEST_BODY", errorBody["type"])
+    assert.Equal(t, 400, int(errorBody["status"].(float64)))
+}
+```
+
+## Common error scenarios
+
+### Missing API key
+
+```go
+// Handled by middleware
+// Returns: 401 Unauthorized
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Missing API key.",
+    "status": 401
+  }
+}
+```
+
+### Missing role
+
+```go
+// Handled by middleware
+// Returns: 403 Forbidden
+{
+  "error": {
+    "type": "CLIENT_FORBIDDEN",
+    "title": "Missing required role.",
+    "status": 403
+  }
+}
+```
+
+### Invalid request body
+
+```go
+// Handled by handler
+// Returns: 400 Bad Request
+{
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Invalid request body.",
+    "status": 400,
+    "errors": [
+      {
+        "pointer": "address",
+        "details": "Address is required."
+      }
+    ]
+  }
+}
+```
+
+### Database error
+
+```go
+// Handled by handler
+// Returns: 500 Internal Server Error
+{
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Database operation failed.",
+    "status": 500
+  }
+}
+```
+
+## Next steps
+
+- [Testing](/engine/address-api/development/testing)
+- [Contributing](/engine/address-api/development/contributing)
+- [API reference](/engine/address-api/api-reference/geoencode)
