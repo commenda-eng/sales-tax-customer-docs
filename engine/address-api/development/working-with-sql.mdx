@@ -1,0 +1,415 @@
+---
+title: Working with SQL
+description: How to make database schema and query changes
+---
+
+This guide explains how to work with SQL in the Address API, including schema changes, writing queries, and generating migrations.
+
+## Overview
+
+The Address API uses:
+- **Atlas** for database migrations
+- **sqlc** for generating type-safe Go code from SQL queries
+- **PostgreSQL** as the database
+
+## Making SQL changes
+
+### Step 1: Update the schema
+
+Edit `database/schema.sql` with your changes:
+
+```sql
+-- Example: Adding a new table
+CREATE TABLE "your_table" (
+  "id" serial PRIMARY KEY,
+  "name" text NOT NULL,
+  "created_at" timestamp DEFAULT now()
+);
+
+-- Example: Adding a column to existing table
+ALTER TABLE "iso_3166" ADD COLUMN "effective_start_date" date;
+ALTER TABLE "iso_3166" ADD COLUMN "effective_end_date" date;
+```
+
+### Step 2: Write SQL queries
+
+SQL queries must be placed in specific `.sql` files that follow the pattern defined in `sqlc.json`:
+
+```json
+{
+  "queries": [
+    "internal/**/sql/queries.sql"
+  ]
+}
+```
+
+This means queries are picked up from any `queries.sql` file inside `internal/*/sql/` directories.
+
+#### Example: Create a queries file
+
+Create `internal/your_feature/sql/queries.sql`:
+
+```sql
+-- name: GetYourData :one
+SELECT * FROM your_table WHERE id = $1;
+
+-- name: ListYourData :many
+SELECT * FROM your_table ORDER BY created_at DESC;
+
+-- name: InsertYourData :one
+INSERT INTO your_table (name)
+VALUES ($1)
+RETURNING *;
+
+-- name: UpdateYourData :exec
+UPDATE your_table
+SET name = $1
+WHERE id = $2;
+
+-- name: DeleteYourData :exec
+DELETE FROM your_table WHERE id = $1;
+```
+
+#### sqlc query annotations
+
+| Annotation | Description | Returns |
+|------------|-------------|---------|
+| `:one` | Query returns exactly one row | Single struct |
+| `:many` | Query returns zero or more rows | Slice of structs |
+| `:exec` | Query doesn't return rows | Error only |
+| `:execrows` | Query doesn't return rows | Rows affected count |
+| `:execresult` | Query doesn't return rows | sql.Result |
+
+For more details, see the [sqlc documentation](https://docs.sqlc.dev/en/latest/howto/select.html).
+
+### Step 3: Generate Go code from SQL
+
+Run sqlc to generate type-safe Go code:
+
+```bash
+sqlc generate
+```
+
+This generates:
+- **Models**: Struct definitions for your tables in `database/generated_models/models.go`
+- **Queries**: Functions for your SQL queries in `database/generated_models/queries.sql.go`
+
+#### Example generated code
+
+For the query above, sqlc generates:
+
+```go
+// database/generated_models/queries.sql.go
+
+type GetYourDataRow struct {
+    ID        int32
+    Name      string
+    CreatedAt time.Time
+}
+
+func (q *Queries) GetYourData(ctx context.Context, id int32) (GetYourDataRow, error) {
+    // Generated implementation
+}
+
+func (q *Queries) ListYourData(ctx context.Context) ([]GetYourDataRow, error) {
+    // Generated implementation
+}
+```
+
+### Step 4: Use generated code in your handler
+
+```go
+package your_feature
+
+import (
+    "github.com/commenda/addresses-api/database"
+    "github.com/commenda/addresses-api/internal/common/internal_context"
+)
+
+func YourHandler(c internal_context.HandlerContext, store database.Store) error {
+    // Use the generated query functions
+    data, err := store.Queries.GetYourData(c.Request().Context(), 1)
+    if err != nil {
+        return err
+    }
+
+    return c.JSON(200, data)
+}
+```
+
+### Step 5: Generate a migration
+
+After updating `database/schema.sql`, generate a migration:
+
+```bash
+./scripts/generate.sh --name your_migration_description
+```
+
+This creates a new migration file in `database/migrations/` with a timestamp and your description.
+
+#### Example migration file
+
+```sql
+-- database/migrations/20251218120000_add_effective_dates.sql
+
+-- Add effective date columns
+ALTER TABLE "iso_3166" ADD COLUMN "effective_start_date" date;
+ALTER TABLE "iso_3166" ADD COLUMN "effective_end_date" date;
+
+-- Update unique constraint to include effective dates
+ALTER TABLE "iso_3166" DROP CONSTRAINT "iso_3166_country_subdivision_unique";
+ALTER TABLE "iso_3166" ADD CONSTRAINT "iso_3166_country_subdivision_dates_unique"
+  UNIQUE ("country_code", "subdivision_code", "effective_start_date", "effective_end_date");
+```
+
+### Step 6: Apply the migration locally
+
+Test your migration locally:
+
+```bash
+./scripts/apply.sh
+```
+
+This applies all pending migrations to your local database.
+
+### Step 7: Commit your changes
+
+```bash
+git add database/schema.sql
+git add database/migrations/
+git add internal/your_feature/sql/
+git add database/generated_models/
+git commit -m "feat: add your feature with database changes"
+```
+
+## Migration deployment
+
+### Local
+
+Migrations are applied manually using `./scripts/apply.sh`.
+
+### Staging/Production
+
+Migrations are **automatically applied** during deployment:
+
+1. GitHub Actions builds the Docker image
+2. The deployment workflow runs migrations before deploying the new version
+3. If migrations fail, the deployment is aborted
+
+This ensures the database schema is always in sync with the deployed code.
+
+## sqlc best practices
+
+### Use named parameters
+
+```sql
+-- Good: Named parameters
+-- name: GetUserByEmail :one
+SELECT * FROM users WHERE email = $1;
+
+-- Avoid: Multiple unnamed parameters can be confusing
+-- name: UpdateUser :exec
+UPDATE users SET name = $1, email = $2, age = $3 WHERE id = $4;
+
+-- Better: Use sqlc.arg for clarity
+-- name: UpdateUser :exec
+UPDATE users 
+SET name = sqlc.arg('name'),
+    email = sqlc.arg('email'),
+    age = sqlc.arg('age')
+WHERE id = sqlc.arg('id');
+```
+
+### Use appropriate return types
+
+```sql
+-- Use :one when you expect exactly one row
+-- name: GetUserByID :one
+SELECT * FROM users WHERE id = $1;
+
+-- Use :many for lists
+-- name: ListUsers :many
+SELECT * FROM users ORDER BY created_at DESC;
+
+-- Use :exec for commands that don't return data
+-- name: DeleteUser :exec
+DELETE FROM users WHERE id = $1;
+```
+
+### Handle nullable columns
+
+```sql
+-- sqlc generates proper nullable types
+-- name: GetAddress :one
+SELECT 
+  address_line_1,  -- text (not null)
+  address_line_2   -- text (nullable)
+FROM addresses WHERE id = $1;
+```
+
+Generated Go code:
+
+```go
+type GetAddressRow struct {
+    AddressLine1 string         // not null
+    AddressLine2 sql.NullString // nullable
+}
+```
+
+### Use transactions
+
+For operations that need atomicity, use transactions:
+
+```go
+func YourHandler(c internal_context.HandlerContext, store database.Store) error {
+    ctx := c.Request().Context()
+    
+    // Begin transaction
+    tx, err := store.ConnPool.Begin(ctx)
+    if err != nil {
+        return err
+    }
+    defer tx.Rollback(ctx)
+    
+    // Create queries with transaction
+    qtx := store.Queries.WithTx(tx)
+    
+    // Execute queries
+    if err := qtx.InsertData(ctx, ...); err != nil {
+        return err
+    }
+    
+    if err := qtx.UpdateRelatedData(ctx, ...); err != nil {
+        return err
+    }
+    
+    // Commit transaction
+    return tx.Commit(ctx)
+}
+```
+
+## Atlas migration best practices
+
+### Never modify existing migrations
+
+Once a migration is committed and deployed, **never modify it**. Always create a new migration to fix issues.
+
+```bash
+# Wrong: Editing an existing migration
+vim database/migrations/20251218120000_add_column.sql
+
+# Right: Create a new migration to fix it
+./scripts/generate.sh --name fix_column_constraint
+```
+
+### Test migrations on a copy of production data
+
+Before deploying to production:
+
+1. Take a snapshot of production database
+2. Restore it locally
+3. Run migrations against the snapshot
+4. Verify data integrity
+
+### Use reversible migrations when possible
+
+While Atlas doesn't have built-in rollback, you can create a new migration to reverse changes:
+
+```sql
+-- Original migration: 20251218120000_add_column.sql
+ALTER TABLE "users" ADD COLUMN "age" integer;
+
+-- Rollback migration: 20251218130000_remove_age_column.sql
+ALTER TABLE "users" DROP COLUMN "age";
+```
+
+### Handle data migrations carefully
+
+When migrating data, do it in steps:
+
+```sql
+-- Step 1: Add new column (nullable)
+ALTER TABLE "users" ADD COLUMN "full_name" text;
+
+-- Step 2: Populate data
+UPDATE "users" SET "full_name" = "first_name" || ' ' || "last_name";
+
+-- Step 3: Make it required (in a separate migration)
+ALTER TABLE "users" ALTER COLUMN "full_name" SET NOT NULL;
+```
+
+## Common patterns
+
+### Upsert (INSERT ... ON CONFLICT)
+
+```sql
+-- name: UpsertISO3166 :one
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name)
+VALUES ($1, $2, $3)
+ON CONFLICT (country_code, subdivision_code)
+DO UPDATE SET
+  subdivision_name = EXCLUDED.subdivision_name,
+  updated_at = now()
+RETURNING *;
+```
+
+### Bulk insert
+
+```sql
+-- name: BulkInsertISO3166 :copyfrom
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name)
+VALUES ($1, $2, $3);
+```
+
+### Conditional queries
+
+```sql
+-- name: SearchUsers :many
+SELECT * FROM users
+WHERE 
+  ($1::text IS NULL OR email = $1)
+  AND ($2::text IS NULL OR name ILIKE '%' || $2 || '%')
+ORDER BY created_at DESC;
+```
+
+## Troubleshooting
+
+### Error: "sqlc: no queries found"
+
+**Cause**: Query files are not in the correct location.
+
+**Fix**: Ensure queries are in `internal/*/sql/queries.sql` files.
+
+### Error: "migration failed: duplicate key"
+
+**Cause**: Migration tries to insert data that violates a unique constraint.
+
+**Fix**: Update the migration to handle existing data:
+
+```sql
+INSERT INTO table (id, name)
+VALUES (1, 'value')
+ON CONFLICT (id) DO NOTHING;
+```
+
+### Error: "column does not exist"
+
+**Cause**: You're using a column in a query that doesn't exist in `database/schema.sql`.
+
+**Fix**: 
+1. Add the column to `database/schema.sql`
+2. Generate a migration: `./scripts/generate.sh --name add_column`
+3. Apply the migration: `./scripts/apply.sh`
+4. Regenerate sqlc code: `sqlc generate`
+
+## Resources
+
+- [sqlc documentation](https://docs.sqlc.dev/)
+- [Atlas documentation](https://atlasgo.io/docs)
+- [PostgreSQL documentation](https://www.postgresql.org/docs/)
+
+## Next steps
+
+- [Error handling](/engine/address-api/development/error-handling)
+- [Testing](/engine/address-api/development/testing)
+- [Contributing](/engine/address-api/development/contributing)
