@@ -1,0 +1,253 @@
+---
+title: Infrastructure overview
+description: Complete infrastructure architecture for the Address API
+---
+
+The Address API is deployed on AWS using a combination of shared base infrastructure and service-specific resources. This document provides a comprehensive overview of the entire infrastructure stack.
+
+## Architecture diagram
+
+```
+                    Internet
+                       │
+                       ▼
+              ┌────────────────┐
+              │    Route53     │  address.in.{env}.commenda.io
+              └───────┬────────┘
+                      │
+                      ▼
+              ┌────────────────┐
+              │  ALB (HTTPS)   │  Service-specific load balancer
+              │  + ACM Cert    │  in PUBLIC subnets
+              └───────┬────────┘
+                      │
+        ┌─────────────┼─────────────┐
+        ▼             ▼             ▼
+   ┌─────────┐   ┌─────────┐   ┌─────────┐
+   │ECS Task │   │ECS Task │   │   ...   │  Fargate containers
+   │(Fargate)│   │(Fargate)│   │         │  in PRIVATE subnets
+   └────┬────┘   └────┬────┘   └─────────┘
+        │             │
+        └──────┬──────┘
+               ▼
+        ┌────────────┐
+        │  RDS       │  PostgreSQL in PRIVATE subnets
+        │ (Postgres) │  Only accessible from ECS tasks
+        └────────────┘
+```
+
+## Infrastructure components
+
+### 1. Networking (from base infrastructure)
+
+| Component | Description | Source |
+|-----------|-------------|--------|
+| **VPC** | Shared network foundation | Base infrastructure |
+| **Public subnets** | Where the ALB lives (internet-accessible) | Base infrastructure |
+| **Private subnets** | Where ECS tasks and RDS live (no direct internet access) | Base infrastructure |
+| **VPC endpoints** | Allow private resources to reach AWS services (ECR, S3, CloudWatch) | Base infrastructure |
+
+### 2. Load balancing (service-specific)
+
+| Component | Description | Created by |
+|-----------|-------------|------------|
+| **Application Load Balancer** | Internet-facing, handles HTTPS termination | This service |
+| **ACM certificate** | SSL/TLS for address.in.{env}.commenda.io | This service |
+| **Target group** | Routes to healthy ECS tasks, health checks on `/healthz` | This service |
+| **HTTP → HTTPS redirect** | Automatic redirect from port 80 to 443 | This service |
+
+### 3. Compute (ECS Fargate)
+
+| Component | Description | Source |
+|-----------|-------------|--------|
+| **ECS cluster** | Shared cluster for all services | Base infrastructure |
+| **ECS service** | Manages task lifecycle (2 tasks by default for HA) | This service |
+| **Task definition** | Defines containers and their configuration | This service |
+| **Init container** | Runs database migrations on startup | This service |
+| **App container** | Main application (waits for init to succeed) | This service |
+
+**Task resources:**
+- CPU: 256 units (0.25 vCPU)
+- Memory: 512 MB
+- Launch type: Fargate
+
+### 4. Database (RDS PostgreSQL)
+
+| Component | Description |
+|-----------|-------------|
+| **Engine** | PostgreSQL 15.12 |
+| **Instance class** | db.t4g.medium |
+| **Storage** | 100 GB (auto-scales to 500 GB) |
+| **Location** | Private subnets |
+| **Access** | Only from ECS tasks (security group restriction) |
+| **Credentials** | Auto-generated, stored in Secrets Manager |
+| **Performance Insights** | Enabled (7-day retention) |
+| **Backups** | 35-day retention (production) |
+| **Encryption** | Enabled at rest |
+
+### 5. Security
+
+#### Security groups
+
+| Security group | Purpose | Ingress rules |
+|----------------|---------|---------------|
+| **ALB SG** | Protects load balancer | HTTP (80) and HTTPS (443) from internet |
+| **ECS SG** | Protects ECS tasks | Traffic only from ALB on container port |
+| **Postgres SG** | Protects RDS instance | PostgreSQL (5432) only from ECS tasks |
+
+#### IAM roles
+
+| Role | Purpose | Permissions |
+|------|---------|-------------|
+| **Execution role** | ECS task execution | Pull images from ECR, write logs to CloudWatch, read secrets from Secrets Manager |
+| **Task role** | Application runtime | SSM for ECS Exec debugging |
+
+### 6. Observability
+
+#### CloudWatch logs
+
+- **Log group**: `/ecs/{env}/address-api`
+- **Retention**: 30 days
+- **Streams**: 
+  - `ecs-init` - Database migration logs
+  - `ecs` - Application logs
+
+#### CloudWatch alarms
+
+| Alarm | Threshold | Description |
+|-------|-----------|-------------|
+| **CPU high** | > 80% for 10 minutes | ECS task CPU utilization |
+| **Memory high** | > 80% for 10 minutes | ECS task memory utilization |
+| **ALB 5xx errors** | > 10 in 5 minutes | Load balancer errors |
+| **Target 5xx errors** | > 10 in 5 minutes | Application errors |
+| **Unhealthy hosts** | > 0 for 2 minutes | Failed health checks |
+
+### 7. Secrets management
+
+All secrets are stored in AWS Secrets Manager:
+
+| Secret | Description |
+|--------|-------------|
+| `{env}-address-api-secrets` | Contains RDS credentials and application secrets |
+
+**Secrets included:**
+- `RDS_USERNAME` - PostgreSQL username
+- `RDS_PASSWORD` - Auto-generated password
+- `RDS_HOSTNAME` - RDS endpoint
+- `RDS_PORT` - PostgreSQL port (5432)
+- `RDS_DBNAME` - Database name
+- `GOOGLE_GEOCODING_API_KEY` - Google API key (from CI)
+
+## Environment mapping
+
+| Environment | AWS account | Domain | Terraform workspace |
+|-------------|-------------|--------|---------------------|
+| **Staging** | 127214192604 | address.in.staging.commenda.io | staging |
+| **Production** | 429032495558 | address.in.commenda.io | prod |
+
+## State management
+
+All Terraform state is stored in S3 in the production account:
+
+```
+s3://tofu-backend-429032495558/
+├── base.tfstate              ← Shared VPC, ECS cluster, etc.
+└── env:/
+    ├── staging/
+    │   └── addresses-api.tfstate
+    └── prod/
+        └── addresses-api.tfstate
+```
+
+**State locking**: DynamoDB table `tofu-backend` prevents concurrent modifications.
+
+## Traffic flow
+
+1. User requests `https://address.in.staging.commenda.io/api/v1/geoencode`
+2. Route53 resolves to ALB DNS name
+3. ALB terminates SSL, forwards HTTP to target group
+4. Target group picks a healthy ECS task
+5. ECS task processes request, queries RDS if needed
+6. Response flows back through the same path
+
+## Deployment architecture
+
+```
+GitHub Release (v0.1.0)
+        │
+        ▼
+  GitHub Actions
+        │
+   ┌────┴────┐
+   │         │
+   ▼         ▼
+Build     Terraform
+Docker    Apply
+   │         │
+   ▼         │
+Push to      │
+  ECR ───────┤
+             │
+             ▼
+     Update Task Definition
+             │
+             ▼
+     ECS Rolling Deployment
+     (0 downtime, circuit breaker)
+             │
+             ▼
+     Smoke Test (/healthz)
+```
+
+**Deployment strategy:**
+- **Rolling deployment**: 100% minimum healthy, 200% maximum
+- **Circuit breaker**: Automatically rolls back on failure
+- **Health check grace period**: 60 seconds
+- **Zero downtime**: New tasks start before old tasks stop
+
+## Cost breakdown
+
+Estimated monthly cost per environment:
+
+| Resource | Cost/month |
+|----------|------------|
+| ALB | $20-25 |
+| ECS Fargate (2 tasks) | $20-30 |
+| RDS (db.t4g.medium, 100GB) | $50-70 |
+| CloudWatch, Secrets Manager | $5-10 |
+| **Total** | **$100-150** |
+
+**Note**: Shared costs (VPC, VPC endpoints, ECS cluster) are paid by base infrastructure.
+
+## High availability
+
+| Component | HA strategy |
+|-----------|-------------|
+| **ALB** | Multi-AZ by default |
+| **ECS tasks** | 2 tasks across multiple AZs |
+| **RDS** | Single-AZ (staging), Multi-AZ (production) |
+| **Secrets** | Replicated across AZs automatically |
+
+## Disaster recovery
+
+| Scenario | Recovery strategy |
+|----------|-------------------|
+| **Task failure** | ECS automatically replaces failed tasks |
+| **ALB failure** | AWS automatically replaces unhealthy ALB nodes |
+| **RDS failure** | Automated backups (35-day retention), point-in-time recovery |
+| **Region failure** | Manual deployment to another region (not automated) |
+
+## Security features
+
+- **Encryption at rest**: RDS storage encrypted
+- **Encryption in transit**: HTTPS only (TLS 1.3)
+- **Network isolation**: ECS tasks and RDS in private subnets
+- **Least privilege**: IAM roles with minimal permissions
+- **Secret rotation**: Supported via Secrets Manager
+- **Deletion protection**: Enabled on RDS
+
+## Next steps
+
+- [Base infrastructure dependencies](/engine/address-api/infrastructure/base-infrastructure)
+- [Deployment process](/engine/address-api/operations/deployment)
+- [Monitoring and debugging](/engine/address-api/operations/debugging)
