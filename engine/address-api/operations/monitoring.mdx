@@ -1,0 +1,297 @@
+---
+title: Monitoring
+description: Monitor the Address API with Better Stack and CloudWatch
+---
+
+The Address API uses Better Stack for external monitoring and alerting, and CloudWatch for metrics and alarms.
+
+## Better Stack
+
+Better Stack monitors the health and performance of the Address API from external locations.
+
+### What Better Stack monitors
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| **Uptime** | Service availability | < 99% uptime |
+| **Response time** | API response latency | > 2 seconds |
+| **Status codes** | HTTP response codes | > 10 5xx errors/min |
+| **Health check** | `/healthz` endpoint | Non-200 response |
+
+### Metrics tracked
+
+Better Stack should track the following metrics:
+
+1. **API call volume**: Total number of requests per minute
+2. **Status code distribution**: 
+   - 2xx (success)
+   - 4xx (client errors)
+   - 5xx (server errors)
+3. **Response times**:
+   - Average response time
+   - P95 response time
+   - P99 response time
+4. **Endpoint-specific metrics**:
+   - `/api/v1/geoencode` success rate
+   - `/api/v1/internal/iso_3166/ingest/json` success rate
+
+### Setting up Better Stack
+
+1. Go to [Better Stack](https://betterstack.com/)
+2. Create a new monitor
+3. Configure:
+   - **URL**: `https://address-api.in.staging.commenda.io/healthz`
+   - **Method**: GET
+   - **Expected status**: 200
+   - **Check frequency**: Every 1 minute
+   - **Timeout**: 10 seconds
+4. Add alert channels (email, Slack, PagerDuty)
+5. Repeat for production: `https://address-api.in.commenda.io/healthz`
+
+### Alert channels
+
+Configure alerts to notify:
+- **Email**: Team distribution list
+- **Slack**: #alerts channel
+- **PagerDuty**: On-call engineer (production only)
+
+## CloudWatch metrics
+
+CloudWatch automatically collects metrics from ECS, ALB, and RDS.
+
+### ECS metrics
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| `CPUUtilization` | Task CPU usage | > 80% |
+| `MemoryUtilization` | Task memory usage | > 80% |
+| `RunningTaskCount` | Number of running tasks | < 2 |
+
+### ALB metrics
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| `TargetResponseTime` | Response time from targets | > 2 seconds |
+| `HTTPCode_Target_5XX_Count` | 5xx errors from targets | > 10/min |
+| `HTTPCode_ELB_5XX_Count` | 5xx errors from ALB | > 5/min |
+| `UnHealthyHostCount` | Unhealthy targets | > 0 |
+| `RequestCount` | Total requests | - |
+
+### RDS metrics
+
+| Metric | Description | Alert threshold |
+|--------|-------------|-----------------|
+| `CPUUtilization` | Database CPU usage | > 80% |
+| `FreeableMemory` | Available memory | < 1 GB |
+| `DatabaseConnections` | Active connections | > 80% of max |
+| `ReadLatency` | Read query latency | > 100ms |
+| `WriteLatency` | Write query latency | > 100ms |
+
+## CloudWatch alarms
+
+The infrastructure creates the following CloudWatch alarms automatically:
+
+### CPU high alarm
+
+```hcl
+alarm_name          = "address-api-cpu-high"
+comparison_operator = "GreaterThanThreshold"
+evaluation_periods  = 2
+metric_name         = "CPUUtilization"
+threshold           = 80
+```
+
+**Action**: Scale up tasks or optimize code
+
+### Memory high alarm
+
+```hcl
+alarm_name          = "address-api-memory-high"
+comparison_operator = "GreaterThanThreshold"
+evaluation_periods  = 2
+metric_name         = "MemoryUtilization"
+threshold           = 80
+```
+
+**Action**: Scale up tasks or fix memory leaks
+
+### ALB 5xx errors
+
+```hcl
+alarm_name          = "address-api-alb-5xx"
+comparison_operator = "GreaterThanThreshold"
+evaluation_periods  = 1
+metric_name         = "HTTPCode_ELB_5XX_Count"
+threshold           = 10
+```
+
+**Action**: Check ALB configuration and target health
+
+### Target 5xx errors
+
+```hcl
+alarm_name          = "address-api-target-5xx"
+comparison_operator = "GreaterThanThreshold"
+evaluation_periods  = 1
+metric_name         = "HTTPCode_Target_5XX_Count"
+threshold           = 10
+```
+
+**Action**: Check application logs for errors
+
+### Unhealthy hosts
+
+```hcl
+alarm_name          = "address-api-unhealthy-hosts"
+comparison_operator = "GreaterThanThreshold"
+evaluation_periods  = 1
+metric_name         = "UnHealthyHostCount"
+threshold           = 0
+```
+
+**Action**: Check task health and logs
+
+## Viewing metrics
+
+### CloudWatch Console
+
+1. Go to **CloudWatch** → **Metrics**
+2. Select namespace:
+   - `AWS/ECS` for ECS metrics
+   - `AWS/ApplicationELB` for ALB metrics
+   - `AWS/RDS` for database metrics
+3. Select metric and create graph
+
+### AWS CLI
+
+```bash
+# Get ECS CPU utilization
+aws cloudwatch get-metric-statistics \\\n  --namespace AWS/ECS \\\n  --metric-name CPUUtilization \\\n  --dimensions Name=ServiceName,Value=address-api Name=ClusterName,Value=staging-ecs-cluster \\\n  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \\\n  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \\\n  --period 300 \\\n  --statistics Average \\\n  --region ap-south-1
+
+# Get ALB request count
+aws cloudwatch get-metric-statistics \\\n  --namespace AWS/ApplicationELB \\\n  --metric-name RequestCount \\\n  --dimensions Name=LoadBalancer,Value=app/staging-address-api/xxx \\\n  --start-time $(date -u -d '1 hour ago' +%Y-%m-%dT%H:%M:%S) \\\n  --end-time $(date -u +%Y-%m-%dT%H:%M:%S) \\\n  --period 300 \\\n  --statistics Sum \\\n  --region ap-south-1
+```
+
+## Custom metrics
+
+You can add custom metrics to track application-specific data:
+
+### Example: Track geocoding cache hit rate
+
+```go
+import (
+    "github.com/aws/aws-sdk-go/aws"
+    "github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/service/cloudwatch"
+)
+
+func publishCacheHitRate(hitRate float64) {
+    sess := session.Must(session.NewSession())
+    cw := cloudwatch.New(sess)
+
+    _, err := cw.PutMetricData(&cloudwatch.PutMetricDataInput{
+        Namespace: aws.String("AddressAPI"),
+        MetricData: []*cloudwatch.MetricDatum{
+            {
+                MetricName: aws.String("CacheHitRate"),
+                Value:      aws.Float64(hitRate),
+                Unit:       aws.String("Percent"),
+            },
+        },
+    })
+    if err != nil {
+        log.Error().Err(err).Msg("failed to publish metric")
+    }
+}
+```
+
+## Dashboards
+
+### CloudWatch Dashboard
+
+Create a CloudWatch dashboard to visualize key metrics:
+
+1. Go to **CloudWatch** → **Dashboards**
+2. Click **Create dashboard**
+3. Add widgets for:
+   - ECS CPU and memory utilization
+   - ALB request count and response time
+   - ALB 5xx error count
+   - RDS CPU and connections
+   - Custom application metrics
+
+### Example dashboard JSON
+
+```json
+{
+  "widgets": [
+    {
+      "type": "metric",
+      "properties": {
+        "metrics": [
+          ["AWS/ECS", "CPUUtilization", {"stat": "Average"}],
+          [".", "MemoryUtilization", {"stat": "Average"}]
+        ],
+        "period": 300,
+        "stat": "Average",
+        "region": "ap-south-1",
+        "title": "ECS Resource Utilization"
+      }
+    }
+  ]
+}
+```
+
+## Alert response
+
+When you receive an alert:
+
+### 1. Acknowledge the alert
+
+Acknowledge in Better Stack or PagerDuty to let others know you're investigating.
+
+### 2. Check service health
+
+```bash
+curl https://address-api.in.staging.commenda.io/healthz
+```
+
+### 3. Check CloudWatch logs
+
+```bash
+aws logs tail /ecs/staging/address-api --follow --region ap-south-1
+```
+
+### 4. Check ECS service
+
+```bash
+aws ecs describe-services \\\n  --cluster staging-ecs-cluster \\\n  --services address-api \\\n  --region ap-south-1
+```
+
+### 5. Check target health
+
+```bash
+aws elbv2 describe-target-health \\\n  --target-group-arn <arn> \\\n  --region ap-south-1
+```
+
+### 6. Take action
+
+Based on the issue:
+- **High CPU/Memory**: Scale up or optimize code
+- **5xx errors**: Check logs and fix bugs
+- **Unhealthy targets**: Restart tasks or fix health check
+- **Database issues**: Check RDS metrics and connections
+
+### 7. Document the incident
+
+After resolving:
+- Document what happened
+- Document how it was fixed
+- Create a post-mortem if needed
+- Update runbooks
+
+## Next steps
+
+- [Troubleshooting](/engine/address-api/operations/troubleshooting)
+- [Debugging](/engine/address-api/operations/debugging)
+- [Database access](/engine/address-api/operations/database-access)
