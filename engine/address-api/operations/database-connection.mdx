@@ -3,167 +3,111 @@ title: Database connection
 description: How to connect to the Address API database
 ---
 
-This guide explains how to connect to the PostgreSQL database for the Address API in staging and production environments.
+This guide explains how to connect to the PostgreSQL database for debugging and maintenance.
 
 ## Overview
 
-The Address API uses Amazon RDS PostgreSQL databases that are deployed in private subnets. To connect, you need to use a bastion host.
+The Address API uses RDS PostgreSQL 15 in private subnets. Direct connections are not possible - you must use a bastion host.
 
-## Architecture
+## Connection architecture
 
 ```
-Your Machine → Bastion Host (EC2) → RDS PostgreSQL (Private Subnet)
+Your Computer
+     │
+     ▼
+AWS Session Manager (SSM)
+     │
+     ▼
+Bastion Host (EC2)
+     │
+     ▼
+RDS PostgreSQL (Private Subnet)
 ```
-
-- **Bastion Host**: EC2 instance in public subnet with Session Manager access
-- **RDS PostgreSQL**: Database in private subnet, not publicly accessible
-- **Security Groups**: Control access between bastion and database
 
 ## Prerequisites
 
 - AWS CLI installed and configured
 - Session Manager plugin installed
-- Appropriate AWS IAM permissions
+- Appropriate IAM permissions
 
-### Install Session Manager plugin
+## Step 1: Configure security group
 
-```bash
-# macOS
-brew install --cask session-manager-plugin
+Add your IP to the RDS security group to allow connections:
 
-# Linux
-curl "https://s3.amazonaws.com/session-manager-downloads/plugin/latest/ubuntu_64bit/session-manager-plugin.deb" -o "session-manager-plugin.deb"
-sudo dpkg -i session-manager-plugin.deb
-
-# Verify installation
-session-manager-plugin --version
-```
-
-## Connecting to staging database
-
-### Step 1: Update security group
-
-Add your IP to the security group to allow traffic:
-
-1. Go to [EC2 Console](https://ap-south-1.console.aws.amazon.com/ec2/home?region=ap-south-1#SecurityGroups:)
-2. Search for `staging-address-api-postgres-sg`
-3. Click on the security group
-4. Click **Edit inbound rules**
-5. Click **Add rule**
-6. Configure:
+1. Go to **EC2** → **Security Groups**
+2. Find `{env}-address-api-postgres-sg`
+3. Click **Edit inbound rules**
+4. Click **Add rule**:
    - **Type**: All traffic
    - **Source type**: Anywhere-IPv4
    - **Description**: Temporary access for debugging
-7. Click **Save rules**
+5. Click **Save rules**
 
-**Important**: Remove this rule after you're done to maintain security.
+**⚠️ Important**: Remove this rule after you're done for security.
 
-### Step 2: Connect to bastion host
+## Step 2: Connect to bastion host
 
-1. Go to [EC2 Instances](https://ap-south-1.console.aws.amazon.com/ec2/home?region=ap-south-1#Instances:)
-2. Search for `staging-bastion-host`
-3. Select the instance
-4. Click **Connect**
-5. Go to **Session Manager** tab
-6. Click **Connect**
+1. Go to **EC2** → **Instances**
+2. Find `{env}-bastion-host`
+3. Click **Connect**
+4. Select **Session Manager** tab
+5. Click **Connect**
 
-This opens a terminal session in your browser.
+You'll be connected to the bastion host terminal.
 
-### Step 3: Get database credentials
+## Step 3: Get database credentials
 
-1. Go to [Secrets Manager](https://ap-south-1.console.aws.amazon.com/secretsmanager/home?region=ap-south-1#!/listSecrets)
-2. Search for `staging-address-api-secrets`
-3. Click on the secret
-4. Click **Retrieve secret value**
-5. Copy the credentials:
-   - `RDS_USERNAME`
-   - `RDS_PASSWORD`
-   - `RDS_HOSTNAME`
-   - `RDS_PORT`
-   - `RDS_DBNAME`
-
-### Step 4: Connect with psql
-
-In the bastion host terminal:
+Retrieve credentials from Secrets Manager:
 
 ```bash
-# Install psql if not available
-sudo yum install postgresql15 -y
-
-# Connect to database
-psql "postgresql://<RDS_USERNAME>:<RDS_PASSWORD>@<RDS_HOSTNAME>:<RDS_PORT>/<RDS_DBNAME>"
+# In the bastion host terminal
+aws secretsmanager get-secret-value \\
+  --secret-id {env}-address-api-secrets \\
+  --region ap-south-1 \\
+  --query SecretString \\
+  --output text | jq
 ```
 
-Example:
+This returns:
+```json
+{
+  "RDS_USERNAME": "app",
+  "RDS_PASSWORD": "your-password-here",
+  "RDS_HOSTNAME": "staging-address-api-postgres.xxxxx.ap-south-1.rds.amazonaws.com",
+  "RDS_PORT": "5432",
+  "RDS_DBNAME": "app"
+}
+```
+
+## Step 4: Connect to PostgreSQL
+
+Construct the connection URL:
+
+```
+postgres://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DBNAME}
+```
+
+Connect using `psql`:
 
 ```bash
-psql "postgresql://postgres:mypassword@staging-address-api-db.abc123.ap-south-1.rds.amazonaws.com:5432/address_api"
+psql "postgres://app:your-password@staging-address-api-postgres.xxxxx.ap-south-1.rds.amazonaws.com:5432/app"
 ```
 
-### Step 5: Run queries
+## Common database operations
+
+### List tables
 
 ```sql
--- List tables
 \dt
-
--- Check migrations
-SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC;
-
--- Query data
-SELECT * FROM api_key LIMIT 10;
-SELECT * FROM iso_3166 WHERE country_code = 'US' LIMIT 10;
-SELECT * FROM address_cache ORDER BY cached_at DESC LIMIT 10;
-
--- Exit
-\q
 ```
 
-## Connecting to production database
+Expected tables:
+- `iso_3166` - ISO 3166 subdivision data
+- `address_cache` - Geocoding cache
+- `api_key` - API keys
+- `atlas_schema_revisions` - Migration history
 
-**Warning**: Be extremely careful when connecting to production. Always use read-only queries unless absolutely necessary.
-
-Follow the same steps as staging, but use:
-
-- Security group: `prod-address-api-postgres-sg`
-- Bastion host: `prod-bastion-host`
-- Secret: `prod-address-api-secrets`
-
-### Production safety checklist
-
-Before connecting to production:
-
-- [ ] Have a specific reason (debugging, data analysis, etc.)
-- [ ] Notify team in Slack
-- [ ] Use read-only queries when possible
-- [ ] Test queries in staging first
-- [ ] Have a rollback plan for any changes
-- [ ] Document what you're doing
-
-## Using psql commands
-
-### Common psql commands
-
-| Command | Description |
-|---------|-------------|
-| `\dt` | List all tables |
-| `\d table_name` | Describe table schema |
-| `\du` | List users |
-| `\l` | List databases |
-| `\c database_name` | Connect to database |
-| `\q` | Quit psql |
-| `\?` | Show all psql commands |
-| `\h SQL_COMMAND` | Show SQL command help |
-
-### Useful queries
-
-#### Check database size
-
-```sql
-SELECT 
-  pg_size_pretty(pg_database_size('address_api')) as database_size;
-```
-
-#### Check table sizes
+### Check table sizes
 
 ```sql
 SELECT 
@@ -175,86 +119,34 @@ WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ```
 
-#### Check active connections
+### View recent cache entries
 
 ```sql
 SELECT 
-  pid,
-  usename,
-  application_name,
-  client_addr,
-  state,
-  query_start,
-  state_change
-FROM pg_stat_activity
-WHERE datname = 'address_api'
-ORDER BY query_start DESC;
-```
-
-#### Check cache hit rate
-
-```sql
-SELECT 
-  COUNT(*) as total_cached_addresses,
-  COUNT(DISTINCT country_code) as unique_countries
-FROM address_cache;
-```
-
-#### Check recent API key usage
-
-```sql
-SELECT 
-  organization_name,
-  roles,
-  created_at
-FROM api_key
-ORDER BY created_at DESC
+  original_address,
+  city,
+  state_code,
+  country_code,
+  cached_at
+FROM address_cache
+ORDER BY cached_at DESC
 LIMIT 10;
 ```
 
-## Port forwarding (alternative method)
+### Count API keys by role
 
-Instead of using the bastion host terminal, you can set up port forwarding to connect from your local machine.
-
-### Step 1: Start port forwarding session
-
-```bash
-# Get bastion instance ID
-BASTION_ID=$(aws ec2 describe-instances \\
-  --filters "Name=tag:Name,Values=staging-bastion-host" \\
-  --query "Reservations[0].Instances[0].InstanceId" \\
-  --output text \\
-  --region ap-south-1)
-
-# Get RDS endpoint from secrets
-RDS_HOSTNAME=$(aws secretsmanager get-secret-value \\
-  --secret-id staging-address-api-secrets \\
-  --region ap-south-1 \\
-  --query 'SecretString' \\
-  --output text | jq -r '.RDS_HOSTNAME')
-
-# Start port forwarding
-aws ssm start-session \\
-  --target $BASTION_ID \\
-  --document-name AWS-StartPortForwardingSessionToRemoteHost \\
-  --parameters "{\"host\":[\"$RDS_HOSTNAME\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"5433\"]}" \\
-  --region ap-south-1
+```sql
+SELECT 
+  unnest(roles) as role,
+  COUNT(*) as count
+FROM api_key
+GROUP BY role;
 ```
 
-### Step 2: Connect from local machine
+### Check migration status
 
-In a new terminal:
-
-```bash
-# Get credentials from secrets
-aws secretsmanager get-secret-value \\
-  --secret-id staging-address-api-secrets \\
-  --region ap-south-1 \\
-  --query 'SecretString' \\
-  --output text | jq .
-
-# Connect via localhost
-psql "postgresql://postgres:password@localhost:5433/address_api"
+```sql
+SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC;
 ```
 
 ## Troubleshooting
@@ -264,99 +156,34 @@ psql "postgresql://postgres:password@localhost:5433/address_api"
 **Cause**: Security group not configured or bastion host can't reach RDS.
 
 **Fix**:
-1. Verify security group rules are added
-2. Check RDS security group allows traffic from bastion
-3. Verify RDS endpoint is correct
+1. Verify security group rules (Step 1)
+2. Check RDS is running: Go to RDS → Databases
+3. Verify bastion host is in the same VPC
 
 ### Error: "password authentication failed"
 
 **Cause**: Incorrect credentials.
 
 **Fix**:
-1. Double-check credentials from Secrets Manager
-2. Ensure you're copying the entire password (no trailing spaces)
-3. Try resetting the password in RDS console
+1. Re-fetch credentials from Secrets Manager
+2. Ensure you're using the correct environment's secrets
+3. Check for special characters in password (may need URL encoding)
 
-### Error: "psql: command not found"
+### Error: "database does not exist"
 
-**Cause**: PostgreSQL client not installed on bastion.
+**Cause**: Wrong database name.
 
-**Fix**:
-```bash
-# On bastion host
-sudo yum install postgresql15 -y
-```
-
-### Session Manager connection fails
-
-**Cause**: Session Manager plugin not installed or IAM permissions missing.
-
-**Fix**:
-1. Install Session Manager plugin
-2. Verify AWS credentials: `aws sts get-caller-identity`
-3. Check IAM permissions for SSM
-
-### Can't find bastion host
-
-**Cause**: Bastion host not running or wrong region.
-
-**Fix**:
-1. Verify you're in ap-south-1 region
-2. Check EC2 console for instance status
-3. Start instance if stopped
+**Fix**: Use `app` as the database name (default for Address API).
 
 ## Security best practices
 
-### Do
-
-- ✅ Remove security group rules after debugging
-- ✅ Use read-only queries when possible
-- ✅ Document what you're doing
-- ✅ Notify team before production access
-- ✅ Use transactions for data changes
-- ✅ Test queries in staging first
-
-### Don't
-
-- ❌ Leave security groups open
-- ❌ Share database credentials
-- ❌ Run untested queries in production
-- ❌ Delete data without backups
-- ❌ Modify schema manually (use migrations)
-- ❌ Store credentials in code or notes
-
-## Automated database access
-
-For automated scripts or CI/CD:
-
-```bash
-#!/bin/bash
-
-# Get credentials from Secrets Manager
-SECRET=$(aws secretsmanager get-secret-value \\
-  --secret-id staging-address-api-secrets \\
-  --region ap-south-1 \\
-  --query 'SecretString' \\
-  --output text)
-
-# Parse credentials
-RDS_USERNAME=$(echo $SECRET | jq -r '.RDS_USERNAME')
-RDS_PASSWORD=$(echo $SECRET | jq -r '.RDS_PASSWORD')
-RDS_HOSTNAME=$(echo $SECRET | jq -r '.RDS_HOSTNAME')
-RDS_PORT=$(echo $SECRET | jq -r '.RDS_PORT')
-RDS_DBNAME=$(echo $SECRET | jq -r '.RDS_DBNAME')
-
-# Connect and run query
-PGPASSWORD=$RDS_PASSWORD psql \\
-  -h $RDS_HOSTNAME \\
-  -p $RDS_PORT \\
-  -U $RDS_USERNAME \\
-  -d $RDS_DBNAME \\
-  -c "SELECT COUNT(*) FROM address_cache;"
-```
+- **Remove security group rules** after debugging
+- **Use read-only queries** when possible
+- **Never modify data** in production without approval
+- **Log all database access** for audit purposes
+- **Rotate credentials** regularly
 
 ## Next steps
 
-- [Debugging](/engine/address-api/operations/debugging)
-- [Monitoring](/engine/address-api/operations/monitoring)
+- [Debugging guide](/engine/address-api/operations/debugging)
 - [Common failures](/engine/address-api/operations/common-failures)
