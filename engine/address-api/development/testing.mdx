@@ -5,6 +5,44 @@ description: Run tests for the Address API
 
 The Address API uses Go's built-in testing framework along with testcontainers for integration tests.
 
+## Testing philosophy: Test-Driven Development (TDD)
+
+We follow **Test-Driven Development (TDD)** for all microservices, including the Address API. This means:
+
+1. **Write tests first**: Before implementing a feature, write tests that define the expected behavior
+2. **Watch tests fail**: Run the tests and verify they fail (proving they're testing something)
+3. **Implement the feature**: Write the minimum code needed to make the tests pass
+4. **Refactor**: Clean up the code while keeping tests green
+
+### Why TDD for microservices?
+
+- **Clear requirements**: Tests document what the API should do
+- **Confidence in changes**: Refactor without fear of breaking things
+- **Better design**: Writing tests first leads to more testable, modular code
+- **Regression prevention**: Bugs become test cases that prevent future regressions
+- **Integration safety**: Microservices have many integration points - tests catch breaking changes
+
+### TDD workflow example
+
+```bash
+# 1. Write a failing test
+vim tests/integration/your_feature_test.go
+
+# 2. Run tests (they should fail)
+go run . tests
+
+# 3. Implement the feature
+vim internal/your_feature/handler.go
+
+# 4. Run tests again (they should pass)
+go run . tests
+
+# 5. Refactor if needed
+# 6. Commit
+git add .
+git commit -m "feat: add your feature"
+```
+
 ## Test structure
 
 ```
