@@ -1,0 +1,354 @@
+---
+title: Base infrastructure dependencies
+description: How the Address API uses shared base infrastructure
+---
+
+The Address API leverages shared base infrastructure for networking, compute, and DNS. This document explains what resources are provided by the base infrastructure and how they're used.
+
+## Overview
+
+The base infrastructure is managed separately and provides foundational resources that multiple services share. This reduces costs and simplifies management.
+
+```
+BASE INFRASTRUCTURE (base.tfstate)         THIS SERVICE (addresses-api.tfstate)
+┌──────────────────────────────────┐       ┌──────────────────────────────┐
+│  vpc_id ─────────────────────────┼──────▶│  Security Groups (ALB, ECS,  │
+│                                  │       │  Postgres)                   │
+│  public_subnet_ids ──────────────┼──────▶│  ALB placement               │
+│                                  │       │                              │
+│  private_subnet_ids ─────────────┼──────▶│  ECS Service + RDS Subnets   │
+│                                  │       │                              │
+│  ecs_cluster_id ─────────────────┼──────▶│  ECS Service deployment      │
+│                                  │       │                              │
+│  ecs_cluster_name ───────────────┼──────▶│  CloudWatch Alarm dimensions │
+│                                  │       │                              │
+│  hosted_zone ────────────────────┼──────▶│  Route53 DNS + FQDN          │
+│                                  │       │                              │
+│  (VPC Endpoints - implicit use)  │       │  ECR pulls, CloudWatch Logs  │
+└──────────────────────────────────┘       └──────────────────────────────┘
+```
+
+## How base infrastructure is accessed
+
+The base infrastructure state is read via a `terraform_remote_state` data source in `provider.tf`:
+
+```hcl
+# Read base infrastructure state (VPC, subnets, ECS cluster)
+data "terraform_remote_state" "base" {
+  backend   = "s3"
+  workspace = terraform.workspace
+
+  config = {
+    bucket = "tofu-backend-429032495558"
+    key    = "base.tfstate"
+    region = "ap-south-1"
+  }
+}
+
+# Access outputs
+local.base_outputs = data.terraform_remote_state.base.outputs[var.region]
+```
+
+This allows the Address API to reference resources created by the base infrastructure without duplicating them.
+
+## Base infrastructure resources
+
+### 1. VPC ID
+
+**What it provides**: The Virtual Private Cloud that all resources live in.
+
+**How it's used**: Referenced when creating security groups.
+
+**Code location**:
+```hcl
+resource "aws_security_group" "alb" {
+  name        = "${local.name}-alb-sg"
+  description = "Security group for ${var.app} ALB"
+  vpc_id      = local.base_outputs.vpc_id  # ← From base infrastructure
+}
+```
+
+**Also used by**:
+- `aws_security_group.ecs` (ECS tasks security group)
+- `aws_security_group.postgres` (RDS security group)
+
+### 2. Public subnet IDs
+
+**What it provides**: Subnets with internet access via an Internet Gateway.
+
+**How it's used**: ALB is placed in public subnets to accept traffic from the internet.
+
+**Code location**:
+```hcl
+resource "aws_lb" "app" {
+  name               = local.name
+  load_balancer_type = "application"
+  internal           = false
+  subnets            = local.base_outputs.public_subnet_ids  # ← From base infrastructure
+  security_groups    = [aws_security_group.alb.id]
+}
+```
+
+**Why public subnets**: The ALB needs to be internet-facing to receive HTTPS requests from users.
+
+### 3. Private subnet IDs
+
+**What it provides**: Subnets without direct internet access (use NAT Gateway for outbound).
+
+**How it's used**: 
+1. ECS tasks are deployed in private subnets for security
+2. RDS database is placed in private subnets
+
+**Code location (ECS Service)**:
+```hcl
+resource "aws_ecs_service" "app" {
+  name            = var.app
+  cluster         = local.base_outputs.ecs_cluster_id
+  task_definition = aws_ecs_task_definition.app.arn
+  
+  network_configuration {
+    subnets          = local.base_outputs.private_subnet_ids  # ← From base infrastructure
+    security_groups  = [aws_security_group.ecs.id]
+    assign_public_ip = false
+  }
+}
+```
+
+**Code location (RDS Subnet Group)**:
+```hcl
+resource "aws_db_subnet_group" "postgres" {
+  name        = "${local.name}-postgres"
+  description = "Subnet group for ${var.app} PostgreSQL RDS"
+  subnet_ids  = local.base_outputs.private_subnet_ids  # ← From base infrastructure
+}
+```
+
+**Why private subnets**: 
+- ECS tasks don't need direct internet access (use VPC endpoints)
+- RDS should never be exposed to the internet
+
+### 4. ECS cluster ID
+
+**What it provides**: A shared ECS cluster where multiple services can run.
+
+**How it's used**: The ECS service is deployed to this cluster.
+
+**Code location**:
+```hcl
+resource "aws_ecs_service" "app" {
+  name            = var.app
+  cluster         = local.base_outputs.ecs_cluster_id  # ← From base infrastructure
+  task_definition = aws_ecs_task_definition.app.arn
+  desired_count   = var.desired_count
+  launch_type     = "FARGATE"
+}
+```
+
+**Benefits of shared cluster**:
+- Reduced management overhead
+- Centralized monitoring
+- Cost efficiency
+
+### 5. ECS cluster name
+
+**What it provides**: The human-readable name of the ECS cluster.
+
+**How it's used**: CloudWatch alarms use the cluster name as a dimension.
+
+**Code location**:
+```hcl
+resource "aws_cloudwatch_metric_alarm" "cpu_high" {
+  alarm_name          = "${local.name}-cpu-high"
+  comparison_operator = "GreaterThanThreshold"
+  metric_name         = "CPUUtilization"
+  namespace           = "AWS/ECS"
+  
+  dimensions = {
+    ClusterName = local.base_outputs.ecs_cluster_name  # ← From base infrastructure
+    ServiceName = aws_ecs_service.app.name
+  }
+}
+```
+
+**Why needed**: CloudWatch metrics are organized by cluster name and service name.
+
+### 6. Hosted zone
+
+**What it provides**: The Route53 hosted zone for the domain (e.g., `staging.commenda.io` or `commenda.io`).
+
+**How it's used**:
+1. Construct the FQDN for the service
+2. Create DNS records pointing to the ALB
+
+**Code location (FQDN construction)**:
+```hcl
+locals {
+  # FQDN: uses the hosted zone from base outputs
+  # e.g., address.in.staging.commenda.io or address.in.commenda.io
+  fqdn = "${var.subdomain}.${var.region}.${local.base_outputs.hosted_zone}"
+}
+```
+
+**Code location (Route53 record)**:
+```hcl
+data "aws_route53_zone" "selected" {
+  name = local.base_outputs.hosted_zone  # ← From base infrastructure
+}
+
+resource "aws_route53_record" "app" {
+  zone_id = data.aws_route53_zone.selected.zone_id
+  name    = local.fqdn
+  type    = "A"
+
+  alias {
+    name                   = aws_lb.app.dns_name
+    zone_id                = aws_lb.app.zone_id
+    evaluate_target_health = true
+  }
+}
+```
+
+**Result**: 
+- Staging: `address.in.staging.commenda.io`
+- Production: `address.in.commenda.io`
+
+### 7. VPC endpoints (implicit use)
+
+**What it provides**: Private connections to AWS services without going through the internet.
+
+**VPC endpoints created by base infrastructure**:
+- **ECR API** - Pull Docker images
+- **ECR DKR** - Docker registry operations
+- **S3** - Access ECR image layers
+- **CloudWatch Logs** - Send application logs
+- **Secrets Manager** - Retrieve secrets
+
+**How it's used**: ECS tasks in private subnets use these endpoints automatically.
+
+**Why important**: 
+- ECS tasks don't have public IPs
+- Without VPC endpoints, they couldn't pull images or send logs
+- Reduces data transfer costs (no NAT Gateway charges for AWS service traffic)
+
+## FQDN construction
+
+The fully qualified domain name (FQDN) is constructed using base infrastructure outputs:
+
+```hcl
+fqdn = "${var.subdomain}.${var.region}.${local.base_outputs.hosted_zone}"
+```
+
+**Examples**:
+
+| Environment | Subdomain | Region | Hosted zone | Result |
+|-------------|-----------|--------|-------------|--------|
+| Staging | address | in | staging.commenda.io | address.in.staging.commenda.io |
+| Production | address | in | commenda.io | address.in.commenda.io |
+
+## ECR image URI construction
+
+The Docker image URI is constructed using the AWS account ID and region:
+
+```hcl
+image = "${local.aws_account_id}.dkr.ecr.${data.aws_region.current.name}.amazonaws.com/${local.env}/${var.app}:${var.app_image_tag}"
+```
+
+**Examples**:
+
+| Environment | AWS account | Region | Image tag | Result |
+|-------------|-------------|--------|-----------|--------|
+| Staging | 127214192604 | ap-south-1 | v0.1.0-rc.1 | 127214192604.dkr.ecr.ap-south-1.amazonaws.com/staging/address-api:v0.1.0-rc.1 |
+| Production | 429032495558 | ap-south-1 | v0.1.0 | 429032495558.dkr.ecr.ap-south-1.amazonaws.com/prod/address-api:v0.1.0 |
+
+## What the Address API creates
+
+While the base infrastructure provides foundational resources, the Address API creates its own:
+
+| Resource | Why not shared |
+|----------|----------------|
+| **ALB** | Each service needs its own load balancer for isolation and independent scaling |
+| **Target group** | Service-specific health checks and routing |
+| **ACM certificate** | Service-specific domain name |
+| **Route53 record** | Service-specific DNS entry |
+| **Security groups** | Service-specific network rules |
+| **ECS service** | Service-specific task management |
+| **Task definition** | Service-specific container configuration |
+| **RDS instance** | Service-specific database |
+| **CloudWatch log group** | Service-specific logs |
+| **Secrets** | Service-specific credentials |
+
+## Benefits of shared infrastructure
+
+### Cost savings
+
+- **VPC**: $0 (shared across all services)
+- **VPC endpoints**: ~$7/month per endpoint (shared across all services)
+- **ECS cluster**: $0 (pay only for tasks)
+- **NAT Gateway**: ~$32/month (shared across all services)
+
+**Without sharing**: Each service would pay ~$50/month just for networking.
+
+### Simplified management
+
+- **Single VPC**: One place to manage network configuration
+- **Centralized DNS**: All services use the same hosted zone
+- **Consistent networking**: All services follow the same patterns
+
+### Security
+
+- **Network isolation**: All services in the same VPC can communicate securely
+- **Centralized VPC endpoints**: Consistent access to AWS services
+- **Shared security groups**: Can reference other services' security groups
+
+## Terraform workspace mapping
+
+The base infrastructure uses the same workspace names as the Address API:
+
+| Workspace | Environment | AWS account |
+|-----------|-------------|-------------|
+| `staging` | Staging | 127214192604 |
+| `prod` | Production | 429032495558 |
+
+**How it works**:
+```hcl
+data "terraform_remote_state" "base" {
+  backend   = "s3"
+  workspace = terraform.workspace  # ← Same workspace as current
+  
+  config = {
+    bucket = "tofu-backend-429032495558"
+    key    = "base.tfstate"
+    region = "ap-south-1"
+  }
+}
+```
+
+When you run `terraform workspace select staging`, it automatically reads the staging base infrastructure state.
+
+## Troubleshooting
+
+### Error: "No outputs found for region 'in'"
+
+**Cause**: The base infrastructure hasn't been deployed for this region.
+
+**Fix**: Deploy the base infrastructure first or check the region name.
+
+### Error: "VPC not found"
+
+**Cause**: The base infrastructure state is not accessible or the workspace is incorrect.
+
+**Fix**: 
+1. Verify you're in the correct workspace: `terraform workspace show`
+2. Check the base infrastructure state exists: `aws s3 ls s3://tofu-backend-429032495558/env:/staging/`
+
+### Error: "Hosted zone not found"
+
+**Cause**: The Route53 hosted zone doesn't exist in the base infrastructure.
+
+**Fix**: Ensure the base infrastructure has created the hosted zone for your environment.
+
+## Next steps
+
+- [Infrastructure overview](/engine/address-api/infrastructure/overview)
+- [Deployment process](/engine/address-api/operations/deployment)
+- [Infrastructure README](https://github.com/commenda-eng/address-api/blob/main/infrastructure/README.md)
