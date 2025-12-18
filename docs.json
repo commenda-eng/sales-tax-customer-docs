@@ -92,6 +92,8 @@
                 "pages": [
                   "engine/address-api/development/local-setup",
                   "engine/address-api/development/environment-configuration",
+                  "engine/address-api/development/working-with-sql",
+                  "engine/address-api/development/error-handling",
                   "engine/address-api/development/testing",
                   "engine/address-api/development/contributing"
                 ]
@@ -100,14 +102,12 @@
                 "group": "Operations",
                 "pages": [
                   "engine/address-api/operations/deployment",
-                  "engine/address-api/operations/database-access",
+                  "engine/address-api/operations/database-connection",
                   "engine/address-api/operations/debugging",
                   "engine/address-api/operations/monitoring",
-                  "engine/address-api/operations/troubleshooting"
+                  "engine/address-api/operations/common-failures"
                 ]
-              },
-              "engine/address-api/workflows",
-              "engine/address-api/future-features"
+              }
             ]
           }
         ]
