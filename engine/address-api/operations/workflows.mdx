@@ -1,0 +1,390 @@
+---
+title: GitHub workflows
+description: CI/CD workflows and checks for the Address API
+---
+
+The Address API uses GitHub Actions for continuous integration and deployment. This document explains all workflows and checks.
+
+## Workflows overview
+
+| Workflow | Trigger | Purpose |
+|----------|---------|---------|
+| **PR Checks** | Pull request | Run tests and linting |
+| **Deploy App** | Release published | Deploy to staging or production |
+
+## PR checks workflow
+
+**File**: `.github/workflows/pr-checks.yml`
+
+**Triggers**: When a pull request is opened or updated
+
+### Jobs
+
+#### 1. Go lint
+
+Checks code quality and style.
+
+```yaml
+- name: golangci-lint
+  uses: golangci/golangci-lint-action@v3
+  with:
+    version: latest
+    args: --timeout=5m
+```
+
+**Checks**:
+- Code formatting
+- Unused variables
+- Error handling
+- Code complexity
+- Security issues
+
+**Common failures**:
+- Unused imports
+- Missing error checks
+- Inefficient code patterns
+
+**Fix**:
+```bash
+golangci-lint run --fix
+```
+
+#### 2. Go format
+
+Ensures code is properly formatted.
+
+```yaml
+- name: Check formatting
+  run: |
+    if [ -n "$(goimports -l -local github.com/commenda/addresses-api .)" ]; then
+      echo "The following files are not formatted correctly:"
+      goimports -l -local github.com/commenda/addresses-api .
+      exit 1
+    fi
+```
+
+**Fix**:
+```bash
+goimports -w -local github.com/commenda/addresses-api .
+```
+
+#### 3. Check build
+
+Verifies the code compiles.
+
+```yaml
+- name: Build
+  run: go build $(go list ./... | grep -v /tests/)
+```
+
+**Common failures**:
+- Syntax errors
+- Missing dependencies
+- Type errors
+
+**Fix**:
+```bash
+go mod tidy
+go build ./...
+```
+
+#### 4. Sqlc lint
+
+Validates SQL queries.
+
+```yaml
+- name: sqlc vet
+  run: sqlc vet
+```
+
+**Checks**:
+- SQL syntax
+- Query correctness
+- Type safety
+
+**Common failures**:
+- Invalid SQL syntax
+- Missing table columns
+- Type mismatches
+
+**Fix**: Update SQL queries in `internal/*/sql/queries.sql`
+
+#### 5. Migrations lint
+
+Ensures database migrations are properly created.
+
+```yaml
+- name: Check for missing migrations
+  run: |
+    atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\
+      --dir file://database/migrations \\
+      --dev-url docker://postgres/15/dev?search_path=public \\
+      --to file://database/schema.sql
+```
+
+**Checks**:
+- Schema changes have corresponding migrations
+- Migrations are in sync with schema
+
+**Common failures**:
+- Modified `database/schema.sql` without creating a migration
+
+**Fix**:
+```bash
+atlas migrate diff your_migration_name \\
+  --dir "file://database/migrations" \\
+  --dev-url "docker://postgres/15/dev?search_path=public" \\
+  --to "file://database/schema.sql"
+```
+
+#### 6. Integration tests
+
+Runs the full integration test suite.
+
+```yaml
+- name: Run Integration Tests
+  env:
+    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+  run: go test -v -timeout 2m ./tests/integration/...
+```
+
+**Requirements**:
+- Docker running (for testcontainers)
+- Google API key set
+
+**Common failures**:
+- Test failures due to code changes
+- Docker not available
+- API key not set
+
+**Fix**: Run tests locally and fix failures:
+```bash
+export GOOGLE_GEOCODING_API_KEY=your-key
+go test -v ./tests/integration/...
+```
+
+## Deploy app workflow
+
+**File**: `.github/workflows/deploy-app.yml`
+
+**Triggers**: When a release is published
+
+### Environment detection
+
+```yaml
+environment: ${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
+```
+
+| Release tag | Environment | Example |
+|-------------|-------------|---------|
+| `v*-rc.*` | staging | v0.1.0-rc.1 |
+| `v*` | prod | v0.1.0 |
+
+### Jobs
+
+#### 1. Checkout code
+
+```yaml
+- uses: actions/checkout@v4
+```
+
+Clones the repository at the release tag.
+
+#### 2. Set up Go
+
+```yaml
+- name: Set up Go
+  uses: actions/setup-go@v4
+  with:
+    go-version: "1.23.1"
+```
+
+Installs Go 1.23.1.
+
+#### 3. Setup Atlas
+
+```yaml
+- name: Setup Atlas
+  uses: ariga/setup-atlas@v0
+```
+
+Installs Atlas for database migrations.
+
+#### 4. Run integration tests
+
+```yaml
+- name: Run Integration Tests
+  env:
+    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+  run: go test -v -timeout 2m ./tests/integration/...
+```
+
+Ensures tests pass before deploying.
+
+#### 5. Configure AWS credentials
+
+```yaml
+- name: Configure AWS Credentials
+  uses: aws-actions/configure-aws-credentials@v4
+  with:
+    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+    aws-region: ap-south-1
+```
+
+Authenticates with AWS using OIDC.
+
+#### 6. Login to ECR
+
+```yaml
+- name: Login to Amazon ECR
+  uses: aws-actions/amazon-ecr-login@v2
+```
+
+Authenticates Docker with ECR.
+
+#### 7. Create ECR repository
+
+```yaml
+- name: Create ECR repository if it doesn't exist
+  run: |
+    aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \\
+    aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+```
+
+Ensures ECR repository exists before pushing.
+
+#### 8. Build and push Docker image
+
+```yaml
+- name: Build and push Docker image
+  run: |
+    docker build -t ${{ env.IMAGE_URI }} .
+    docker push ${{ env.IMAGE_URI }}
+```
+
+Builds and pushes the Docker image to ECR.
+
+#### 9. Deploy with Terraform
+
+```yaml
+- name: Terraform Init
+  run: terraform init
+
+- name: Terraform Workspace
+  run: terraform workspace select ${{ env.ENVIRONMENT }}
+
+- name: Terraform Apply
+  run: |
+    terraform apply -auto-approve \\
+      -var="app_image_tag=${{ github.ref_name }}" \\
+      -var="app_secrets=${{ secrets.APP_SECRETS }}"
+```
+
+Updates infrastructure and deploys new image.
+
+#### 10. Wait for ECS deployment
+
+```yaml
+- name: Wait for ECS service to stabilize
+  run: |
+    aws ecs wait services-stable \\
+      --cluster ${{ env.ECS_CLUSTER }} \\
+      --services address-api \\
+      --region ap-south-1
+```
+
+Waits for ECS rolling deployment to complete.
+
+#### 11. Smoke test
+
+```yaml
+- name: Smoke test
+  run: |
+    curl -f https://address.in.${{ env.DOMAIN_SUFFIX }}.commenda.io/healthz
+```
+
+Verifies the deployment is healthy.
+
+## Workflow secrets
+
+Required secrets in GitHub repository settings:
+
+| Secret | Description | Example |
+|--------|-------------|---------|
+| `AWS_ROLE_ARN` | IAM role for GitHub Actions | arn:aws:iam::123456789012:role/github-actions |
+| `GOOGLE_GEOCODING_API_KEY` | Google API key | AIzaSy... |
+| `APP_SECRETS` | JSON of application secrets | {"KEY":"value"} |
+
+## Workflow permissions
+
+The GitHub Actions workflow requires:
+
+### AWS permissions
+
+- **ECR**: Create repositories, push images
+- **ECS**: Update services, describe tasks
+- **Terraform**: Read/write state, manage resources
+- **Secrets Manager**: Read secrets
+
+### GitHub permissions
+
+```yaml
+permissions:
+  id-token: write  # For OIDC authentication
+  contents: read   # For checking out code
+```
+
+## Monitoring workflows
+
+### View workflow runs
+
+1. Go to **Actions** tab in GitHub
+2. Select a workflow
+3. Click on a run to see details
+
+### Workflow notifications
+
+Notifications are sent to:
+- **GitHub**: In-app notifications
+- **Slack**: #engineering channel (if configured)
+- **Email**: Commit author
+
+## Troubleshooting workflows
+
+### Workflow fails at "Run Integration Tests"
+
+**Cause**: Tests are failing.
+
+**Fix**: Run tests locally and fix failures.
+
+### Workflow fails at "Build and push Docker image"
+
+**Cause**: Docker build error or ECR authentication issue.
+
+**Fix**: 
+1. Check Dockerfile syntax
+2. Verify AWS credentials
+3. Check ECR repository exists
+
+### Workflow fails at "Terraform Apply"
+
+**Cause**: Infrastructure changes have errors.
+
+**Fix**:
+1. Review Terraform plan
+2. Check for resource conflicts
+3. Verify AWS permissions
+
+### Workflow fails at "Smoke test"
+
+**Cause**: Deployment succeeded but service is unhealthy.
+
+**Fix**:
+1. Check CloudWatch logs
+2. Verify health endpoint
+3. Check ECS service events
+
+## Next steps
+
+- [Deployment guide](/engine/address-api/operations/deployment)
+- [Contributing guide](/engine/address-api/development/contributing)
