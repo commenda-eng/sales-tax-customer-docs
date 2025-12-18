@@ -250,9 +250,9 @@ The Address API automatically caches geocoding results to improve performance an
 
 Google's Geocoding API may return state information in various formats (ISO code, full name, or local variant). The Address API standardizes these using the ISO 3166 content database:
 
-1. **Google returns ISO code** (e.g., "CA"): Looks up the full state name from the database
-2. **Google returns full name** (e.g., "California"): Looks up the ISO code from the database
-3. **Google returns local variant** (e.g., "Québec"): Looks up the ISO code from the database
+1. **Google returns ISO code** (e.g., "CA"): Validates it's a valid ISO 3166 code and uses the ISO 3166 code from the database
+2. **Google returns full name** (e.g., "California"): Matches against subdivision name to find the ISO 3166 code from the database
+3. **Google returns local variant** (e.g., "Québec"): Matches against subdivision local variant to find the ISO 3166 code from the database
 4. **State not found in database**: Returns whatever Google provided without failing
 
 This ensures consistent address standardization across all responses while maintaining resilience when encountering unknown subdivisions.
