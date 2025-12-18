@@ -12,7 +12,7 @@ ISO 3166 is an international standard for country codes and their subdivisions (
 ## Endpoint
 
 ```
-POST /ingest/iso-3166
+POST /api/v1/internal/iso_3166/ingest/json
 ```
 
 **Required role**: `MANAGE_CONTENT`
@@ -79,55 +79,20 @@ The ingestion process uses an **upsert** strategy:
 2. **Insert or update**: If a record with the same country/subdivision combination exists, it's updated. Otherwise, a new record is created
 3. **Duplicate detection**: The API validates that no duplicates exist within a single request
 4. **Batch processing**: All items in the request are processed in a single transaction
+5. **Validation**: Each item is validated for required fields and format constraints
 
 ## Example requests
 
 ### Ingest US states
 
 ```bash
-curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
-  -H "x-commenda-key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "country_code": "US",
-        "subdivision_code": "CA",
-        "subdivision_name": "California",
-        "subdivision_local_variant": null
-      },
-      {
-        "country_code": "US",
-        "subdivision_code": "TX",
-        "subdivision_name": "Texas",
-        "subdivision_local_variant": null
-      }
-    ]
-  }'
+curl -X POST https://address-api.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "US",\n        "subdivision_code": "CA",\n        "subdivision_name": "California",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "US",\n        "subdivision_code": "TX",\n        "subdivision_name": "Texas",\n        "subdivision_local_variant": null\n      }\n    ]\n  }'
 ```
 
 ### Ingest Canadian provinces
 
 ```bash
-curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
-  -H "x-commenda-key: your-api-key" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "items": [
-      {
-        "country_code": "CA",
-        "subdivision_code": "ON",
-        "subdivision_name": "Ontario",
-        "subdivision_local_variant": null
-      },
-      {
-        "country_code": "CA",
-        "subdivision_code": "QC",
-        "subdivision_name": "Quebec",
-        "subdivision_local_variant": "Québec"
-      }
-    ]
-  }'
+curl -X POST https://address-api.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "CA",\n        "subdivision_code": "ON",\n        "subdivision_name": "Ontario",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "CA",\n        "subdivision_code": "QC",\n        "subdivision_name": "Quebec",\n        "subdivision_local_variant": "Québec"\n      }\n    ]\n  }'
 ```
 
 ## Error responses
@@ -140,7 +105,7 @@ curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
     "type": "CLIENT_BAD_REQUEST",
     "title": "Invalid request body.",
     "status": 400,
-    "instance": "/ingest/iso-3166",
+    "instance": "/api/v1/internal/iso_3166/ingest/json",
     "detail": {
       "description": "The request body is invalid or missing required fields."
     }
@@ -156,7 +121,7 @@ curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
     "type": "CLIENT_BAD_REQUEST",
     "title": "ISO 3166 ingestion validation failed.",
     "status": 400,
-    "instance": "/ingest/iso-3166",
+    "instance": "/api/v1/internal/iso_3166/ingest/json",
     "detail": {
       "description": "Validation errors occurred during ISO 3166 ingestion."
     },
@@ -170,6 +135,22 @@ curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
 }
 ```
 
+### Missing API key (401)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Missing API key.",
+    "status": 401,
+    "instance": "/api/v1/internal/iso_3166/ingest/json",
+    "detail": {
+      "description": "The x-commenda-key header is required for authentication."
+    }
+  }
+}
+```
+
 ### Missing role (403)
 
 ```json
@@ -178,12 +159,29 @@ curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
     "type": "CLIENT_FORBIDDEN",
     "title": "Missing required role.",
     "status": 403,
-    "instance": "/ingest/iso-3166",
+    "instance": "/api/v1/internal/iso_3166/ingest/json",
     "detail": {
       "description": "Your API key does not have the MANAGE_CONTENT role."
     }
   }
 }
+```
+
+## Database schema
+
+The ISO 3166 data is stored in the `iso_3166` table:
+
+```sql
+CREATE TABLE "iso_3166" (
+  "id" serial NOT NULL,
+  "country_code" character varying(2) NOT NULL,
+  "subdivision_code" character varying(3) NOT NULL,
+  "subdivision_name" text NULL,
+  "subdivision_local_variant" text NULL,
+  PRIMARY KEY ("id"),
+  CONSTRAINT "iso_3166_country_subdivision_unique"
+    UNIQUE ("country_code", "subdivision_code")
+);
 ```
 
 ## Best practices
@@ -192,3 +190,4 @@ curl -X POST https://address-api.in.commenda.io/ingest/iso-3166 \
 - **Validate data**: Ensure country codes are valid ISO 3166-1 alpha-2 codes
 - **Handle errors**: Check for duplicate records and validation errors in your ingestion pipeline
 - **Update regularly**: Re-run ingestion when subdivision data changes (new states, name changes, etc.)
+- **Use upsert behavior**: Don't worry about duplicates - the API will update existing records

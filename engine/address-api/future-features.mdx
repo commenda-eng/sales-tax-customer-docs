@@ -1,0 +1,322 @@
+---
+title: Future features
+description: Planned enhancements for the Address API
+---
+
+This document outlines planned features and enhancements for the Address API.
+
+## Effective date ranges for ISO 3166 content
+
+### Overview
+
+Add temporal validity to ISO 3166 subdivision data to handle historical changes in country subdivisions.
+
+### Problem
+
+Currently, the ISO 3166 content has a simple unique constraint on `(country_code, subdivision_code)`. This doesn't handle cases where:
+- A subdivision changes its name over time
+- A subdivision code is reused for a different region
+- Historical address data needs to be validated against past subdivision structures
+
+### Proposed solution
+
+Add `effective_start_date` and `effective_end_date` columns to track when a subdivision record is valid.
+
+#### Database schema changes
+
+```sql
+ALTER TABLE iso_3166
+ADD COLUMN effective_start_date DATE NOT NULL DEFAULT '1900-01-01',
+ADD COLUMN effective_end_date DATE;
+
+-- Drop old unique constraint
+ALTER TABLE iso_3166
+DROP CONSTRAINT iso_3166_country_subdivision_unique;
+
+-- Add new unique constraint with date range
+ALTER TABLE iso_3166
+ADD CONSTRAINT iso_3166_country_subdivision_date_unique
+EXCLUDE USING gist (
+  country_code WITH =,
+  subdivision_code WITH =,
+  daterange(effective_start_date, effective_end_date, '[]') WITH &&
+);
+```
+
+#### Updated data model
+
+```go
+type ISO3166 struct {
+    ID                       int       `json:"id"`
+    CountryCode              string    `json:"country_code"`
+    SubdivisionCode          string    `json:"subdivision_code"`
+    SubdivisionName          *string   `json:"subdivision_name"`
+    SubdivisionLocalVariant  *string   `json:"subdivision_local_variant"`
+    EffectiveStartDate       time.Time `json:"effective_start_date"`
+    EffectiveEndDate         *time.Time `json:"effective_end_date"`
+}
+```
+
+#### Updated ingestion API
+
+```json
+{
+  "items": [
+    {
+      "country_code": "US",
+      "subdivision_code": "CA",
+      "subdivision_name": "California",
+      "subdivision_local_variant": null,
+      "effective_start_date": "1850-09-09",
+      "effective_end_date": null
+    }
+  ]
+}
+```
+
+#### Query logic
+
+When validating addresses, query for the subdivision that was valid at a specific date:
+
+```sql
+SELECT *
+FROM iso_3166
+WHERE country_code = $1
+  AND subdivision_code = $2
+  AND effective_start_date <= $3
+  AND (effective_end_date IS NULL OR effective_end_date >= $3);
+```
+
+### Benefits
+
+- **Historical accuracy**: Validate addresses against the correct subdivision structure for their time period
+- **Data integrity**: Prevent conflicts when subdivision codes are reused
+- **Audit trail**: Track when subdivisions changed
+- **Compliance**: Meet regulatory requirements for historical data validation
+
+### Implementation steps
+
+1. **Create migration** to add date columns
+2. **Update schema.sql** with new columns and constraint
+3. **Update sqlc queries** to include date filtering
+4. **Update ingestion API** to accept date fields
+5. **Update geocoding logic** to use current date for validation
+6. **Add tests** for date range scenarios
+7. **Document** the new fields and behavior
+
+### Migration strategy
+
+For existing data:
+- Set `effective_start_date` to `1900-01-01` (far past)
+- Set `effective_end_date` to `NULL` (still valid)
+
+This ensures backward compatibility while enabling future temporal queries.
+
+### Example use cases
+
+#### Use case 1: Subdivision name change
+
+```sql
+-- Old name (valid until 2020)
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
+VALUES ('IN', 'OR', 'Orissa', '1950-01-26', '2011-11-01');
+
+-- New name (valid from 2011)
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
+VALUES ('IN', 'OR', 'Odisha', '2011-11-01', NULL);
+```
+
+#### Use case 2: Subdivision code reuse
+
+```sql
+-- Original subdivision (valid until split)
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
+VALUES ('IN', 'AP', 'Andhra Pradesh', '1956-11-01', '2014-06-02');
+
+-- After split (valid from 2014)
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
+VALUES ('IN', 'AP', 'Andhra Pradesh (post-split)', '2014-06-02', NULL);
+
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
+VALUES ('IN', 'TG', 'Telangana', '2014-06-02', NULL);
+```
+
+### API changes
+
+#### Geocoding API
+
+Add optional `as_of_date` parameter:
+
+```json
+{
+  "address": "Hyderabad, Andhra Pradesh, India",
+  "as_of_date": "2010-01-01"
+}
+```
+
+If not provided, uses current date.
+
+#### Ingestion API
+
+Require date fields for new records:
+
+```json
+{
+  "items": [
+    {
+      "country_code": "IN",
+      "subdivision_code": "TG",
+      "subdivision_name": "Telangana",
+      "subdivision_local_variant": "తెలంగాణ",
+      "effective_start_date": "2014-06-02",
+      "effective_end_date": null
+    }
+  ]
+}
+```
+
+### Backward compatibility
+
+- Existing records get default dates
+- API remains backward compatible (dates optional)
+- Queries without dates use current date
+- No breaking changes to existing clients
+
+## Other planned features
+
+### 1. Multiple geocoding providers
+
+Add support for alternative geocoding providers:
+- OpenStreetMap Nominatim
+- Mapbox Geocoding API
+- HERE Geocoding API
+
+**Benefits**:
+- Redundancy if Google API is down
+- Cost optimization
+- Better coverage in certain regions
+
+### 2. Batch geocoding endpoint
+
+Add endpoint to geocode multiple addresses in one request:
+
+```json
+{
+  "addresses": [
+    "123 Main St, San Francisco, CA",
+    "456 Oak Ave, New York, NY",
+    "789 Pine Rd, Austin, TX"
+  ]
+}
+```
+
+**Benefits**:
+- Reduced API calls
+- Better performance for bulk operations
+- Lower latency
+
+### 3. Address validation
+
+Add endpoint to validate address format without geocoding:
+
+```json
+{
+  "address_line_1": "123 Main St",
+  "city": "San Francisco",
+  "state": "CA",
+  "postal_code": "94108",
+  "country": "US"
+}
+```
+
+**Returns**:
+- Validation errors
+- Suggestions for corrections
+- Confidence score
+
+### 4. Reverse geocoding
+
+Add endpoint to convert coordinates to address:
+
+```json
+{
+  "latitude": 37.7749,
+  "longitude": -122.4194
+}
+```
+
+**Returns**:
+- Formatted address
+- Address components
+- Place information
+
+### 5. IAM authentication for database
+
+Replace password-based authentication with IAM database authentication:
+
+**Benefits**:
+- No password rotation needed
+- Automatic credential management
+- Better audit trail
+- Follows AWS best practices
+
+### 6. Read replicas
+
+Add RDS read replicas for:
+- Geocoding cache lookups
+- ISO 3166 content queries
+
+**Benefits**:
+- Reduced load on primary database
+- Better read performance
+- Higher availability
+
+### 7. API rate limiting
+
+Implement rate limiting per API key:
+
+**Features**:
+- Configurable limits per role
+- Burst allowance
+- Rate limit headers in response
+- 429 status code when exceeded
+
+### 8. Metrics and analytics
+
+Add detailed metrics:
+- Cache hit rate
+- Average response time per endpoint
+- Geocoding provider success rate
+- API key usage statistics
+
+### 9. Webhook notifications
+
+Send webhooks for events:
+- Failed geocoding attempts
+- Cache misses
+- Rate limit exceeded
+- System errors
+
+### 10. GraphQL API
+
+Add GraphQL endpoint alongside REST API:
+
+**Benefits**:
+- Flexible queries
+- Reduced over-fetching
+- Better for complex queries
+- Modern API standard
+
+## Contributing
+
+If you'd like to implement any of these features:
+
+1. Create a GitHub issue to discuss the approach
+2. Follow the [Contributing guide](/engine/address-api/development/contributing)
+3. Write tests first (TDD)
+4. Submit a pull request
+
+## Next steps
+
+- [Contributing guide](/engine/address-api/development/contributing)
+- [API reference](/engine/address-api/api-reference/geoencode)

@@ -1,0 +1,433 @@
+---
+title: Contributing
+description: How to contribute to the Address API
+---
+
+This guide explains the workflow for contributing code changes to the Address API.
+
+## Development workflow
+
+### 1. Start the server locally
+
+Before making changes, ensure the server runs locally:
+
+```bash
+# Start PostgreSQL
+brew services start postgresql@15  # macOS
+# or
+sudo systemctl start postgresql    # Linux
+
+# Start the server
+go run main.go serve
+```
+
+Verify it's working:
+
+```bash
+curl http://localhost:8080/healthz
+```
+
+### 2. Create a new branch
+
+```bash
+git checkout -b feature/your-feature-name
+```
+
+Branch naming conventions:
+- `feature/` - New features
+- `fix/` - Bug fixes
+- `refactor/` - Code refactoring
+- `docs/` - Documentation changes
+
+### 3. Write tests first (TDD approach)
+
+Before implementing your feature, write tests that define the expected behavior.
+
+#### Add integration tests
+
+Create or update test files in `tests/integration/`:
+
+```go
+func TestYourNewFeature(t *testing.T) {
+    // Setup
+    e, store := setupTestServer(t)
+    defer store.ConnPool.Close()
+
+    // Create test data
+    apiKey := createTestAPIKey(t, store, []string{"GEOCODE"})
+
+    // Make request
+    req := httptest.NewRequest(http.MethodPost, "/api/v1/your-endpoint",
+        strings.NewReader(`{"field":"value"}`))
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-commenda-key", apiKey)
+
+    rec := httptest.NewRecorder()
+    e.ServeHTTP(rec, req)
+
+    // Assert
+    assert.Equal(t, http.StatusOK, rec.Code)
+    // Add more assertions
+}
+```
+
+#### Run tests (they should fail)
+
+```bash
+go run . tests
+```
+
+Expected output:
+```
+FAIL: TestYourNewFeature
+```
+
+This confirms your tests are working and the feature isn't implemented yet.
+
+### 4. Implement the feature
+
+Now implement the actual feature to make the tests pass.
+
+#### Example: Adding a new endpoint
+
+**Step 1: Define the DTO (Data Transfer Object)**
+
+Create `internal/your_feature/dto/your_dto.go`:
+
+```go
+package dto
+
+type YourRequest struct {
+    Field string `json:"field" validate:"required,min=1"`
+}
+
+type YourResponse struct {
+    Result string `json:"result"`
+}
+```
+
+**Step 2: Create the handler**
+
+Create `internal/your_feature/handler.go`:
+
+```go
+package your_feature
+
+import (
+    "net/http"
+    "github.com/commenda/addresses-api/database"
+    "github.com/commenda/addresses-api/internal/common/internal_context"
+    "github.com/commenda/addresses-api/internal/your_feature/dto"
+)
+
+func YourHandler(c internal_context.HandlerContext, store database.Store) error {
+    var req dto.YourRequest
+    if err := c.Bind(&req); err != nil {
+        return err
+    }
+
+    if err := c.Validate(&req); err != nil {
+        return err
+    }
+
+    // Your business logic here
+    result := processRequest(req)
+
+    return c.JSON(http.StatusOK, dto.YourResponse{
+        Result: result,
+    })
+}
+```
+
+**Step 3: Add routes**
+
+Create `internal/your_feature/routes.go`:
+
+```go
+package your_feature
+
+import (
+    "github.com/commenda/addresses-api/internal/common/helpers"
+    "github.com/labstack/echo/v4"
+)
+
+func AddRoutes(e *echo.Echo) {
+    e.POST("/api/v1/your-endpoint", helpers.WrapHandler(YourHandler))
+}
+```
+
+**Step 4: Register routes in main server**
+
+Edit `cmd/serve.go`:
+
+```go
+import (
+    "github.com/commenda/addresses-api/internal/your_feature"
+)
+
+func runServer(cmd *cobra.Command, args []string) {
+    // ... existing code ...
+
+    // Register routes
+    e.GET("/", helpers.WrapHandler(index))
+    e.GET("/healthz", helpers.WrapHandler(healthz))
+    content_ingestion.AddRoutes(e)
+    geoencode.AddRoutes(e)
+    your_feature.AddRoutes(e)  // Add this line
+
+    // ... rest of the code ...
+}
+```
+
+### 5. Run tests again (they should pass)
+
+```bash
+go run . tests
+```
+
+Expected output:
+```
+PASS: TestYourNewFeature
+```
+
+### 6. Add database migrations (if needed)
+
+If your feature requires database changes:
+
+```bash
+# Create a new migration
+atlas migrate diff your_migration_name \\\n  --dir "file://database/migrations" \\\n  --dev-url "docker://postgres/15/dev?search_path=public" \\\n  --to "file://database/schema.sql"
+```
+
+This creates a new migration file in `database/migrations/`.
+
+**Update `database/schema.sql`** with your schema changes:
+
+```sql
+-- Add your table or column changes
+ALTER TABLE your_table ADD COLUMN new_column text;
+```
+
+### 7. Generate database code (if needed)
+
+If you added new SQL queries:
+
+**Step 1: Add queries to SQL file**
+
+Edit or create `internal/your_feature/sql/queries.sql`:
+
+```sql
+-- name: GetYourData :one
+SELECT * FROM your_table WHERE id = $1;
+
+-- name: InsertYourData :one
+INSERT INTO your_table (field1, field2)
+VALUES ($1, $2)
+RETURNING *;
+```
+
+**Step 2: Update `sqlc.json`**
+
+Add your SQL directory to `sqlc.json`:
+
+```json
+{
+  "version": "2",
+  "sql": [
+    {
+      "schema": "database/schema.sql",
+      "queries": "internal/your_feature/sql/queries.sql",
+      "engine": "postgresql",
+      "gen": {
+        "go": {
+          "package": "your_feature_dao",
+          "out": "internal/your_feature/dao",
+          "sql_package": "pgx/v5"
+        }
+      }
+    }
+  ]
+}
+```
+
+**Step 3: Generate code**
+
+```bash
+sqlc generate
+```
+
+### 8. Run all checks locally
+
+Before creating a PR, run all checks that will run in CI:
+
+```bash
+# Format code
+goimports -w -local github.com/commenda/addresses-api .
+
+# Lint
+golangci-lint run --timeout=5m
+
+# Run tests
+go test -v ./...
+
+# Check build
+go build $(go list ./... | grep -v /tests/)
+
+# Check migrations
+atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\\n  --dir file://database/migrations \\\n  --dev-url docker://postgres/15/dev?search_path=public \\\n  --to file://database/schema.sql
+```
+
+### 9. Commit your changes
+
+```bash
+git add .
+git commit -m "feat: add your feature description"
+```
+
+Commit message conventions:
+- `feat:` - New feature
+- `fix:` - Bug fix
+- `refactor:` - Code refactoring
+- `docs:` - Documentation changes
+- `test:` - Test changes
+- `chore:` - Build/tooling changes
+
+### 10. Push and create a pull request
+
+```bash
+git push origin feature/your-feature-name
+```
+
+Go to GitHub and create a pull request against `main`.
+
+## Pull request checks
+
+When you create a PR, the following checks run automatically:
+
+| Check | Description | Must pass |
+|-------|-------------|-----------|
+| **Go Lint** | Code quality and style checks | ✅ Yes |
+| **Go Format** | Code formatting with goimports | ✅ Yes |
+| **Check Build** | Ensures code compiles | ✅ Yes |
+| **Sqlc Lint** | SQL query validation | ✅ Yes |
+| **Migrations Lint** | Database migration validation | ✅ Yes |
+| **Integration Tests** | Full integration test suite | ✅ Yes |
+
+### Common check failures
+
+#### Go Format Check fails
+
+**Error**: "The following files are not formatted correctly"
+
+**Fix**:
+```bash
+goimports -w -local github.com/commenda/addresses-api .
+git add .
+git commit -m "fix: format code"
+git push
+```
+
+#### Migrations Lint fails
+
+**Error**: "Missing schema migration"
+
+**Fix**: You modified `database/schema.sql` but didn't create a migration:
+```bash
+atlas migrate diff your_change_description \\\n  --dir "file://database/migrations" \\\n  --dev-url "docker://postgres/15/dev?search_path=public" \\\n  --to "file://database/schema.sql"
+
+git add database/migrations/
+git commit -m "feat: add migration for your changes"
+git push
+```
+
+#### Integration Tests fail
+
+**Error**: Test failures in CI
+
+**Fix**: Run tests locally to debug:
+```bash
+go test -v ./tests/integration/...
+```
+
+## Merging your PR
+
+Once all checks pass and your PR is approved:
+
+1. **Squash and merge** (preferred) - Combines all commits into one
+2. **Merge commit** - Keeps all commits separate
+3. **Rebase and merge** - Replays commits on top of main
+
+**Note**: Merging to `main` does NOT deploy anything. It only updates the main branch.
+
+## Deployment
+
+After your PR is merged, you need to create a release to deploy:
+
+### Deploy to staging
+
+1. Go to **Releases** → **Create a new release**
+2. Tag: `v0.1.0-rc.1` (increment version)
+3. Check: **Set as a pre-release**
+4. Click: **Publish release**
+
+GitHub Actions will automatically:
+- Build Docker image
+- Push to ECR
+- Deploy to staging
+- Run smoke tests
+
+### Deploy to production
+
+1. Go to **Releases** → **Create a new release**
+2. Tag: `v0.1.0` (same version without `-rc.X`)
+3. **Do NOT check** "Set as a pre-release"
+4. Click: **Publish release**
+
+GitHub Actions will deploy to production.
+
+## Best practices
+
+### Code style
+
+- Follow Go conventions (use `gofmt` and `goimports`)
+- Use meaningful variable names
+- Add comments for complex logic
+- Keep functions small and focused
+
+### Testing
+
+- Write tests before implementation (TDD)
+- Test both success and error cases
+- Use table-driven tests for multiple scenarios
+- Mock external dependencies in unit tests
+
+### Database
+
+- Always create migrations for schema changes
+- Never modify existing migrations
+- Test migrations on a local database first
+- Use transactions for data consistency
+
+### Error handling
+
+- Return structured errors using the error types in `internal/common/clients/errors.go`
+- Log errors with context using zerolog
+- Don't expose internal errors to clients
+
+### Security
+
+- Validate all input
+- Use parameterized queries (sqlc does this automatically)
+- Never log sensitive data (passwords, API keys)
+- Follow principle of least privilege for API keys
+
+## Getting help
+
+- **Questions**: Ask in the team Slack channel
+- **Bugs**: Create a GitHub issue
+- **Documentation**: Check this documentation or the infrastructure README
+
+## Next steps
+
+- [Deployment process](/engine/address-api/operations/deployment)
+- [Debugging guide](/engine/address-api/operations/debugging)

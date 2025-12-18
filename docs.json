@@ -78,10 +78,36 @@
           {
             "group": "Address API",
             "pages": [
-              "engine/address-api/overview",
-              "engine/address-api/authorization",
-              "engine/address-api/geocode",
-              "engine/address-api/ingestion"
+              "engine/address-api/introduction",
+              {
+                "group": "API reference",
+                "pages": [
+                  "engine/address-api/api-reference/authorization",
+                  "engine/address-api/api-reference/geoencode",
+                  "engine/address-api/api-reference/ingestion"
+                ]
+              },
+              {
+                "group": "Development",
+                "pages": [
+                  "engine/address-api/development/local-setup",
+                  "engine/address-api/development/environment-configuration",
+                  "engine/address-api/development/testing",
+                  "engine/address-api/development/contributing"
+                ]
+              },
+              {
+                "group": "Operations",
+                "pages": [
+                  "engine/address-api/operations/deployment",
+                  "engine/address-api/operations/database-access",
+                  "engine/address-api/operations/debugging",
+                  "engine/address-api/operations/monitoring",
+                  "engine/address-api/operations/troubleshooting"
+                ]
+              },
+              "engine/address-api/workflows",
+              "engine/address-api/future-features"
             ]
           }
         ]

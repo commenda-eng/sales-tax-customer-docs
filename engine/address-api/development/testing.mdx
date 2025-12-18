@@ -1,0 +1,266 @@
+---
+title: Testing
+description: Run tests for the Address API
+---
+
+The Address API uses Go's built-in testing framework along with testcontainers for integration tests.
+
+## Test structure
+
+```
+tests/
+├── integration/          # Integration tests with real database
+│   ├── authorization_tests.go
+│   ├── geoencode_tests.go
+│   ├── ingestion_tests.go
+│   ├── integration_test.go
+│   └── test_helpers.go
+└── unit/                 # Unit tests
+    └── health_test.go
+```
+
+## Running tests
+
+### Run all tests
+
+```bash
+go test -v ./...
+```
+
+### Run integration tests only
+
+```bash
+go test -v ./tests/integration/...
+```
+
+### Run unit tests only
+
+```bash
+go test -v ./tests/unit/...
+```
+
+### Using the CLI command
+
+```bash
+# Run integration tests
+go run . tests
+
+# Run unit tests
+go run . tests unit-tests
+```
+
+## Integration tests
+
+Integration tests use [testcontainers-go](https://golang.testcontainers.org/) to spin up a real PostgreSQL database in Docker.
+
+### Prerequisites
+
+- Docker must be running
+- `GOOGLE_GEOCODING_API_KEY` environment variable must be set
+
+### How integration tests work
+
+1. **Container startup**: Testcontainers starts a PostgreSQL 15 container
+2. **Migration**: Atlas applies all migrations to the test database
+3. **Test execution**: Tests run against the real database
+4. **Cleanup**: Container is automatically destroyed after tests complete
+
+### Test coverage
+
+| Test file | Coverage |
+|-----------|----------|
+| `authorization_tests.go` | API key authentication and role-based access control |
+| `geoencode_tests.go` | Geocoding endpoint with caching and Google API integration |
+| `ingestion_tests.go` | ISO 3166 content ingestion with upsert logic |
+
+### Example integration test
+
+```go
+func TestGeocodeEndpoint(t *testing.T) {
+    // Setup test server
+    e, store := setupTestServer(t)
+    defer store.ConnPool.Close()
+
+    // Create test API key
+    apiKey := createTestAPIKey(t, store, []string{"GEOCODE"})
+
+    // Make request
+    req := httptest.NewRequest(http.MethodPost, "/api/v1/geoencode", 
+        strings.NewReader(`{"address":"94108, CA, US"}`))
+    req.Header.Set("Content-Type", "application/json")
+    req.Header.Set("x-commenda-key", apiKey)
+    
+    rec := httptest.NewRecorder()
+    e.ServeHTTP(rec, req)
+
+    // Assert response
+    assert.Equal(t, http.StatusOK, rec.Code)
+}
+```
+
+## Unit tests
+
+Unit tests test individual functions without external dependencies.
+
+### Example unit test
+
+```go
+func TestHealthEndpoint(t *testing.T) {
+    e := echo.New()
+    req := httptest.NewRequest(http.MethodGet, "/healthz", nil)
+    rec := httptest.NewRecorder()
+    
+    c := e.NewContext(req, rec)
+    
+    err := healthz(c)
+    
+    assert.NoError(t, err)
+    assert.Equal(t, http.StatusOK, rec.Code)
+}
+```
+
+## Test helpers
+
+The `test_helpers.go` file provides utilities for integration tests:
+
+```go
+// Setup test server with database
+func setupTestServer(t *testing.T) (*echo.Echo, database.Store)
+
+// Create test API key
+func createTestAPIKey(t *testing.T, store database.Store, roles []string) string
+
+// Make authenticated request
+func makeAuthenticatedRequest(e *echo.Echo, method, path, body, apiKey string) *httptest.ResponseRecorder
+```
+
+## Running tests in CI
+
+Tests run automatically on every pull request via GitHub Actions.
+
+### PR checks workflow
+
+```yaml
+integration-tests:
+  name: Integration Tests
+  runs-on: ubuntu-latest
+  environment: staging
+  steps:
+    - uses: actions/checkout@v4
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: "1.23.1"
+    - name: Setup Atlas
+      uses: ariga/setup-atlas@v0
+    - name: Run Integration Tests
+      env:
+        GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+      run: go test -v -timeout 2m ./tests/integration/...
+```
+
+## Test best practices
+
+### Writing integration tests
+
+1. **Use testcontainers**: Always use real database containers
+2. **Clean up**: Ensure containers are destroyed after tests
+3. **Isolate tests**: Each test should be independent
+4. **Use transactions**: Roll back changes after each test if needed
+5. **Test error cases**: Don't just test happy paths
+
+### Writing unit tests
+
+1. **Mock dependencies**: Use interfaces to mock external services
+2. **Test edge cases**: Empty strings, nil values, boundary conditions
+3. **Keep tests fast**: Unit tests should run in milliseconds
+4. **Use table-driven tests**: Test multiple scenarios with one test function
+
+### Example table-driven test
+
+```go
+func TestValidateAddress(t *testing.T) {
+    tests := []struct {
+        name    string
+        address string
+        wantErr bool
+    }{
+        {"valid address", "123 Main St", false},
+        {"empty address", "", true},
+        {"whitespace only", "   ", true},
+    }
+
+    for _, tt := range tests {
+        t.Run(tt.name, func(t *testing.T) {
+            err := validateAddress(tt.address)
+            if (err != nil) != tt.wantErr {
+                t.Errorf("validateAddress() error = %v, wantErr %v", err, tt.wantErr)
+            }
+        })
+    }
+}
+```
+
+## Test coverage
+
+Generate test coverage report:
+
+```bash
+# Generate coverage
+go test -coverprofile=coverage.out ./...
+
+# View coverage in browser
+go tool cover -html=coverage.out
+```
+
+## Troubleshooting
+
+### Error: "Docker daemon not running"
+
+**Cause**: Testcontainers requires Docker to be running.
+
+**Fix**:
+```bash
+# macOS
+open -a Docker
+
+# Linux
+sudo systemctl start docker
+```
+
+### Error: "GOOGLE_GEOCODING_API_KEY not set"
+
+**Cause**: Integration tests require Google API key for geocoding tests.
+
+**Fix**:
+```bash
+export GOOGLE_GEOCODING_API_KEY=your_api_key
+go test -v ./tests/integration/...
+```
+
+### Error: "port already in use"
+
+**Cause**: Previous test container wasn't cleaned up.
+
+**Fix**:
+```bash
+# Stop all containers
+docker stop $(docker ps -aq)
+
+# Remove all containers
+docker rm $(docker ps -aq)
+```
+
+### Tests timing out
+
+**Cause**: Slow network or Docker image pull.
+
+**Fix**: Increase timeout:
+```bash
+go test -v -timeout 5m ./tests/integration/...
+```
+
+## Next steps
+
+- [Contributing guide](/engine/address-api/development/contributing)
+- [Deployment process](/engine/address-api/operations/deployment)

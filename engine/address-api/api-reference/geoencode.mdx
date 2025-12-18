@@ -1,0 +1,256 @@
+---
+title: Geoencode API
+description: Convert addresses to geographic coordinates
+---
+
+The Geoencode API converts address strings into standardized address components and geographic coordinates.
+
+## Endpoint
+
+```
+POST /api/v1/geoencode
+```
+
+**Required role**: `GEOCODE`
+
+## Request
+
+### Headers
+
+| Header | Required | Description |
+|--------|----------|-------------|
+| `x-commenda-key` | Yes | Your API key with `GEOCODE` role |
+| `Content-Type` | Yes | Must be `application/json` |
+
+### Body
+
+```json
+{
+  "address": "94108, CA, US"
+}
+```
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `address` | string | Yes | The address to geocode (minimum 1 character) |
+
+## Response
+
+### Success response (200 OK)
+
+```json
+{
+  "data": {
+    "original_address": "94108, CA, US",
+    "address_line_1": null,
+    "address_line_2": null,
+    "city": "San Francisco",
+    "state": "California",
+    "state_code": "CA",
+    "country": "United States",
+    "country_code": "US",
+    "postal_code": "94108",
+    "latitude": 37.7909427,
+    "longitude": -122.4084994,
+    "provider_request": {
+      "address": "94108, CA, US"
+    },
+    "provider_response": {
+      "results": [
+        {
+          "address_components": [
+            {
+              "long_name": "94108",
+              "short_name": "94108",
+              "types": ["postal_code"]
+            },
+            {
+              "long_name": "San Francisco",
+              "short_name": "SF",
+              "types": ["locality", "political"]
+            },
+            {
+              "long_name": "San Francisco County",
+              "short_name": "San Francisco County",
+              "types": ["administrative_area_level_2", "political"]
+            },
+            {
+              "long_name": "California",
+              "short_name": "CA",
+              "types": ["administrative_area_level_1", "political"]
+            },
+            {
+              "long_name": "United States",
+              "short_name": "US",
+              "types": ["country", "political"]
+            }
+          ],
+          "formatted_address": "San Francisco, CA 94108, USA",
+          "geometry": {
+            "bounds": {
+              "northeast": {
+                "lat": 37.7962109,
+                "lng": -122.4034656
+              },
+              "southwest": {
+                "lat": 37.785744,
+                "lng": -122.4148261
+              }
+            },
+            "location": {
+              "lat": 37.7909427,
+              "lng": -122.4084994
+            },
+            "location_type": "APPROXIMATE",
+            "viewport": {
+              "northeast": {
+                "lat": 37.7962109,
+                "lng": -122.4034656
+              },
+              "southwest": {
+                "lat": 37.785744,
+                "lng": -122.4148261
+              }
+            }
+          },
+          "navigation_points": null,
+          "partial_match": false,
+          "place_id": "ChIJx5rJUYyAhYARxagLGBVGeFs",
+          "types": ["postal_code"]
+        }
+      ],
+      "status": "OK"
+    },
+    "cached_at": 1766029176
+  }
+}
+```
+
+### Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `original_address` | string | The address string that was geocoded |
+| `address_line_1` | string \| null | Primary street address |
+| `address_line_2` | string \| null | Secondary address information (suite, apt, etc.) |
+| `city` | string \| null | City name |
+| `state` | string \| null | Full state/province name |
+| `state_code` | string \| null | State/province code (e.g., "CA") |
+| `country` | string \| null | Full country name |
+| `country_code` | string \| null | ISO country code (e.g., "US") |
+| `postal_code` | string \| null | Postal/ZIP code |
+| `latitude` | number \| null | Geographic latitude |
+| `longitude` | number \| null | Geographic longitude |
+| `provider_request` | object | The request sent to the geocoding provider |
+| `provider_response` | object | The raw response from the geocoding provider (Google) |
+| `cached_at` | number \| null | Unix timestamp when the result was cached |
+
+## How it works
+
+1. **Check cache**: The API first checks if the address has been geocoded before
+2. **Cache hit**: If found, returns the cached result immediately
+3. **Cache miss**: If not found, calls Google Geocoding API
+4. **Parse response**: Extracts address components from Google's response
+5. **Validate state**: Checks if the state code exists in the ISO 3166 content database
+6. **Store in cache**: Saves the result for future requests
+7. **Return response**: Returns standardized address data
+
+## Example requests
+
+### Basic geocoding
+
+```bash
+curl -X POST https://address-api.in.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "address": "1600 Amphitheatre Parkway, Mountain View, CA"\n  }'
+```
+
+### Postal code lookup
+
+```bash
+curl -X POST https://address-api.in.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "address": "94108, CA, US"\n  }'
+```
+
+## Error responses
+
+### Invalid request body (400)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_BAD_REQUEST",
+    "title": "Invalid request body.",
+    "status": 400,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "The request body is invalid or missing required fields."
+    }
+  }
+}
+```
+
+### Missing API key (401)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Missing API key.",
+    "status": 401,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "The x-commenda-key header is required for authentication."
+    }
+  }
+}
+```
+
+### Missing role (403)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_FORBIDDEN",
+    "title": "Missing required role.",
+    "status": 403,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "Your API key does not have the GEOCODE role."
+    }
+  }
+}
+```
+
+### Google API error (500)
+
+If Google's Geocoding API is unavailable and the address is not in cache:
+
+```json
+{
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Geocoding failed.",
+    "status": 500,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "Failed to geocode address."
+    }
+  }
+}
+```
+
+## Caching behavior
+
+The Address API automatically caches geocoding results to improve performance and reduce costs:
+
+- **Cache key**: The original address string (case-sensitive)
+- **Cache duration**: Indefinite (until manually cleared)
+- **Cache hit**: Returns immediately with `cached_at` timestamp
+- **Cache miss**: Calls Google API, stores result, returns with `cached_at` timestamp
+
+## State code validation
+
+When Google returns a state code (e.g., "CA"), the API validates it against the ISO 3166 content database:
+
+- **State found**: Uses the full state name from the database
+- **State not found**: Returns the short name from Google without failing
+
+This ensures address standardization while maintaining resilience.

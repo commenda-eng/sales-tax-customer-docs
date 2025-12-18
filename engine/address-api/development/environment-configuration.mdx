@@ -1,0 +1,203 @@
+---
+title: Environment configuration
+description: Configure environment variables for the Address API
+---
+
+The Address API uses environment variables for configuration. This guide explains each variable and how to set them up.
+
+## Environment variables
+
+### Server configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `PORT` | No | `8080` | Port the server listens on |
+
+### Database configuration
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `RDS_USERNAME` | Yes | - | PostgreSQL username |
+| `RDS_PASSWORD` | Yes | - | PostgreSQL password |
+| `RDS_HOSTNAME` | Yes | - | PostgreSQL hostname (e.g., `localhost` or RDS endpoint) |
+| `RDS_PORT` | Yes | - | PostgreSQL port (usually `5432`) |
+| `RDS_DBNAME` | Yes | - | PostgreSQL database name |
+
+### External services
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GOOGLE_GEOCODING_API_KEY` | No* | - | Google Geocoding API key |
+
+\* Required only if you want to use the geocoding endpoint. The server will start without it, but geocoding requests will fail.
+
+## Configuration by environment
+
+### Local development
+
+Create a `.env` file in the project root:
+
+```bash
+# Server
+PORT=8080
+
+# Database
+RDS_USERNAME=postgres
+RDS_PASSWORD=your_local_password
+RDS_HOSTNAME=localhost
+RDS_PORT=5432
+RDS_DBNAME=address_api_dev
+
+# Google API
+GOOGLE_GEOCODING_API_KEY=your_google_api_key
+```
+
+### Staging
+
+Staging environment variables are managed through:
+- **AWS Secrets Manager**: `staging-address-api-secrets`
+- **Terraform**: Injected as ECS task environment variables
+
+To view staging secrets:
+
+```bash
+aws secretsmanager get-secret-value \\\n  --secret-id staging-address-api-secrets \\\n  --region ap-south-1 \\\n  --profile staging
+```
+
+### Production
+
+Production environment variables are managed through:
+- **AWS Secrets Manager**: `prod-address-api-secrets`
+- **Terraform**: Injected as ECS task environment variables
+
+To view production secrets:
+
+```bash
+aws secretsmanager get-secret-value \\\n  --secret-id prod-address-api-secrets \\\n  --region ap-south-1 \\\n  --profile prod
+```
+
+## Database connection string
+
+The application constructs the PostgreSQL connection string from environment variables:
+
+```
+postgres://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DBNAME}
+```
+
+Example:
+```
+postgres://postgres:mypassword@localhost:5432/address_api_dev
+```
+
+## Connection pool configuration
+
+The application uses the following connection pool settings (configured in `configs/postgres.config.go`):
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `MaxConns` | 48 | Maximum number of connections |
+| `MinConns` | 12 | Minimum number of idle connections |
+| `MaxConnLifetime` | 30 minutes | Maximum connection lifetime |
+| `MaxConnIdleTime` | 5 minutes | Maximum idle time before closing |
+| `HealthCheckPeriod` | 30 seconds | Health check interval |
+| `ConnectTimeout` | 10 seconds | Connection establishment timeout |
+
+### Database-level timeouts
+
+| Setting | Value | Description |
+|---------|-------|-------------|
+| `statement_timeout` | 10 seconds | Maximum query execution time |
+| `idle_in_transaction_session_timeout` | 60 seconds | Maximum idle time in transaction |
+| `lock_timeout` | 2 seconds | Maximum time waiting for locks |
+
+## Validation
+
+The application validates required environment variables on startup. If any required variable is missing, the server will fail to start with an error message:
+
+```
+{"level":"fatal","error":"missing required environment variables: RDS_USERNAME, RDS_PASSWORD","time":1734518400,"message":"missing required environment variables"}
+```
+
+## Security best practices
+
+### Local development
+
+- **Never commit `.env` files**: The `.env` file is in `.gitignore`
+- **Use strong passwords**: Even for local development
+- **Rotate API keys**: Regularly update your Google API key
+
+### Production
+
+- **Use AWS Secrets Manager**: Never hardcode secrets in code or Terraform
+- **Enable secret rotation**: Set up automatic rotation for database passwords
+- **Restrict IAM access**: Only allow necessary services to read secrets
+- **Audit secret access**: Monitor CloudWatch logs for secret access
+
+## Updating secrets
+
+### Local
+
+Edit your `.env` file and restart the server:
+
+```bash
+# Edit .env
+vim .env
+
+# Restart server
+go run main.go serve
+```
+
+### Staging/Production
+
+Update secrets in AWS Secrets Manager:
+
+```bash
+# Update secret
+aws secretsmanager update-secret \\\n  --secret-id staging-address-api-secrets \\\n  --secret-string '{"GOOGLE_GEOCODING_API_KEY":"new-key"}' \\\n  --region ap-south-1
+
+# Restart ECS service to pick up new secrets
+aws ecs update-service \\\n  --cluster staging-ecs-cluster \\\n  --service address-api \\\n  --force-new-deployment \\\n  --region ap-south-1
+```
+
+## Testing configuration
+
+For integration tests, use `.env.test.example` as a template:
+
+```bash
+cp .env.test.example .env.test
+```
+
+The test suite uses testcontainers to spin up a PostgreSQL instance, so you only need:
+
+```bash
+GOOGLE_GEOCODING_API_KEY=your_test_api_key
+```
+
+## Troubleshooting
+
+### Error: "missing required environment variables"
+
+**Cause**: One or more required variables are not set.
+
+**Fix**: Check the error message for which variables are missing and add them to your `.env` file.
+
+### Error: "could not ping the database"
+
+**Cause**: Database connection failed.
+
+**Fix**: 
+1. Verify PostgreSQL is running
+2. Check connection details in `.env`
+3. Test connection manually:
+   ```bash
+   psql -U postgres -h localhost -p 5432 -d address_api_dev
+   ```
+
+### Error: "Geocoding failed"
+
+**Cause**: Google API key is missing or invalid.
+
+**Fix**:
+1. Verify `GOOGLE_GEOCODING_API_KEY` is set
+2. Check the key is valid in Google Cloud Console
+3. Ensure the Geocoding API is enabled for your project

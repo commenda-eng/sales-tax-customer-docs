@@ -1,0 +1,292 @@
+---
+title: Local setup
+description: Set up the Address API for local development
+---
+
+This guide walks you through setting up the Address API on your local machine for development.
+
+## Prerequisites
+
+Before you begin, ensure you have the following installed:
+
+| Tool | Required version | Check command |
+|------|------------------|---------------|
+| Go | 1.23.1 or higher | `go version` |
+| PostgreSQL | 15 or higher | `psql --version` |
+| Docker | Latest | `docker --version` |
+| Git | Latest | `git --version` |
+
+## Step 1: Clone the repository
+
+```bash
+git clone https://github.com/commenda-eng/address-api.git
+cd address-api
+```
+
+## Step 2: Install PostgreSQL
+
+### macOS (using Homebrew)
+
+```bash
+brew install postgresql@15
+brew services start postgresql@15
+```
+
+### Ubuntu/Debian
+
+```bash
+sudo apt update
+sudo apt install postgresql-15 postgresql-contrib-15
+sudo systemctl start postgresql
+sudo systemctl enable postgresql
+```
+
+### Windows
+
+Download and install from [PostgreSQL official website](https://www.postgresql.org/download/windows/).
+
+### Verify installation
+
+```bash
+psql --version
+# Should output: psql (PostgreSQL) 15.x
+```
+
+## Step 3: Create database
+
+```bash
+# Connect to PostgreSQL
+psql postgres
+
+# Create database
+CREATE DATABASE address_api_dev;
+
+# Create user (optional)
+CREATE USER address_api_user WITH PASSWORD 'your_password';
+GRANT ALL PRIVILEGES ON DATABASE address_api_dev TO address_api_user;
+
+# Exit
+\q
+```
+
+## Step 4: Set up environment variables
+
+Create a `.env` file in the project root:
+
+```bash
+cp .env.test.example .env
+```
+
+Edit `.env` with your configuration:
+
+```bash
+# Server configuration
+PORT=8080
+
+# Database configuration
+RDS_USERNAME=postgres
+RDS_PASSWORD=your_password
+RDS_HOSTNAME=localhost
+RDS_PORT=5432
+RDS_DBNAME=address_api_dev
+
+# Google Geocoding API key (required for geocoding)
+GOOGLE_GEOCODING_API_KEY=your_google_api_key_here
+```
+
+### Getting a Google Geocoding API key
+
+1. Go to [Google Cloud Console](https://console.cloud.google.com/)
+2. Create a new project or select an existing one
+3. Enable the **Geocoding API**
+4. Go to **Credentials** → **Create Credentials** → **API Key**
+5. Copy the API key and add it to your `.env` file
+
+## Step 5: Run database migrations
+
+The project uses [Atlas](https://atlasgo.io/) for database migrations.
+
+### Install Atlas
+
+```bash
+# macOS
+brew install ariga/tap/atlas
+
+# Linux
+curl -sSf https://atlasgo.sh | sh
+
+# Windows
+# Download from https://atlasgo.io/getting-started#installation
+```
+
+### Apply migrations
+
+```bash
+# Apply all migrations
+atlas migrate apply \\\n  --dir "file://database/migrations" \\\n  --url "postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable"
+```
+
+### Verify migrations
+
+```bash
+# Connect to database
+psql -U postgres -d address_api_dev
+
+# List tables
+\dt
+
+# Should see:
+# - iso_3166
+# - address_cache
+# - api_key
+# - atlas_schema_revisions
+
+# Exit
+\q
+```
+
+## Step 6: Generate database code
+
+The project uses [sqlc](https://sqlc.dev/) to generate type-safe Go code from SQL queries.
+
+### Install sqlc
+
+```bash
+# macOS
+brew install sqlc
+
+# Linux/Windows
+# Download from https://docs.sqlc.dev/en/latest/overview/install.html
+```
+
+### Generate code
+
+```bash
+sqlc generate
+```
+
+This generates Go code in `database/generated_models/`.
+
+## Step 7: Install Go dependencies
+
+```bash
+go mod download
+go mod tidy
+```
+
+## Step 8: Start the server
+
+```bash
+go run main.go serve
+```
+
+You should see:
+
+```
+{"level":"info","port":"8080","time":1734518400,"message":"server started"}
+```
+
+## Step 9: Verify the server is running
+
+### Test root endpoint
+
+```bash
+curl http://localhost:8080/
+# Output: Commenda address validation API is up and running.
+```
+
+### Test health endpoint
+
+```bash
+curl http://localhost:8080/healthz
+```
+
+Expected response:
+
+```json
+{
+  "api": true,
+  "database_pool": {
+    "total_connections": 12,
+    "acquired_connections": 0,
+    "idle_connections": 12,
+    "max_connections": 48,
+    "acquire_duration_ms": 2
+  }
+}
+```
+
+## Step 10: Create an API key for testing
+
+Connect to the database and insert a test API key:
+
+```bash
+psql -U postgres -d address_api_dev
+```
+
+```sql
+INSERT INTO api_key (key, organization_name, roles)
+VALUES ('test-api-key-local', 'Local Development', ARRAY['GEOCODE', 'MANAGE_CONTENT']);
+```
+
+## Step 11: Test the geocoding endpoint
+
+```bash
+curl -X POST http://localhost:8080/api/v1/geoencode \\\n  -H "x-commenda-key: test-api-key-local" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
+```
+
+If successful, you'll receive a geocoded response with address components and coordinates.
+
+## Troubleshooting
+
+### Error: "could not ping the database"
+
+**Cause**: PostgreSQL is not running or connection details are incorrect.
+
+**Fix**:
+```bash
+# Check if PostgreSQL is running
+pg_isready
+
+# Start PostgreSQL
+# macOS
+brew services start postgresql@15
+
+# Linux
+sudo systemctl start postgresql
+```
+
+### Error: "missing required environment variables"
+
+**Cause**: `.env` file is missing or incomplete.
+
+**Fix**: Ensure all required variables are set in `.env`:
+- `RDS_USERNAME`
+- `RDS_PASSWORD`
+- `RDS_HOSTNAME`
+- `RDS_PORT`
+- `RDS_DBNAME`
+
+### Error: "GOOGLE_GEOCODING_API_KEY is required"
+
+**Cause**: Google API key is not set or invalid.
+
+**Fix**: 
+1. Get a valid API key from Google Cloud Console
+2. Add it to `.env` file
+3. Restart the server
+
+### Error: "relation does not exist"
+
+**Cause**: Database migrations haven't been applied.
+
+**Fix**:
+```bash
+atlas migrate apply \\\n  --dir "file://database/migrations" \\\n  --url "postgresql://postgres:your_password@localhost:5432/address_api_dev?sslmode=disable"
+```
+
+## Next steps
+
+- [Environment configuration](/engine/address-api/development/environment-configuration)
+- [Running tests](/engine/address-api/development/testing)
+- [Contributing](/engine/address-api/development/contributing)
