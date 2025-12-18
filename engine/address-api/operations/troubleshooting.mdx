@@ -1,0 +1,459 @@
+---
+title: Troubleshooting
+description: Common failures and how to fix them
+---
+
+This guide covers common failures in the Address API and how to resolve them.
+
+## Failed migrations
+
+### Symptom
+
+Migration fails during deployment with error like:
+```
+Error: migration failed: duplicate key value violates unique constraint
+```
+
+### Cause
+
+The migration tries to add a uniqueness constraint to a table that already has duplicate records.
+
+### Example scenario
+
+Adding a unique constraint to `iso_3166` table on `(country_code, subdivision_code)` when duplicates exist.
+
+### How to fix
+
+**Step 1: Connect to the database**
+
+Follow the [Database access guide](/engine/address-api/operations/database-access) to connect.
+
+**Step 2: Identify duplicates**
+
+```sql
+SELECT country_code, subdivision_code, COUNT(*)
+FROM iso_3166
+GROUP BY country_code, subdivision_code
+HAVING COUNT(*) > 1;
+```
+
+**Step 3: Remove duplicates**
+
+```sql
+-- Keep only the first record for each duplicate
+DELETE FROM iso_3166 a
+USING iso_3166 b
+WHERE a.id > b.id
+  AND a.country_code = b.country_code
+  AND a.subdivision_code = b.subdivision_code;
+```
+
+**Step 4: Update Atlas migration table**
+
+```sql
+-- Check current migration version
+SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC LIMIT 1;
+
+-- If the migration partially applied, you may need to manually mark it as complete
+-- or roll it back and reapply
+```
+
+**Step 5: Reapply migration**
+
+```bash
+atlas migrate apply \\\n  --dir "file://database/migrations" \\\n  --url "postgresql://username:password@hostname:5432/dbname"
+```
+
+**Step 6: Redeploy**
+
+Create a new release to trigger redeployment.
+
+## Google API issues
+
+### Issue 1: Missing API key
+
+#### Symptom
+
+Server fails to start with error:
+```
+{"level":"fatal","error":"missing required environment variables: GOOGLE_GEOCODING_API_KEY"}
+```
+
+#### Cause
+
+`GOOGLE_GEOCODING_API_KEY` environment variable is not set.
+
+#### How to fix
+
+**For local development:**
+
+```bash
+# Add to .env file
+echo "GOOGLE_GEOCODING_API_KEY=your_api_key" >> .env
+
+# Restart server
+go run main.go serve
+```
+
+**For staging/production:**
+
+```bash
+# Update secret in AWS Secrets Manager
+aws secretsmanager update-secret \\\n  --secret-id staging-address-api-secrets \\\n  --secret-string '{"GOOGLE_GEOCODING_API_KEY":"your_new_key","RDS_USERNAME":"...","RDS_PASSWORD":"...","RDS_HOSTNAME":"...","RDS_PORT":"5432","RDS_DBNAME":"address_api"}' \\\n  --region ap-south-1
+
+# Force new deployment to pick up new secret
+aws ecs update-service \\\n  --cluster staging-ecs-cluster \\\n  --service address-api \\\n  --force-new-deployment \\\n  --region ap-south-1
+```
+
+### Issue 2: Google API is down
+
+#### Symptom
+
+Geocoding requests fail with:
+```json
+{
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Geocoding failed.",
+    "status": 500
+  }
+}
+```
+
+#### Cause
+
+Google's Geocoding API is unavailable or rate-limited.
+
+#### Behavior
+
+- **Cached addresses**: Will work (returned from database)
+- **New addresses**: Will fail (cannot call Google API)
+
+#### How to fix
+
+**Short-term:**
+- Wait for Google API to recover
+- Check [Google Cloud Status Dashboard](https://status.cloud.google.com/)
+- Verify API key quota in Google Cloud Console
+
+**Long-term:**
+- Implement retry logic with exponential backoff
+- Add fallback geocoding provider
+- Increase cache hit rate
+
+#### Monitoring
+
+Check Google API status:
+
+```bash
+# Test Google API directly
+curl "https://maps.googleapis.com/maps/api/geocode/json?address=1600+Amphitheatre+Parkway,+Mountain+View,+CA&key=YOUR_API_KEY"
+```
+
+## RDS issues
+
+### Issue 1: Database is down
+
+#### Symptom
+
+Health endpoint returns 500:
+
+```json
+{
+  "api": false,
+  "error": "database connection acquisition failed within 10s",
+  "details": "connection timeout"
+}
+```
+
+#### Cause
+
+RDS instance is stopped, rebooting, or unreachable.
+
+#### How to fix
+
+**Step 1: Check RDS status**
+
+```bash
+aws rds describe-db-instances \\\n  --db-instance-identifier staging-address-api-db \\\n  --region ap-south-1 \\\n  --query 'DBInstances[0].DBInstanceStatus'
+```
+
+**Step 2: Start database if stopped**
+
+```bash
+aws rds start-db-instance \\\n  --db-instance-identifier staging-address-api-db \\\n  --region ap-south-1
+```
+
+**Step 3: Check security groups**
+
+Ensure ECS tasks can reach RDS:
+
+```bash
+# Get RDS security group
+aws rds describe-db-instances \\\n  --db-instance-identifier staging-address-api-db \\\n  --region ap-south-1 \\\n  --query 'DBInstances[0].VpcSecurityGroups'
+
+# Check inbound rules
+aws ec2 describe-security-groups \\\n  --group-ids sg-xxxxx \\\n  --region ap-south-1
+```
+
+**Step 4: Monitor recovery**
+
+```bash
+# Watch health endpoint
+watch -n 5 'curl -s https://address-api.in.staging.commenda.io/healthz | jq'
+```
+
+### Issue 2: Connection pool exhausted
+
+#### Symptom
+
+Requests fail with:
+```
+failed to acquire connection from pool
+```
+
+Health endpoint shows:
+
+```json
+{
+  "database_pool": {
+    "total_connections": 48,
+    "acquired_connections": 48,
+    "idle_connections": 0,
+    "max_connections": 48
+  }
+}
+```
+
+#### Cause
+
+All connections are in use, likely due to:
+- Slow queries holding connections
+- Connection leaks
+- Insufficient pool size
+
+#### How to fix
+
+**Step 1: Check for slow queries**
+
+Connect to database and run:
+
+```sql
+SELECT
+  pid,
+  now() - query_start AS duration,
+  state,
+  query
+FROM pg_stat_activity
+WHERE datname = 'address_api'
+  AND state != 'idle'
+ORDER BY duration DESC;
+```
+
+**Step 2: Kill slow queries**
+
+```sql
+-- Kill specific query
+SELECT pg_terminate_backend(pid);
+
+-- Kill all queries running > 5 minutes
+SELECT pg_terminate_backend(pid)
+FROM pg_stat_activity
+WHERE datname = 'address_api'
+  AND state != 'idle'
+  AND now() - query_start > interval '5 minutes';
+```
+
+**Step 3: Increase pool size**
+
+Edit `configs/postgres.config.go`:
+
+```go
+const defaultMaxConns = int32(96)  // Increased from 48
+const defaultMinConns = int32(24)  // Increased from 12
+```
+
+**Step 4: Optimize queries**
+
+Add indexes for slow queries:
+
+```sql
+-- Example: Add index on address_cache
+CREATE INDEX idx_address_cache_original_address
+ON address_cache(original_address);
+```
+
+## ISO 3166 content issues
+
+### Symptom
+
+Geocoding returns state code instead of full state name:
+
+```json
+{
+  "state": "CA",
+  "state_code": "CA"
+}
+```
+
+#### Cause
+
+The state code from Google is not in the ISO 3166 content database.
+
+#### Behavior
+
+The API does NOT fail. It returns the short name from Google instead of the full name.
+
+#### How to fix
+
+**Step 1: Identify missing content**
+
+Check CloudWatch logs for warnings (if logging is added):
+
+```bash
+aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern "state code not found" \\\n  --region ap-south-1
+```
+
+**Step 2: Ingest missing content**
+
+```bash
+curl -X POST https://address-api.in.staging.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-manage-content-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "US",\n        "subdivision_code": "CA",\n        "subdivision_name": "California",\n        "subdivision_local_variant": null\n      }\n    ]\n  }'
+```
+
+**Step 3: Verify**
+
+Test geocoding again:
+
+```bash
+curl -X POST https://address-api.in.staging.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-geocode-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
+```
+
+## Deployment failures
+
+### Issue: Tests fail in CI
+
+#### Symptom
+
+GitHub Actions workflow fails at "Run tests" step.
+
+#### How to fix
+
+**Step 1: Check test logs**
+
+Click on the failed workflow in GitHub Actions and view the test output.
+
+**Step 2: Run tests locally**
+
+```bash
+go test -v ./...
+```
+
+**Step 3: Fix failing tests**
+
+Fix the code or tests, commit, and push.
+
+### Issue: Docker build fails
+
+#### Symptom
+
+Workflow fails at "Build Docker image" step.
+
+#### How to fix
+
+**Step 1: Test Docker build locally**
+
+```bash
+docker build -t address-api:test .
+```
+
+**Step 2: Check Dockerfile**
+
+Common issues:
+- Missing dependencies
+- Incorrect Go version
+- Build context issues
+
+**Step 3: Fix and redeploy**
+
+### Issue: ECS tasks fail to start
+
+#### Symptom
+
+Deployment fails at "Wait for ECS" step with circuit breaker rollback.
+
+#### How to fix
+
+**Step 1: Check stopped tasks**
+
+```bash
+aws ecs list-tasks \\\n  --cluster staging-ecs-cluster \\\n  --service-name address-api \\\n  --desired-status STOPPED \\\n  --region ap-south-1 \\\n  | head -1
+```
+
+**Step 2: Get failure reason**
+
+```bash
+aws ecs describe-tasks \\\n  --cluster staging-ecs-cluster \\\n  --tasks <task-arn> \\\n  --region ap-south-1 \\\n  --query 'tasks[0].{reason:stoppedReason,container:containers[0].reason}'
+```
+
+**Step 3: Check CloudWatch logs**
+
+```bash
+aws logs tail /ecs/staging/address-api --since 10m --region ap-south-1
+```
+
+**Step 4: Fix the issue**
+
+Common causes:
+- Missing environment variables
+- Database connection failure
+- Application crash on startup
+- Image not found in ECR
+
+## Performance issues
+
+### Issue: Slow response times
+
+#### Symptom
+
+Requests taking > 2 seconds.
+
+#### How to fix
+
+**Step 1: Identify slow endpoints**
+
+```bash
+aws logs filter-log-events \\\n  --log-group-name /ecs/staging/address-api \\\n  --filter-pattern '{ $.duration_ms > 2000 }' \\\n  --region ap-south-1
+```
+
+**Step 2: Check database queries**
+
+```sql
+SELECT
+  calls,
+  mean_exec_time,
+  query
+FROM pg_stat_statements
+ORDER BY mean_exec_time DESC
+LIMIT 10;
+```
+
+**Step 3: Add indexes**
+
+```sql
+CREATE INDEX idx_name ON table_name(column_name);
+```
+
+**Step 4: Optimize queries**
+
+Use EXPLAIN ANALYZE to understand query plans:
+
+```sql
+EXPLAIN ANALYZE
+SELECT * FROM address_cache WHERE original_address = '123 Main St';
+```
+
+## Next steps
+
+- [Debugging guide](/engine/address-api/operations/debugging)
+- [Monitoring](/engine/address-api/operations/monitoring)
+- [Database access](/engine/address-api/operations/database-access)
