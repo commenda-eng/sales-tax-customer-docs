@@ -3,11 +3,20 @@ title: Content ingestion
 description: Ingest ISO 3166 subdivision data
 ---
 
-The Content Ingestion API allows you to populate and update the ISO 3166 subdivision database, which is used for address validation and standardization.
+The Content Ingestion API allows you to populate and update the ISO 3166 subdivision database, which is used for address component standardization.
 
 ## What is ISO 3166?
 
-ISO 3166 is an international standard for country codes and their subdivisions (states, provinces, regions, etc.). The Address API uses this data to validate and standardize address components.
+ISO 3166 is an international standard for country codes and their subdivisions (states, provinces, regions, etc.). The Address API uses this data to standardize address components when Google's Geocoding API returns local variants or subdivision names instead of ISO 3166 codes.
+
+## Why is this needed?
+
+Google's Geocoding API sometimes returns state information in different formats:
+- ISO 3166 code (e.g., "CA" for California)
+- Full subdivision name (e.g., "California")
+- Local language variant (e.g., "Québec" instead of "QC")
+
+This content database allows the Address API to normalize these variations back to standard ISO 3166 codes, ensuring consistent address data across all responses.
 
 ## Endpoint
 
