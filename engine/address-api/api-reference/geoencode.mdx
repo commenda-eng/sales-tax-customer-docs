@@ -246,11 +246,13 @@ The Address API automatically caches geocoding results to improve performance an
 - **Cache hit**: Returns immediately with `cached_at` timestamp
 - **Cache miss**: Calls Google API, stores result, returns with `cached_at` timestamp
 
-## State code validation
+## State code standardization
 
-When Google returns a state code (e.g., "CA"), the API validates it against the ISO 3166 content database:
+Google's Geocoding API may return state information in various formats (ISO code, full name, or local variant). The Address API standardizes these using the ISO 3166 content database:
 
-- **State found**: Uses the full state name from the database
-- **State not found**: Returns the short name from Google without failing
+1. **Google returns ISO code** (e.g., "CA"): Looks up the full state name from the database
+2. **Google returns full name** (e.g., "California"): Looks up the ISO code from the database
+3. **Google returns local variant** (e.g., "Québec"): Looks up the ISO code from the database
+4. **State not found in database**: Returns whatever Google provided without failing
 
-This ensures address standardization while maintaining resilience.
+This ensures consistent address standardization across all responses while maintaining resilience when encountering unknown subdivisions.
