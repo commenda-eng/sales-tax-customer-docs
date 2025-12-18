@@ -1,0 +1,133 @@
+---
+title: Authorization
+description: API key-based authentication with role-based access control
+---
+
+The Address API uses API key-based authentication with role-based access control to secure endpoints.
+
+## Authentication mechanism
+
+All requests to the Address API (except `/` and `/healthz`) require an API key passed in the `x-commenda-key` header.
+
+```bash
+curl -X POST https://address-api.in.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-api-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
+```
+
+## Roles
+
+API keys are assigned specific roles that determine which endpoints they can access:
+
+| Role | Description | Endpoints |
+|------|-------------|-----------|
+| `GEOCODE` | Access to geocoding functionality | `/api/v1/geoencode` |
+| `MANAGE_CONTENT` | Access to content ingestion | `/api/v1/internal/iso_3166/ingest/json` |
+
+An API key can have multiple roles.
+
+## How authorization works
+
+1. **Request received**: The API receives a request with the `x-commenda-key` header
+2. **Key lookup**: The middleware queries the `api_key` table to find the key
+3. **Key validation**: Checks if the key exists and is valid
+4. **Role check**: Verifies the key has the required role for the endpoint
+5. **Request processing**: If authorized, the request proceeds to the handler
+6. **Error response**: If unauthorized, returns 401 or 403 error
+
+## Database schema
+
+API keys are stored in the `api_key` table:
+
+```sql
+CREATE TABLE api_key (
+  id serial PRIMARY KEY,
+  key text NOT NULL,
+  organization_name text,
+  roles text[],
+  created_at timestamp DEFAULT now(),
+  updated_at timestamp DEFAULT now(),
+  CONSTRAINT api_key_key_unique UNIQUE (key)
+);
+```
+
+## Getting an API key
+
+To obtain an API key with the necessary roles:
+
+1. Contact your Commenda administrator or developer
+2. Request the specific role(s) you need (`GEOCODE` or `MANAGE_CONTENT`)
+3. The administrator will generate an API key with the appropriate permissions
+4. Store the API key securely (use environment variables or secret management)
+5. Include it in the `x-commenda-key` header for all requests
+
+## Error responses
+
+### Missing API key (401)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Missing API key.",
+    "status": 401,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "The x-commenda-key header is required for authentication."
+    },
+    "errors": [
+      {
+        "pointer": "x-commenda-key",
+        "details": "API key must be provided in the x-commenda-key header."
+      }
+    ]
+  }
+}
+```
+
+### Invalid API key (401)
+
+```json
+{
+  "error": {
+    "type": "CLIENT_UNAUTHORIZED",
+    "title": "Invalid API key.",
+    "status": 401,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "The provided API key is invalid or does not exist."
+    }
+  }
+}
+```
+
+### Missing role (403)
+
+If your API key doesn't have the required role for an endpoint:
+
+```json
+{
+  "error": {
+    "type": "CLIENT_FORBIDDEN",
+    "title": "Missing required role.",
+    "status": 403,
+    "instance": "/api/v1/geoencode",
+    "detail": {
+      "description": "Your API key does not have the GEOCODE role required for this endpoint."
+    }
+  }
+}
+```
+
+## Exempt endpoints
+
+The following endpoints do NOT require authentication:
+
+- `GET /` - Root endpoint (returns service status message)
+- `GET /healthz` - Health check endpoint (returns database connection status)
+
+## Security best practices
+
+- **Never commit API keys**: Store them in environment variables or secret management systems
+- **Rotate keys regularly**: Generate new keys periodically and revoke old ones
+- **Use least privilege**: Only assign the roles that are actually needed
+- **Monitor usage**: Track API key usage to detect anomalies
+- **Secure transmission**: Always use HTTPS to prevent key interception
