@@ -1,0 +1,56 @@
+---
+title: Introduction
+description: Address geocoding and validation service
+---
+
+The Address API is a geocoding service that converts addresses into geographic coordinates (latitude and longitude) and standardizes address components. It uses Google's Geocoding API as the underlying provider and includes caching to optimize performance and reduce costs.
+
+## What it does
+
+The Address API provides two core capabilities:
+
+1. **Geocoding**: Convert address strings to geographic coordinates and standardized address components
+2. **Content ingestion**: Manage ISO 3166 subdivision data for address validation
+
+## Tech stack
+
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Language | Go | 1.23.1 |
+| Web framework | Echo | v4.12.0 |
+| Database | PostgreSQL | 15 |
+| Database driver | pgx | v5.7.6 |
+| Migration tool | Atlas | Latest |
+| Query builder | sqlc | 1.30.0 |
+| Logging | zerolog | v1.33.0 |
+| Validation | go-playground/validator | v10.25.0 |
+| Testing | testcontainers-go | v0.34.0 |
+| Geocoding provider | Google Geocoding API | - |
+
+## Deployed URLs
+
+| Environment | URL | AWS Account |
+|-------------|-----|-------------|
+| Staging | `https://address-api.in.staging.commenda.io` | 127214192604 |
+| Production | `https://address-api.in.commenda.io` | 429032495558 |
+
+## Key features
+
+- **Geocoding**: Convert addresses to geographic coordinates using Google's Geocoding API
+- **Address standardization**: Parse and normalize address components (city, state, country, postal code)
+- **Caching**: Automatic caching of geocoding results to reduce API costs and improve performance
+- **Provider transparency**: Access to both normalized results and raw provider responses
+- **ISO 3166 content management**: Ingest and manage subdivision data for address validation
+- **Role-based access control**: API key authentication with granular permissions
+- **Health monitoring**: Built-in health check endpoint with database connection pooling metrics
+
+## Architecture
+
+The service is deployed on AWS ECS Fargate in the ap-south-1 (Mumbai) region with the following components:
+
+- **Application Load Balancer**: HTTPS traffic routing with SSL termination
+- **ECS Fargate**: Containerized application running in private subnets
+- **RDS PostgreSQL**: Database for caching and content storage
+- **ECR**: Container image registry
+- **CloudWatch**: Centralized logging and monitoring
+- **Better Stack**: External monitoring and alerting
