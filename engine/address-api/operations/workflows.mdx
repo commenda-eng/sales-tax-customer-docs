@@ -116,9 +116,9 @@ Ensures database migrations are properly created.
 ```yaml
 - name: Check for missing migrations
   run: |
-    atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\
-      --dir file://database/migrations \\
-      --dev-url docker://postgres/15/dev?search_path=public \\
+    atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \
+      --dir file://database/migrations \
+      --dev-url docker://postgres/15/dev?search_path=public \
       --to file://database/schema.sql
 ```
 
@@ -131,9 +131,9 @@ Ensures database migrations are properly created.
 
 **Fix**:
 ```bash
-atlas migrate diff your_migration_name \\
-  --dir "file://database/migrations" \\
-  --dev-url "docker://postgres/15/dev?search_path=public" \\
+atlas migrate diff your_migration_name \
+  --dir "file://database/migrations" \
+  --dev-url "docker://postgres/15/dev?search_path=public" \
   --to "file://database/schema.sql"
 ```
 
@@ -144,7 +144,7 @@ Runs the full integration test suite.
 ```yaml
 - name: Run Integration Tests
   env:
-    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+    GOOGLE_GEOCODING_API_KEY: \${{ secrets.GOOGLE_GEOCODING_API_KEY }}
   run: go test -v -timeout 2m ./tests/integration/...
 ```
 
@@ -172,7 +172,7 @@ go test -v ./tests/integration/...
 ### Environment detection
 
 ```yaml
-environment: ${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
+environment: \${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
 ```
 
 | Release tag | Environment | Example |
@@ -215,7 +215,7 @@ Installs Atlas for database migrations.
 ```yaml
 - name: Run Integration Tests
   env:
-    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+    GOOGLE_GEOCODING_API_KEY: \${{ secrets.GOOGLE_GEOCODING_API_KEY }}
   run: go test -v -timeout 2m ./tests/integration/...
 ```
 
@@ -227,7 +227,7 @@ Ensures tests pass before deploying.
 - name: Configure AWS Credentials
   uses: aws-actions/configure-aws-credentials@v4
   with:
-    role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+    role-to-assume: \${{ secrets.AWS_ROLE_ARN }}
     aws-region: ap-south-1
 ```
 
@@ -247,8 +247,8 @@ Authenticates Docker with ECR.
 ```yaml
 - name: Create ECR repository if it doesn't exist
   run: |
-    aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \\
-    aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+    aws ecr describe-repositories --repository-names \${{ env.ECR_REPOSITORY }} || \
+    aws ecr create-repository --repository-name \${{ env.ECR_REPOSITORY }}
 ```
 
 Ensures ECR repository exists before pushing.
@@ -258,8 +258,8 @@ Ensures ECR repository exists before pushing.
 ```yaml
 - name: Build and push Docker image
   run: |
-    docker build -t ${{ env.IMAGE_URI }} .
-    docker push ${{ env.IMAGE_URI }}
+    docker build -t \${{ env.IMAGE_URI }} .
+    docker push \${{ env.IMAGE_URI }}
 ```
 
 Builds and pushes the Docker image to ECR.
@@ -271,13 +271,13 @@ Builds and pushes the Docker image to ECR.
   run: terraform init
 
 - name: Terraform Workspace
-  run: terraform workspace select ${{ env.ENVIRONMENT }}
+  run: terraform workspace select \${{ env.ENVIRONMENT }}
 
 - name: Terraform Apply
   run: |
-    terraform apply -auto-approve \\
-      -var="app_image_tag=${{ github.ref_name }}" \\
-      -var="app_secrets=${{ secrets.APP_SECRETS }}"
+    terraform apply -auto-approve \
+      -var="app_image_tag=\${{ github.ref_name }}" \
+      -var="app_secrets=\${{ secrets.APP_SECRETS }}"
 ```
 
 Updates infrastructure and deploys new image.
@@ -287,9 +287,9 @@ Updates infrastructure and deploys new image.
 ```yaml
 - name: Wait for ECS service to stabilize
   run: |
-    aws ecs wait services-stable \\
-      --cluster ${{ env.ECS_CLUSTER }} \\
-      --services address-api \\
+    aws ecs wait services-stable \
+      --cluster \${{ env.ECS_CLUSTER }} \
+      --services address-api \
       --region ap-south-1
 ```
 
@@ -300,7 +300,7 @@ Waits for ECS rolling deployment to complete.
 ```yaml
 - name: Smoke test
   run: |
-    curl -f https://address.in.${{ env.DOMAIN_SUFFIX }}.commenda.io/healthz
+    curl -f https://address.in.\${{ env.DOMAIN_SUFFIX }}.commenda.io/healthz
 ```
 
 Verifies the deployment is healthy.
