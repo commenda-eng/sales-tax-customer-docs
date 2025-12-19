@@ -102,8 +102,7 @@
                   "engine/address-api/operations/deployment",
                   "engine/address-api/operations/database-connection",
                   "engine/address-api/operations/debugging",
-                  "engine/address-api/operations/common-failures",
-                  "engine/address-api/operations/workflows"
+                  "engine/address-api/operations/common-failures"
                 ]
               },
               {
