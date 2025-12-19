@@ -5,7 +5,7 @@ description: Planned features and enhancements for the Address API
 
 This document outlines planned features and enhancements for the Address API.
 
-## Effective date ranges for ISO 3166 content
+## Effective date support for ISO 3166 content
 
 ### Overview
 
@@ -13,23 +13,16 @@ Add temporal validity to ISO 3166 subdivision data to handle historical changes 
 
 ### Problem
 
-Currently, the ISO 3166 content has a simple unique constraint:
-
-```sql
-CONSTRAINT "iso_3166_country_subdivision_unique"
-  UNIQUE ("country_code", "subdivision_code")
-```
-
-This doesn't allow for:
-- Historical subdivision changes (e.g., state name changes)
-- Subdivision mergers or splits
-- Temporal queries (e.g., "What was the state code in 2020?")
+Currently, the ISO 3166 content has a unique constraint on `(country_code, subdivision_code)`, which means:
+- We can only store one version of each subdivision
+- Historical changes (name changes, code changes, new subdivisions) overwrite previous data
+- We cannot query what a subdivision was called at a specific point in time
 
 ### Proposed solution
 
-Add `effective_start_date` and `effective_end_date` columns to track when a subdivision record is valid.
+Add `effective_start_date` and `effective_end_date` columns to track when each subdivision record is valid.
 
-#### Schema changes
+#### Database schema changes
 
 ```sql
 ALTER TABLE iso_3166
@@ -50,240 +43,239 @@ ADD CONSTRAINT iso_3166_country_subdivision_date_unique
   );
 ```
 
-#### Example data
+#### Updated ingestion API
 
-```sql
--- California (current)
-INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
-VALUES ('US', 'CA', 'California', '1850-09-09', NULL);
-
--- Historical example: Czechoslovakia split into Czech Republic and Slovakia
-INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
-VALUES ('CS', 'CZ', 'Czech Socialist Republic', '1969-01-01', '1992-12-31');
-
-INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, effective_start_date, effective_end_date)
-VALUES ('CZ', 'CZ', 'Czech Republic', '1993-01-01', NULL);
-```
-
-### API changes
-
-#### Ingestion endpoint
-
-Update the ingestion endpoint to accept date ranges:
+The ingestion endpoint would accept effective dates:
 
 ```json
 {
-  "items": [
+  \"items\": [
     {
-      "country_code": "US",
-      "subdivision_code": "CA",
-      "subdivision_name": "California",
-      "subdivision_local_variant": null,
-      "effective_start_date": "1850-09-09",
-      "effective_end_date": null
+      \"country_code\": \"US\",
+      \"subdivision_code\": \"CA\",
+      \"subdivision_name\": \"California\",
+      \"subdivision_local_variant\": null,
+      \"effective_start_date\": \"1850-09-09\",
+      \"effective_end_date\": null
     }
   ]
 }
 ```
 
-**Validation rules**:
-- `effective_start_date` is required
-- `effective_end_date` is optional (NULL means "still valid")
-- `effective_end_date` must be after `effective_start_date`
-- Date ranges cannot overlap for the same (country_code, subdivision_code)
+#### Query logic
 
-#### Geocoding endpoint
+When geocoding an address, the API would:
 
-The geocoding endpoint behavior:
-
-**Default behavior** (no date specified):
-- Use the current date
-- Return the subdivision valid today
-
-**With date parameter** (future enhancement):
-```json
-{
-  "address": "Prague, Czechoslovakia",
-  "as_of_date": "1990-01-01"
-}
-```
-
-Returns the subdivision valid on that date.
-
-### Migration strategy
-
-1. **Add columns** with default values (non-breaking)
-2. **Populate existing data** with default dates
-3. **Update application code** to use date ranges
-4. **Update ingestion endpoint** to accept dates
-5. **Drop old constraint** and add new one
-6. **Deploy** with backward compatibility
+1. Use the current date by default
+2. Query for the subdivision that was valid on that date:
+   ```sql
+   SELECT * FROM iso_3166
+   WHERE country_code = $1
+     AND subdivision_code = $2
+     AND effective_start_date <= CURRENT_DATE
+     AND (effective_end_date IS NULL OR effective_end_date >= CURRENT_DATE)
+   LIMIT 1;
+   ```
 
 ### Benefits
 
-- **Historical accuracy**: Track subdivision changes over time
-- **Temporal queries**: Query data as of a specific date
-- **Audit trail**: Know when subdivisions changed
-- **Compliance**: Meet regulatory requirements for historical data
+- **Historical accuracy**: Correctly handle addresses from different time periods
+- **Audit trail**: Track when subdivision names or codes changed
+- **Data integrity**: Prevent accidental overwrites of historical data
+- **Compliance**: Meet regulatory requirements for historical address validation
 
-### Implementation checklist
+### Implementation steps
 
-- [ ] Design database schema changes
-- [ ] Write migration script
-- [ ] Update DTO for ingestion endpoint
-- [ ] Update validation logic
-- [ ] Update service layer to query by date
-- [ ] Add tests for date range logic
-- [ ] Update documentation
-- [ ] Deploy to staging
-- [ ] Test with historical data
-- [ ] Deploy to production
+1. **Create migration**:
+   ```bash
+   atlas migrate diff add_effective_dates \
+     --dir \"file://database/migrations\" \
+     --dev-url \"docker://postgres/15/dev?search_path=public\" \
+     --to \"file://database/schema.sql\"
+   ```
 
-### Estimated effort
+2. **Update database schema** (`database/schema.sql`):
+   - Add `effective_start_date` and `effective_end_date` columns
+   - Update unique constraint to include date range
 
-- **Database changes**: 2 days
-- **Application changes**: 3 days
-- **Testing**: 2 days
-- **Documentation**: 1 day
-- **Total**: ~2 weeks
+3. **Update SQL queries** (`internal/content_ingestion/sql/queries.sql`):
+   - Modify upsert logic to handle date ranges
+   - Add query to find subdivision by date
 
-## Other planned features
+4. **Update DTOs**:
+   - Add date fields to `ISO3166IngestItem`
+   - Add validation for date ranges
+
+5. **Update ingestion handler**:
+   - Validate date ranges (start < end)
+   - Check for overlapping date ranges
+   - Handle null end dates (current/ongoing)
+
+6. **Update geocoding logic**:
+   - Query by current date
+   - Handle cases where no valid subdivision exists for the date
+
+7. **Add tests**:
+   - Test date range validation
+   - Test overlapping date ranges
+   - Test historical queries
+   - Test current date queries
+
+8. **Update documentation**:
+   - Document new ingestion API fields
+   - Explain date range behavior
+   - Provide examples of historical data
+
+### Example use cases
+
+#### 1. Subdivision name change
+
+**Scenario**: A state changes its official name
+
+```json
+[
+  {
+    \"country_code\": \"IN\",
+    \"subdivision_code\": \"OR\",
+    \"subdivision_name\": \"Orissa\",
+    \"effective_start_date\": \"1950-01-26\",
+    \"effective_end_date\": \"2011-11-01\"
+  },
+  {
+    \"country_code\": \"IN\",
+    \"subdivision_code\": \"OR\",
+    \"subdivision_name\": \"Odisha\",
+    \"effective_start_date\": \"2011-11-01\",
+    \"effective_end_date\": null
+  }
+]
+```
+
+#### 2. New subdivision created
+
+**Scenario**: A new state is created from an existing state
+
+```json
+[
+  {
+    \"country_code\": \"IN\",
+    \"subdivision_code\": \"TG\",
+    \"subdivision_name\": \"Telangana\",
+    \"effective_start_date\": \"2014-06-02\",
+    \"effective_end_date\": null
+  }
+]
+```
+
+#### 3. Subdivision code change
+
+**Scenario**: A subdivision changes its ISO code
+
+```json
+[
+  {
+    \"country_code\": \"XX\",
+    \"subdivision_code\": \"OLD\",
+    \"subdivision_name\": \"Old Name\",
+    \"effective_start_date\": \"2000-01-01\",
+    \"effective_end_date\": \"2020-12-31\"
+  },
+  {
+    \"country_code\": \"XX\",
+    \"subdivision_code\": \"NEW\",
+    \"subdivision_name\": \"Old Name\",
+    \"effective_start_date\": \"2021-01-01\",
+    \"effective_end_date\": null
+  }
+]
+```
+
+### Considerations
+
+#### Performance
+
+- **Index on date columns**: Add indexes to optimize date range queries
+- **Materialized view**: Consider a materialized view for current subdivisions
+- **Caching**: Cache current subdivisions separately from historical ones
+
+#### Data migration
+
+- **Existing data**: Set `effective_start_date` to a default historical date (e.g., `1900-01-01`)
+- **End dates**: Set `effective_end_date` to `NULL` for all current subdivisions
+- **Validation**: Ensure no overlapping date ranges exist
+
+#### API compatibility
+
+- **Backward compatibility**: Make date fields optional in ingestion API
+- **Default behavior**: Use current date if no date specified
+- **Versioning**: Consider API versioning if breaking changes needed
+
+### Timeline
+
+- **Phase 1**: Database schema changes and migration (1 week)
+- **Phase 2**: Update ingestion API and logic (1 week)
+- **Phase 3**: Update geocoding logic (1 week)
+- **Phase 4**: Testing and documentation (1 week)
+- **Phase 5**: Deployment and monitoring (1 week)
+
+**Total estimated time**: 5 weeks
+
+## Other potential features
 
 ### 1. Batch geocoding
 
-**Description**: Allow geocoding multiple addresses in a single request.
+**Description**: Allow geocoding multiple addresses in a single request
 
 **Benefits**:
-- Reduced API calls
-- Better performance for bulk operations
-- Lower latency
+- Reduce API calls
+- Improve performance for bulk operations
+- Better rate limit management
 
-**API design**:
-```json
-POST /api/v1/geoencode/batch
-{
-  "addresses": [
-    "94108, CA, US",
-    "10001, NY, US",
-    "60601, IL, US"
-  ]
-}
-```
+### 2. Reverse geocoding
 
-**Response**:
-```json
-{
-  "data": [
-    { "original_address": "94108, CA, US", ... },
-    { "original_address": "10001, NY, US", ... },
-    { "original_address": "60601, IL, US", ... }
-  ]
-}
-```
-
-### 2. Address validation
-
-**Description**: Validate addresses without geocoding.
+**Description**: Convert coordinates to addresses
 
 **Benefits**:
-- Faster than full geocoding
-- Lower cost (no Google API call)
-- Useful for form validation
+- Support location-based services
+- Complement forward geocoding
 
-**API design**:
-```json
-POST /api/v1/validate
-{
-  "address_line_1": "123 Main St",
-  "city": "San Francisco",
-  "state_code": "CA",
-  "postal_code": "94108",
-  "country_code": "US"
-}
-```
+### 3. Address autocomplete
 
-**Response**:
-```json
-{
-  "valid": true,
-  "issues": []
-}
-```
-
-### 3. Reverse geocoding
-
-**Description**: Convert coordinates to addresses.
-
-**API design**:
-```json
-POST /api/v1/reverse-geocode
-{
-  "latitude": 37.7909427,
-  "longitude": -122.4084994
-}
-```
-
-**Response**:
-```json
-{
-  "data": {
-    "address_line_1": "123 Main St",
-    "city": "San Francisco",
-    "state": "California",
-    "state_code": "CA",
-    "country": "United States",
-    "country_code": "US",
-    "postal_code": "94108"
-  }
-}
-```
-
-### 4. Cache management
-
-**Description**: Admin endpoints to manage the geocoding cache.
-
-**Endpoints**:
-- `DELETE /api/v1/internal/cache/{address}` - Clear specific cache entry
-- `DELETE /api/v1/internal/cache` - Clear all cache
-- `GET /api/v1/internal/cache/stats` - Cache statistics
-
-### 5. Rate limiting
-
-**Description**: Implement rate limiting per API key.
+**Description**: Provide address suggestions as users type
 
 **Benefits**:
-- Prevent abuse
-- Fair usage
-- Cost control
+- Improve user experience
+- Reduce geocoding errors
+- Increase cache hit rate
 
-**Implementation**:
-- Use Redis for distributed rate limiting
-- Configure limits per API key
-- Return 429 Too Many Requests when exceeded
+### 4. Custom geocoding providers
 
-### 6. Webhook notifications
+**Description**: Support multiple geocoding providers (not just Google)
 
-**Description**: Notify external systems when content is updated.
+**Benefits**:
+- Reduce vendor lock-in
+- Improve reliability (fallback providers)
+- Optimize costs
 
-**Use case**: Automatically sync ISO 3166 changes to other services.
+### 5. Address validation
 
-**Implementation**:
-- Store webhook URLs in database
-- Trigger webhooks on content ingestion
-- Retry failed webhooks
+**Description**: Validate address format without geocoding
 
-## Contributing to future features
+**Benefits**:
+- Faster validation
+- Lower costs
+- Better error messages
 
-If you'd like to implement any of these features:
+## Contributing
 
-1. **Create an issue** on GitHub describing your approach
-2. **Get approval** from the team
-3. **Follow the contribution guide** for implementation
-4. **Write comprehensive tests**
-5. **Update documentation**
-6. **Submit a pull request**
+If you'd like to contribute to any of these features, please:
+
+1. Open a GitHub issue to discuss the feature
+2. Review the implementation plan
+3. Submit a pull request with your changes
+4. Update documentation
 
 ## Next steps
 
 - [Contributing guide](/engine/address-api/development/contributing)
-- [API reference](/engine/address-api/api-reference/geoencode)
+- [Infrastructure](/engine/address-api/infrastructure)
