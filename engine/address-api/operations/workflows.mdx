@@ -275,8 +275,8 @@ Builds and pushes the Docker image to ECR.
 
 - name: Terraform Apply
   run: |
-    terraform apply -auto-approve \\
-      -var="app_image_tag=${{ github.ref_name }}" \\
+    terraform apply -auto-approve \
+      -var="app_image_tag=${{ github.ref_name }}" \
       -var="app_secrets=${{ secrets.APP_SECRETS }}"
 ```
 
