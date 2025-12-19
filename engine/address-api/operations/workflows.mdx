@@ -172,7 +172,7 @@ go test -v ./tests/integration/...
 ### Environment detection
 
 ```yaml
-environment: ${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
+environment: \${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
 ```
 
 | Release tag | Environment | Example |
