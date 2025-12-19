@@ -287,9 +287,9 @@ Updates infrastructure and deploys new image.
 ```yaml
 - name: Wait for ECS service to stabilize
   run: |
-    aws ecs wait services-stable \\
-      --cluster ${{ env.ECS_CLUSTER }} \\
-      --services address-api \\
+    aws ecs wait services-stable \
+      --cluster ${{ env.ECS_CLUSTER }} \
+      --services address-api \
       --region ap-south-1
 ```
 
