@@ -215,7 +215,7 @@ Installs Atlas for database migrations.
 ```yaml
 - name: Run Integration Tests
   env:
-    GOOGLE_GEOCODING_API_KEY: ${{ secrets.GOOGLE_GEOCODING_API_KEY }}
+    GOOGLE_GEOCODING_API_KEY: \${{ secrets.GOOGLE_GEOCODING_API_KEY }}
   run: go test -v -timeout 2m ./tests/integration/...
 ```
 
