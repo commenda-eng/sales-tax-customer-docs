@@ -247,8 +247,8 @@ Authenticates Docker with ECR.
 ```yaml
 - name: Create ECR repository if it doesn't exist
   run: |
-    aws ecr describe-repositories --repository-names ${{ env.ECR_REPOSITORY }} || \
-    aws ecr create-repository --repository-name ${{ env.ECR_REPOSITORY }}
+    aws ecr describe-repositories --repository-names \${{ env.ECR_REPOSITORY }} || \
+    aws ecr create-repository --repository-name \${{ env.ECR_REPOSITORY }}
 ```
 
 Ensures ECR repository exists before pushing.
