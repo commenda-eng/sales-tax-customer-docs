@@ -116,9 +116,9 @@ Ensures database migrations are properly created.
 ```yaml
 - name: Check for missing migrations
   run: |
-    atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \\
-      --dir file://database/migrations \\
-      --dev-url docker://postgres/15/dev?search_path=public \\
+    atlas migrate diff SOMEONE_FORGOT_TO_CREATE_A_MIGRATION \
+      --dir file://database/migrations \
+      --dev-url docker://postgres/15/dev?search_path=public \
       --to file://database/schema.sql
 ```
 
