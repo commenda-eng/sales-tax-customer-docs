@@ -242,7 +242,6 @@ If Google's Geocoding API is unavailable and the address is not in cache:
 The Address API automatically caches geocoding results to improve performance and reduce costs:
 
 - **Cache key**: The original address string (case-sensitive)
-- **Cache duration**: Indefinite (until manually cleared)
 - **Cache hit**: Returns immediately with `cached_at` timestamp
 - **Cache miss**: Calls Google API, stores result, returns with `cached_at` timestamp
 
