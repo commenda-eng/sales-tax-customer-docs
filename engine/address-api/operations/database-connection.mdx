@@ -1,113 +1,166 @@
 ---
 title: Database connection
-description: How to connect to the Address API database
+description: Connect to the Address API database
 ---
 
-This guide explains how to connect to the PostgreSQL database for debugging and maintenance.
+The Address API uses Amazon RDS PostgreSQL for data storage. This guide explains how to connect to the database for debugging and maintenance.
 
-## Overview
+## Database overview
 
-The Address API uses RDS PostgreSQL 15 in private subnets. Direct connections are not possible - you must use a bastion host.
+| Environment | Instance | Engine | Version |
+|-------------|----------|--------|---------|
+| Staging | `staging-address-api-postgres` | PostgreSQL | 15 |
+| Production | `prod-address-api-postgres` | PostgreSQL | 15 |
 
-## Connection architecture
+## Connection methods
 
-```
-Your Computer
-     │
-     ▼
-AWS Session Manager (SSM)
-     │
-     ▼
-Bastion Host (EC2)
-     │
-     ▼
-RDS PostgreSQL (Private Subnet)
-```
+### Method 1: Via bastion host (recommended)
 
-## Prerequisites
+The databases are in private subnets and can only be accessed through a bastion host.
 
-- AWS CLI installed and configured
-- Session Manager plugin installed
-- Appropriate IAM permissions
+#### Step 1: Configure security group
 
-## Step 1: Configure security group
-
-Add your IP to the RDS security group to allow connections:
-
-1. Go to **EC2** → **Security Groups**
-2. Find `{env}-address-api-postgres-sg`
-3. Click **Edit inbound rules**
-4. Click **Add rule**:
+1. Go to **AWS Console** → **EC2** → **Security Groups**
+2. Search for `staging-address-api-postgres-sg` (or `prod-address-api-postgres-sg`)
+3. Click on the security group
+4. Click **Edit inbound rules**
+5. Click **Add rule**
+6. Configure the rule:
    - **Type**: All traffic
    - **Source type**: Anywhere-IPv4
-   - **Description**: Temporary access for debugging
-5. Click **Save rules**
+   - **Source**: 0.0.0.0/0
+7. Click **Save rules**
 
-**⚠️ Important**: Remove this rule after you're done for security.
+**⚠️ Security note**: This opens the database to all traffic from the bastion host. Remove this rule after you're done.
 
-## Step 2: Connect to bastion host
+#### Step 2: Connect to bastion host
 
-1. Go to **EC2** → **Instances**
-2. Find `{env}-bastion-host`
+1. Go to **AWS Console** → **EC2** → **Instances**
+2. Find `staging-bastion-host` (or `prod-bastion-host`)
 3. Click **Connect**
-4. Select **Session Manager** tab
+4. Select **Session Manager**
 5. Click **Connect**
 
 You'll be connected to the bastion host terminal.
 
-## Step 3: Get database credentials
+#### Step 3: Get database credentials
 
-Retrieve credentials from Secrets Manager:
+1. Go to **AWS Console** → **Secrets Manager**
+2. Find `staging-address-api-secrets` (or `prod-address-api-secrets`)
+3. Click on the secret
+4. Click **Retrieve secret value**
+5. Copy the credentials:
+   - `RDS_USERNAME`
+   - `RDS_PASSWORD`
+   - `RDS_HOSTNAME`
+   - `RDS_PORT`
+   - `RDS_DBNAME`
 
-```bash
-# In the bastion host terminal
-aws secretsmanager get-secret-value \\
-  --secret-id {env}-address-api-secrets \\
-  --region ap-south-1 \\
-  --query SecretString \\
-  --output text | jq
-```
+#### Step 4: Connect to database
 
-This returns:
-```json
-{
-  "RDS_USERNAME": "app",
-  "RDS_PASSWORD": "your-password-here",
-  "RDS_HOSTNAME": "staging-address-api-postgres.xxxxx.ap-south-1.rds.amazonaws.com",
-  "RDS_PORT": "5432",
-  "RDS_DBNAME": "app"
-}
-```
-
-## Step 4: Connect to PostgreSQL
-
-Construct the connection URL:
-
-```
-postgres://{RDS_USERNAME}:{RDS_PASSWORD}@{RDS_HOSTNAME}:{RDS_PORT}/{RDS_DBNAME}
-```
-
-Connect using `psql`:
+In the bastion host terminal:
 
 ```bash
-psql "postgres://app:your-password@staging-address-api-postgres.xxxxx.ap-south-1.rds.amazonaws.com:5432/app"
+psql postgresql://USERNAME:PASSWORD@HOSTNAME:PORT/DBNAME
 ```
 
-## Common database operations
+Example:
+```bash
+psql postgresql://postgres:mypassword@staging-address-api-postgres.abc123.ap-south-1.rds.amazonaws.com:5432/address_api
+```
 
-### List tables
+### Method 2: Via SSH tunnel (for local tools)
+
+If you want to use local database tools (DBeaver, pgAdmin, etc.):
+
+#### Step 1: Set up SSH tunnel
+
+```bash
+# Get bastion host instance ID
+aws ec2 describe-instances \
+  --filters \"Name=tag:Name,Values=staging-bastion-host\" \
+  --query \"Reservations[0].Instances[0].InstanceId\" \
+  --output text \
+  --region ap-south-1 \
+  --profile staging
+
+# Create SSH tunnel
+aws ssm start-session \
+  --target INSTANCE_ID \
+  --document-name AWS-StartPortForwardingSessionToRemoteHost \
+  --parameters '{\"host\":[\"RDS_HOSTNAME\"],\"portNumber\":[\"5432\"],\"localPortNumber\":[\"5433\"]}' \
+  --region ap-south-1 \
+  --profile staging
+```
+
+#### Step 2: Connect with local tool
+
+Now you can connect to `localhost:5433` with your database tool:
+
+- **Host**: `localhost`
+- **Port**: `5433`
+- **Database**: `address_api`
+- **Username**: From Secrets Manager
+- **Password**: From Secrets Manager
+
+## Common database queries
+
+### View all tables
 
 ```sql
 \dt
 ```
 
-Expected tables:
-- `iso_3166` - ISO 3166 subdivision data
-- `address_cache` - Geocoding cache
-- `api_key` - API keys
-- `atlas_schema_revisions` - Migration history
+Output:
+```
+ Schema |         Name          | Type  |  Owner
+--------+-----------------------+-------+----------
+ public | address_cache         | table | postgres
+ public | api_key               | table | postgres
+ public | atlas_schema_revisions| table | postgres
+ public | iso_3166              | table | postgres
+```
 
-### Check table sizes
+### Check ISO 3166 content
+
+```sql
+SELECT * FROM iso_3166 LIMIT 10;
+```
+
+### Check address cache
+
+```sql
+SELECT 
+  original_address,
+  city,
+  state,
+  state_code,
+  country_code,
+  cached_at
+FROM address_cache
+ORDER BY cached_at DESC
+LIMIT 10;
+```
+
+### Check API keys
+
+```sql
+SELECT 
+  id,
+  organization_name,
+  roles,
+  created_at
+FROM api_key;
+```
+
+### View database size
+
+```sql
+SELECT 
+  pg_size_pretty(pg_database_size('address_api')) as database_size;
+```
+
+### View table sizes
 
 ```sql
 SELECT 
@@ -119,69 +172,129 @@ WHERE schemaname = 'public'
 ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;
 ```
 
-### View recent cache entries
+### Check active connections
 
 ```sql
 SELECT 
-  original_address,
-  city,
-  state_code,
-  country_code,
-  cached_at
-FROM address_cache
-ORDER BY cached_at DESC
-LIMIT 10;
+  datname,
+  usename,
+  application_name,
+  client_addr,
+  state,
+  query
+FROM pg_stat_activity
+WHERE datname = 'address_api';
 ```
 
-### Count API keys by role
+## Database maintenance
+
+### Clear address cache
 
 ```sql
-SELECT 
-  unnest(roles) as role,
-  COUNT(*) as count
-FROM api_key
-GROUP BY role;
+-- Clear all cached addresses
+TRUNCATE address_cache;
+
+-- Clear specific address
+DELETE FROM address_cache WHERE original_address = '94108, CA, US';
+
+-- Clear old cache entries (older than 30 days)
+DELETE FROM address_cache 
+WHERE cached_at < EXTRACT(EPOCH FROM NOW() - INTERVAL '30 days');
 ```
 
-### Check migration status
+### Add API key
+
+```sql
+INSERT INTO api_key (key, organization_name, roles)
+VALUES ('your-api-key-here', 'Organization Name', ARRAY['GEOCODE', 'MANAGE_CONTENT']);
+```
+
+### Revoke API key
+
+```sql
+DELETE FROM api_key WHERE key = 'api-key-to-revoke';
+```
+
+### Update ISO 3166 content
+
+```sql
+-- Update subdivision name
+UPDATE iso_3166
+SET subdivision_name = 'New Name'
+WHERE country_code = 'US' AND subdivision_code = 'CA';
+
+-- Add new subdivision
+INSERT INTO iso_3166 (country_code, subdivision_code, subdivision_name, subdivision_local_variant)
+VALUES ('US', 'PR', 'Puerto Rico', NULL);
+```
+
+## Database migrations
+
+### View migration history
 
 ```sql
 SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC;
 ```
 
+### Apply migrations manually
+
+If a migration fails during deployment:
+
+1. Connect to the database
+2. Check the failed migration in `atlas_schema_revisions`
+3. Fix the issue (e.g., remove duplicate data)
+4. Re-run the migration:
+
+```bash
+atlas migrate apply \
+  --dir \"file://database/migrations\" \
+  --url \"postgresql://USERNAME:PASSWORD@HOSTNAME:PORT/DBNAME\"
+```
+
 ## Troubleshooting
 
-### Error: "could not connect to server"
+### Error: \"could not connect to server\"
 
-**Cause**: Security group not configured or bastion host can't reach RDS.
+**Cause**: Security group not configured or bastion host not accessible.
 
 **Fix**:
-1. Verify security group rules (Step 1)
-2. Check RDS is running: Go to RDS → Databases
-3. Verify bastion host is in the same VPC
+1. Verify security group rules
+2. Ensure bastion host is running
+3. Check VPC and subnet configuration
 
-### Error: "password authentication failed"
+### Error: \"password authentication failed\"
 
 **Cause**: Incorrect credentials.
 
 **Fix**:
-1. Re-fetch credentials from Secrets Manager
-2. Ensure you're using the correct environment's secrets
-3. Check for special characters in password (may need URL encoding)
+1. Verify credentials in Secrets Manager
+2. Ensure you're using the correct environment (staging vs prod)
+3. Check for special characters in password (may need escaping)
 
-### Error: "database does not exist"
+### Error: \"database does not exist\"
 
 **Cause**: Wrong database name.
 
-**Fix**: Use `app` as the database name (default for Address API).
+**Fix**:
+1. Check `RDS_DBNAME` in Secrets Manager
+2. List available databases: `\l` in psql
+
+### Connection times out
+
+**Cause**: Security group rules not allowing traffic.
+
+**Fix**:
+1. Add inbound rule to security group
+2. Verify bastion host can reach RDS instance
+3. Check network ACLs
 
 ## Security best practices
 
-- **Remove security group rules** after debugging
-- **Use read-only queries** when possible
-- **Never modify data** in production without approval
-- **Log all database access** for audit purposes
-- **Rotate credentials** regularly
+- **Remove security group rules**: After debugging, remove the \"All traffic\" rule
+- **Use read-only user**: Create a read-only user for querying
+- **Audit database access**: Monitor CloudWatch logs for database connections
+- **Rotate credentials**: Regularly update database passwords in Secrets Manager
+- **Use IAM authentication**: Consider using IAM database authentication instead of passwords
 
 ## Next steps
 
