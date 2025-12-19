@@ -10,7 +10,7 @@ The Address API uses API key-based authentication with role-based access control
 All requests to the Address API (except `/` and `/healthz`) require an API key passed in the `x-commenda-key` header.
 
 ```bash
-curl -X POST https://address-api.in.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-api-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
+curl -X POST https://address.in.commenda.io/api/v1/geoencode \\\n  -H "x-commenda-key: your-api-key-here" \\\n  -H "Content-Type: application/json" \\\n  -d '{"address": "94108, CA, US"}'
 ```
 
 ## Roles
