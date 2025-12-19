@@ -1,374 +1,277 @@
 ---
 title: Deployment
-description: How to deploy the Address API to staging and production
+description: Deploy the Address API to staging and production
 ---
 
-The Address API uses GitHub releases to trigger deployments. This document explains the complete deployment process.
+The Address API uses GitHub Actions for continuous deployment to AWS ECS Fargate. Deployments are triggered by creating GitHub releases.
 
 ## Deployment overview
 
-```
-GitHub Release Created
-        │
-        ▼
-  GitHub Actions Triggered
-        │
-   ┌────┴────────────────┐
-   │                     │
-   ▼                     ▼
-Build Docker        Run Tests
-   │                     │
-   └────┬────────────────┘
-        │
-        ▼
-  Push to ECR
-        │
-        ▼
-  Terraform Apply
-  (Update Task Definition)
-        │
-        ▼
-  ECS Rolling Deployment
-  (Circuit Breaker Enabled)
-        │
-        ▼
-  Smoke Test (/healthz)
-        │
-        ▼
-  Deployment Complete
-```
+| Environment | Trigger | AWS Account | Region |
+|-------------|---------|-------------|--------|
+| Staging | Pre-release tag (`v*-rc.*`) | 127214192604 | ap-south-1 |
+| Production | Release tag (`v*`) | 429032495558 | ap-south-1 |
 
 ## Prerequisites
 
 Before deploying, ensure:
 
-1. **PR is merged**: Your changes are in the `main` branch
-2. **Tests pass**: All CI checks are green
-3. **AWS credentials**: GitHub Actions has access to AWS (configured in repository secrets)
-4. **Secrets configured**: Required secrets are in AWS Secrets Manager
+1. **All PR checks pass**: Lint, format, build, tests
+2. **PR is merged to main**: Merging does NOT trigger deployment
+3. **You have release permissions**: Only maintainers can create releases
 
-## Deployment to staging
+## Creating a release
 
-### Step 1: Create a pre-release
+### Deploy to staging
 
 1. Go to the [Releases page](https://github.com/commenda-eng/address-api/releases)
 2. Click **Draft a new release**
-3. Fill in the release form:
-   - **Tag**: `v0.1.0-rc.1` (increment the RC number for each staging release)
-   - **Release title**: `v0.1.0-rc.1 - Staging Release`
-   - **Description**: Describe what changed
-   - **✅ Check**: "Set as a pre-release"
-4. Click **Publish release**
+3. Click **Choose a tag**
+4. Enter a pre-release tag: `v0.1.0-rc.1`
+   - Format: `v{major}.{minor}.{patch}-rc.{release-candidate}`
+   - Example: `v0.2.0-rc.1`, `v0.2.0-rc.2`
+5. Set **Target**: `main`
+6. Enter **Release title**: `v0.1.0-rc.1 - Staging Release`
+7. Add **Release notes**: Describe what changed
+8. ✅ Check **Set as a pre-release**
+9. Click **Publish release**
 
-### Step 2: Monitor the deployment
+### Deploy to production
 
-The deployment workflow will automatically start. Monitor it in the [Actions tab](https://github.com/commenda-eng/address-api/actions).
+1. Go to the [Releases page](https://github.com/commenda-eng/address-api/releases)
+2. Click **Draft a new release**
+3. Click **Choose a tag**
+4. Enter a production tag: `v0.1.0`
+   - Format: `v{major}.{minor}.{patch}`
+   - Example: `v0.2.0`, `v1.0.0`
+5. Set **Target**: `main`
+6. Enter **Release title**: `v0.1.0 - Production Release`
+7. Add **Release notes**: Describe what changed
+8. ❌ **Do NOT check** \"Set as a pre-release\"
+9. Click **Publish release**
 
-**Workflow steps**:
-1. **Checkout code** - Clone the repository
-2. **Set up Go** - Install Go 1.23.1
-3. **Run tests** - Execute integration tests
-4. **Build Docker image** - Create container image
-5. **Push to ECR** - Upload image to staging ECR
-6. **Terraform apply** - Update infrastructure
-7. **Wait for deployment** - ECS rolling deployment
-8. **Smoke test** - Verify `/healthz` endpoint
+## Deployment workflow
 
-### Step 3: Verify the deployment
+When you create a release, GitHub Actions automatically:
 
-Once the workflow completes:
+### 1. Build Docker image
 
+```yaml
+- name: Build Docker image
+  run: docker build -t address-api:${{ github.ref_name }} .
+```
+
+### 2. Push to ECR
+
+```yaml
+- name: Push to ECR
+  run: |
+    docker tag address-api:${{ github.ref_name }} $ECR_REGISTRY/address-api:${{ github.ref_name }}
+    docker push $ECR_REGISTRY/address-api:${{ github.ref_name }}
+```
+
+### 3. Update ECS task definition
+
+```yaml
+- name: Update task definition
+  run: |
+    aws ecs register-task-definition \
+      --family address-api \
+      --container-definitions '[{\"name\":\"address-api\",\"image\":\"$ECR_IMAGE\"}]'
+```
+
+### 4. Deploy to ECS
+
+```yaml
+- name: Deploy to ECS
+  run: |
+    aws ecs update-service \
+      --cluster $CLUSTER_NAME \
+      --service address-api \
+      --task-definition address-api:$REVISION \
+      --force-new-deployment
+```
+
+### 5. Wait for deployment
+
+The workflow waits for the ECS service to stabilize (all tasks running the new version).
+
+## Monitoring deployment
+
+### View deployment progress
+
+1. Go to [GitHub Actions](https://github.com/commenda-eng/address-api/actions)
+2. Click on the running workflow
+3. Monitor the deployment steps
+
+### Check ECS deployment
+
+**Staging:**
 ```bash
-# Check health endpoint
-curl https://address.in.staging.commenda.io/healthz
+aws ecs describe-services \
+  --cluster staging-ecs-cluster \
+  --services address-api \
+  --region ap-south-1 \
+  --profile staging
+```
 
-# Expected response:
+**Production:**
+```bash
+aws ecs describe-services \
+  --cluster prod-ecs-cluster \
+  --services address-api \
+  --region ap-south-1 \
+  --profile prod
+```
+
+### Verify deployment
+
+**Staging:**
+```bash
+curl https://address.in.staging.commenda.io/healthz
+```
+
+**Production:**
+```bash
+curl https://address.in.commenda.io/healthz
+```
+
+Expected response:
+```json
 {
-  "api": true,
-  "database_pool": {
-    "total_connections": 12,
-    "acquired_connections": 0,
-    "idle_connections": 12,
-    "max_connections": 48,
-    "acquire_duration_ms": 2
+  \"api\": true,
+  \"database_pool\": {
+    \"total_connections\": 12,
+    \"acquired_connections\": 0,
+    \"idle_connections\": 12,
+    \"max_connections\": 48,
+    \"acquire_duration_ms\": 2
   }
 }
 ```
 
-### Step 4: Test your changes
+## Rollback
 
+If a deployment fails or introduces issues, you can rollback to a previous version.
+
+### Option 1: Redeploy previous release
+
+1. Go to [Releases](https://github.com/commenda-eng/address-api/releases)
+2. Find the last working release
+3. Click **Edit release**
+4. Click **Update release** (this triggers redeployment)
+
+### Option 2: Manual ECS rollback
+
+**Staging:**
 ```bash
-# Test geocoding endpoint
-curl -X POST https://address.in.staging.commenda.io/api/v1/geoencode \\
-  -H "x-commenda-key: your-staging-api-key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"address": "94108, CA, US"}'
+# List task definitions
+aws ecs list-task-definitions \
+  --family-prefix address-api \
+  --region ap-south-1 \
+  --profile staging
+
+# Rollback to previous version
+aws ecs update-service \
+  --cluster staging-ecs-cluster \
+  --service address-api \
+  --task-definition address-api:PREVIOUS_REVISION \
+  --force-new-deployment \
+  --region ap-south-1 \
+  --profile staging
 ```
 
-## Deployment to production
+**Production:**
+```bash
+# List task definitions
+aws ecs list-task-definitions \
+  --family-prefix address-api \
+  --region ap-south-1 \
+  --profile prod
 
-### Step 1: Verify staging
+# Rollback to previous version
+aws ecs update-service \
+  --cluster prod-ecs-cluster \
+  --service address-api \
+  --task-definition address-api:PREVIOUS_REVISION \
+  --force-new-deployment \
+  --region ap-south-1 \
+  --profile prod
+```
+
+## Deployment checklist
 
 Before deploying to production:
 
-1. **Test thoroughly on staging**
-2. **Check CloudWatch logs** for errors
-3. **Monitor CloudWatch alarms** for anomalies
-4. **Get approval** from team lead (if required)
+- [ ] Staging deployment successful
+- [ ] Smoke tests pass on staging
+- [ ] No errors in CloudWatch logs
+- [ ] Health check endpoint responds correctly
+- [ ] Database migrations applied successfully
+- [ ] Better Stack shows no alerts
+- [ ] API key authentication works
+- [ ] Geocoding endpoint returns correct results
+- [ ] Ingestion endpoint works correctly
 
-### Step 2: Create a full release
+## Common deployment issues
 
-1. Go to the [Releases page](https://github.com/commenda-eng/address-api/releases)
-2. Click **Draft a new release**
-3. Fill in the release form:
-   - **Tag**: `v0.1.0` (same version as staging, without `-rc.X`)
-   - **Release title**: `v0.1.0 - Production Release`
-   - **Description**: Describe what changed
-   - **❌ Do NOT check**: "Set as a pre-release"
-4. Click **Publish release**
+### Error: \"Task failed to start\"
 
-### Step 3: Monitor the deployment
-
-The production deployment workflow will start automatically. Monitor it in the [Actions tab](https://github.com/commenda-eng/address-api/actions).
-
-**Production deployment is identical to staging**, but targets the production AWS account and domain.
-
-### Step 4: Verify the deployment
-
-```bash
-# Check health endpoint
-curl https://address.in.commenda.io/healthz
-
-# Test geocoding endpoint
-curl -X POST https://address.in.commenda.io/api/v1/geoencode \\
-  -H "x-commenda-key: your-production-api-key" \\
-  -H "Content-Type: application/json" \\
-  -d '{"address": "94108, CA, US"}'
-```
-
-### Step 5: Monitor production
-
-After deployment, monitor:
-
-- **CloudWatch logs**: `/ecs/prod/address-api`
-- **CloudWatch alarms**: Check for any triggered alarms
-- **Better Stack**: Monitor API call metrics and error rates
-- **ECS service**: Verify all tasks are healthy
-
-## Deployment workflow details
-
-### GitHub Actions workflow
-
-The deployment is handled by `.github/workflows/deploy-app.yml`:
-
-```yaml
-name: Deploy Application
-
-on:
-  release:
-    types: [published]
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    environment: ${{ contains(github.ref, 'rc') && 'staging' || 'prod' }}
-    
-    steps:
-      - name: Checkout code
-      - name: Set up Go
-      - name: Run integration tests
-      - name: Configure AWS credentials
-      - name: Build and push Docker image
-      - name: Deploy with Terraform
-      - name: Wait for ECS deployment
-      - name: Smoke test
-```
-
-### Environment detection
-
-The workflow automatically detects the environment based on the release tag:
-
-| Tag format | Environment | Example |
-|------------|-------------|---------|
-| `v*-rc.*` | Staging | v0.1.0-rc.1 |
-| `v*` (no rc) | Production | v0.1.0 |
-
-### Docker image tagging
-
-Images are tagged with the release version:
-
-| Environment | Image tag | ECR repository |
-|-------------|-----------|----------------|
-| Staging | v0.1.0-rc.1 | 127214192604.dkr.ecr.ap-south-1.amazonaws.com/staging/address-api |
-| Production | v0.1.0 | 429032495558.dkr.ecr.ap-south-1.amazonaws.com/prod/address-api |
-
-### Terraform apply
-
-The workflow runs Terraform to update the infrastructure:
-
-```bash
-terraform workspace select $ENVIRONMENT
-terraform apply -auto-approve \\
-  -var="app_image_tag=$TAG" \\
-  -var="app_secrets=$SECRETS_JSON"
-```
-
-**What Terraform updates**:
-- ECS task definition (with new image tag)
-- Secrets Manager (with latest secrets)
-- Any infrastructure changes from code
-
-### ECS rolling deployment
-
-ECS performs a rolling deployment with these settings:
-
-| Setting | Value | Description |
-|---------|-------|-------------|
-| **Minimum healthy percent** | 100% | Keep all tasks running during deployment |
-| **Maximum percent** | 200% | Can run double the tasks temporarily |
-| **Circuit breaker** | Enabled | Automatically rollback on failure |
-| **Health check grace period** | 60 seconds | Wait before checking health |
-
-**Deployment process**:
-1. Start new tasks with new image
-2. Wait for new tasks to pass health checks
-3. Drain connections from old tasks
-4. Stop old tasks
-5. Repeat until all tasks are updated
-
-### Smoke test
-
-After deployment, the workflow tests the `/healthz` endpoint:
-
-```bash
-curl -f https://address.in.$ENVIRONMENT.commenda.io/healthz
-```
-
-If the health check fails, the workflow fails and alerts the team.
-
-## Rollback
-
-If a deployment fails or causes issues, you can rollback:
-
-### Automatic rollback
-
-The ECS circuit breaker automatically rolls back if:
-- New tasks fail health checks
-- New tasks crash repeatedly
-- Deployment doesn't stabilize within 10 minutes
-
-### Manual rollback
-
-To manually rollback to a previous version:
-
-1. **Find the previous release tag** (e.g., `v0.0.9`)
-2. **Redeploy the previous version**:
-   - Go to Releases
-   - Find the previous release
-   - Click "Edit release"
-   - Click "Update release" (this triggers a new deployment)
-
-Alternatively, use Terraform:
-
-```bash
-# Switch to the environment
-terraform workspace select staging
-
-# Apply with previous image tag
-terraform apply -var="app_image_tag=v0.0.9"
-```
-
-## Deployment checks
-
-The deployment workflow includes several checks:
-
-| Check | Description | Failure action |
-|-------|-------------|----------------|
-| **Integration tests** | Run full test suite | Abort deployment |
-| **Docker build** | Build container image | Abort deployment |
-| **Terraform plan** | Preview infrastructure changes | Abort deployment |
-| **ECS deployment** | Rolling update of tasks | Circuit breaker rollback |
-| **Smoke test** | Health check endpoint | Mark deployment as failed |
-
-## Deployment frequency
-
-| Environment | Typical frequency | Purpose |
-|-------------|-------------------|---------|
-| **Staging** | Multiple times per day | Test new features and bug fixes |
-| **Production** | 1-2 times per week | Stable releases only |
-
-## Deployment notifications
-
-Deployment status is reported in:
-
-- **GitHub Actions**: Workflow status and logs
-- **Slack** (if configured): Deployment start/success/failure notifications
-- **Better Stack**: Deployment events and metrics
-
-## Troubleshooting deployments
-
-### Deployment stuck at "Waiting for ECS deployment"
-
-**Cause**: New tasks are failing health checks.
+**Cause**: Container fails to start (missing env vars, port conflicts, etc.)
 
 **Fix**:
-1. Check CloudWatch logs for errors
-2. Verify the health check endpoint is responding
-3. Check security group rules
-4. Verify secrets are correct
+1. Check CloudWatch logs for error messages
+2. Verify environment variables in ECS task definition
+3. Ensure secrets are accessible from Secrets Manager
 
-### Error: "Image not found in ECR"
+### Error: \"Service failed to stabilize\"
 
-**Cause**: Docker image wasn't pushed successfully.
+**Cause**: New tasks keep failing health checks
 
 **Fix**:
-1. Check the "Build and push Docker image" step in GitHub Actions
+1. Check ALB target group health checks
+2. Verify the `/healthz` endpoint is responding
+3. Check database connectivity
+
+### Error: \"Image not found in ECR\"
+
+**Cause**: Docker image wasn't pushed to ECR
+
+**Fix**:
+1. Check GitHub Actions logs for build/push errors
 2. Verify ECR repository exists
-3. Check AWS credentials
+3. Ensure AWS credentials are valid
 
-### Error: "Terraform apply failed"
+### Deployment takes too long
 
-**Cause**: Infrastructure changes have errors.
-
-**Fix**:
-1. Review the Terraform plan output
-2. Check for resource conflicts
-3. Verify AWS permissions
-
-### Circuit breaker triggered rollback
-
-**Cause**: New tasks are unhealthy or crashing.
+**Cause**: ECS is waiting for old tasks to drain
 
 **Fix**:
-1. Check CloudWatch logs for crash reasons
-2. Verify environment variables and secrets
-3. Test the Docker image locally
-4. Check database connectivity
+1. Check ECS service deployment configuration
+2. Reduce `deregistration_delay` in target group settings
+3. Ensure old tasks are terminating properly
 
-## Best practices
+## Deployment best practices
 
-### Before deploying
+### Versioning
 
-- ✅ Run tests locally
-- ✅ Test on staging first
-- ✅ Review Terraform plan
-- ✅ Check for breaking changes
-- ✅ Update documentation
+- **Semantic versioning**: Use `v{major}.{minor}.{patch}` format
+- **Staging first**: Always deploy to staging before production
+- **Increment versions**: Don't reuse version numbers
 
-### During deployment
+### Release notes
 
-- ✅ Monitor GitHub Actions workflow
-- ✅ Watch CloudWatch logs
-- ✅ Check ECS service events
-- ✅ Monitor CloudWatch alarms
+Include in release notes:
+- **Features**: New functionality added
+- **Fixes**: Bugs fixed
+- **Breaking changes**: API changes that require client updates
+- **Database migrations**: Schema changes applied
 
-### After deployment
+### Timing
 
-- ✅ Verify health endpoint
-- ✅ Test critical endpoints
-- ✅ Monitor error rates
-- ✅ Check Better Stack metrics
-- ✅ Update release notes
+- **Deploy during low traffic**: Minimize impact on users
+- **Monitor after deployment**: Watch logs and metrics for 15-30 minutes
+- **Have rollback plan**: Know how to quickly revert if needed
 
 ## Next steps
 
