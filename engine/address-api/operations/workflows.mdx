@@ -271,13 +271,13 @@ Builds and pushes the Docker image to ECR.
   run: terraform init
 
 - name: Terraform Workspace
-  run: terraform workspace select ${{ env.ENVIRONMENT }}
+  run: terraform workspace select \${{ env.ENVIRONMENT }}
 
 - name: Terraform Apply
   run: |
     terraform apply -auto-approve \
-      -var="app_image_tag=${{ github.ref_name }}" \
-      -var="app_secrets=${{ secrets.APP_SECRETS }}"
+      -var="app_image_tag=\${{ github.ref_name }}" \
+      -var="app_secrets=\${{ secrets.APP_SECRETS }}"
 ```
 
 Updates infrastructure and deploys new image.
