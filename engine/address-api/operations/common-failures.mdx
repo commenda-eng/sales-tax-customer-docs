@@ -3,85 +3,94 @@ title: Common failures
 description: Common failure scenarios and how to fix them
 ---
 
-This guide covers common failure scenarios for the Address API and their solutions.
+This guide covers common failure scenarios for the Address API and how to resolve them.
 
 ## Failed migration
 
 ### Symptoms
 
-- Init container fails during deployment
-- Logs show migration errors
-- New tasks never become healthy
+- Deployment fails during migration step
+- ECS tasks fail to start
+- CloudWatch logs show migration errors
 
 ### Common causes
 
 #### 1. Duplicate records violating unique constraint
 
-**Example**: Adding a uniqueness filter to a table that has duplicate records.
+**Scenario**: Adding a unique constraint to a table that has duplicate records.
 
-**Error message**:
+**Example error**:
 ```
 ERROR: could not create unique index "iso_3166_country_subdivision_unique"
 DETAIL: Key (country_code, subdivision_code)=(US, CA) is duplicated.
 ```
 
-**Solution**:
+**Fix**:
 
-1. **Connect to the database** (see [Database connection](/engine/address-api/operations/database-connection))
+1. Connect to the database (see [Database connection](/engine/address-api/operations/database-connection))
 
-2. **Find duplicates**:
-```sql
-SELECT country_code, subdivision_code, COUNT(*)
-FROM iso_3166
-GROUP BY country_code, subdivision_code
-HAVING COUNT(*) > 1;
-```
+2. Identify duplicates:
+   ```sql
+   SELECT country_code, subdivision_code, COUNT(*)
+   FROM iso_3166
+   GROUP BY country_code, subdivision_code
+   HAVING COUNT(*) > 1;
+   ```
 
-3. **Remove duplicates** (keep the first record):
-```sql
-DELETE FROM iso_3166 a
-USING iso_3166 b
-WHERE a.id > b.id
-  AND a.country_code = b.country_code
-  AND a.subdivision_code = b.subdivision_code;
-```
+3. Remove duplicates (keep the most recent):
+   ```sql
+   DELETE FROM iso_3166 a
+   USING iso_3166 b
+   WHERE a.id < b.id
+     AND a.country_code = b.country_code
+     AND a.subdivision_code = b.subdivision_code;
+   ```
 
-4. **Update Atlas migration table**:
-```sql
--- Mark the failed migration as applied
-INSERT INTO atlas_schema_revisions (version, description, executed_at, execution_time, error)
-VALUES ('20251217100000', 'add_iso_3166_unique_country_subdivision', NOW(), 0, NULL)
-ON CONFLICT (version) DO UPDATE SET error = NULL;
-```
+4. Update the Atlas migration table to mark the migration as applied:
+   ```sql
+   -- Check current migration status
+   SELECT * FROM atlas_schema_revisions ORDER BY executed_at DESC;
+   
+   -- If the migration is marked as failed, you may need to manually mark it as applied
+   -- after fixing the data issue and re-running the migration
+   ```
 
-5. **Redeploy** the service
+5. Re-run the migration:
+   ```bash
+   atlas migrate apply \
+     --dir "file://database/migrations" \
+     --url "postgresql://USERNAME:PASSWORD@HOSTNAME:PORT/DBNAME"
+   ```
 
-#### 2. Migration file syntax error
+6. Redeploy the service:
+   ```bash
+   aws ecs update-service \
+     --cluster staging-ecs-cluster \
+     --service address-api \
+     --force-new-deployment \
+     --region ap-south-1
+   ```
 
-**Error message**:
-```
-ERROR: syntax error at or near "CONSTRAINT"
-```
+#### 2. Migration syntax error
 
-**Solution**:
+**Scenario**: SQL syntax error in migration file.
 
-1. **Fix the migration file** in the repository
-2. **Commit and push** the fix
-3. **Create a new release** to redeploy
+**Fix**:
 
-#### 3. Database connection timeout
+1. Review the migration file in `database/migrations/`
+2. Fix the SQL syntax error
+3. Commit and push the fix
+4. Create a new release to redeploy
 
-**Error message**:
-```
-ERROR: could not connect to database: connection timeout
-```
+#### 3. Migration timeout
 
-**Solution**:
+**Scenario**: Migration takes too long and times out.
 
-1. **Check RDS status**: Go to RDS → Databases
-2. **Verify security groups**: Ensure ECS tasks can reach RDS
-3. **Check RDS Performance Insights**: Look for connection issues
-4. **Restart RDS** if necessary (last resort)
+**Fix**:
+
+1. Increase the migration timeout in the deployment workflow
+2. Optimize the migration (add indexes after data migration, not during)
+3. Consider breaking large migrations into smaller steps
 
 ## Google API issues
 
@@ -89,312 +98,364 @@ ERROR: could not connect to database: connection timeout
 
 **Symptoms**:
 - Server fails to start
-- Logs show "GOOGLE_GEOCODING_API_KEY is required"
+- CloudWatch logs show: \"GOOGLE_GEOCODING_API_KEY is required\"
 
-**Error message**:
-```json
-{
-  "level": "fatal",
-  "error": "GOOGLE_GEOCODING_API_KEY is required",
-  "time": 1734518400,
-  "message": "missing required environment variables"
-}
-```
+**Fix**:
 
-**Solution**:
+1. Check Secrets Manager:
+   ```bash
+   aws secretsmanager get-secret-value \
+     --secret-id staging-address-api-secrets \
+     --region ap-south-1
+   ```
 
-1. **Add the API key to Secrets Manager**:
-```bash
-aws secretsmanager update-secret \\
-  --secret-id {env}-address-api-secrets \\
-  --secret-string "$(aws secretsmanager get-secret-value \\
-    --secret-id {env}-address-api-secrets \\
-    --query SecretString --output text | \\
-    jq '. + {\"GOOGLE_GEOCODING_API_KEY\": \"your-key-here\"}')" \\
-  --region ap-south-1
-```
+2. Add the missing key:
+   ```bash
+   aws secretsmanager update-secret \
+     --secret-id staging-address-api-secrets \
+     --secret-string '{\"GOOGLE_GEOCODING_API_KEY\":\"your-key-here\"}' \
+     --region ap-south-1
+   ```
 
-2. **Restart the ECS service**:
-```bash
-aws ecs update-service \\
-  --cluster {env}-ecs-cluster \\
-  --service address-api \\
-  --force-new-deployment \\
-  --region ap-south-1
-```
+3. Restart the ECS service:
+   ```bash
+   aws ecs update-service \
+     --cluster staging-ecs-cluster \
+     --service address-api \
+     --force-new-deployment \
+     --region ap-south-1
+   ```
 
-### 2. Google API is down
+### 2. Invalid API key
 
 **Symptoms**:
 - Geocoding requests fail with 500 errors
-- Cached addresses still work
-- Logs show Google API errors
+- CloudWatch logs show: \"Google API authentication failed\"
 
-**Error message**:
-```json
-{
-  "level": "error",
-  "message": "geocoding failed",
-  "error": "UNAVAILABLE",
-  "provider": "google"
-}
-```
+**Fix**:
+
+1. Verify the API key in Google Cloud Console
+2. Ensure the Geocoding API is enabled
+3. Check API key restrictions (IP, referrer, API)
+4. Update the key in Secrets Manager
+5. Restart the ECS service
+
+### 3. Google API quota exceeded
+
+**Symptoms**:
+- Geocoding requests fail with \"OVER_QUERY_LIMIT\"
+- Only cached addresses work
+
+**Fix**:
+
+**Short-term**:
+- Requests for cached addresses will continue to work
+- New addresses will fail until quota resets
+
+**Long-term**:
+1. Increase Google API quota in Google Cloud Console
+2. Implement rate limiting
+3. Optimize cache usage
+
+### 4. Google API is down
+
+**Symptoms**:
+- Geocoding requests fail for non-cached addresses
+- Cached addresses still work
+- CloudWatch logs show: \"failed to connect to Google API\"
 
 **Behavior**:
-- **Cached addresses**: Return successfully from cache
-- **New addresses**: Fail with 500 error
+- **Cached addresses**: Continue to work normally
+- **New addresses**: Return 500 error
 
-**Solution**:
+**Fix**:
 
-1. **Check Google Cloud Status**: Visit [Google Cloud Status Dashboard](https://status.cloud.google.com/)
-2. **Monitor the situation**: Wait for Google to resolve the issue
-3. **Notify users**: If prolonged, inform users of the outage
-4. **Check API quotas**: Ensure you haven't exceeded quota limits
+1. Check [Google Cloud Status Dashboard](https://status.cloud.google.com/)
+2. Wait for Google to resolve the issue
+3. Monitor Better Stack for alerts
+4. Cached addresses will continue to work during the outage
 
-**Prevention**:
-- Implement retry logic with exponential backoff
-- Consider a fallback geocoding provider
-- Increase cache hit rate by pre-caching common addresses
-
-## RDS issues
+## RDS (database) issues
 
 ### 1. Database is down
 
 **Symptoms**:
-- `/healthz` endpoint returns unhealthy
-- Better Stack alerts triggered
-- All API requests fail
+- Health check endpoint returns 500 error
+- Better Stack alerts: \"Service is down\"
+- CloudWatch logs show: \"could not ping the database\"
 
-**Error message**:
-```json
-{
-  "level": "error",
-  "message": "database connection failed",
-  "error": "connection refused"
-}
-```
+**Fix**:
 
-**Solution**:
+1. Check RDS instance status:
+   ```bash
+   aws rds describe-db-instances \
+     --db-instance-identifier staging-address-api-postgres \
+     --region ap-south-1
+   ```
 
-1. **Check RDS status**:
-```bash
-aws rds describe-db-instances \\
-  --db-instance-identifier {env}-address-api-postgres \\
-  --region ap-south-1 \\
-  --query 'DBInstances[0].DBInstanceStatus'
-```
+2. If stopped, start the instance:
+   ```bash
+   aws rds start-db-instance \
+     --db-instance-identifier staging-address-api-postgres \
+     --region ap-south-1
+   ```
 
-2. **If stopped, start it**:
-```bash
-aws rds start-db-instance \\
-  --db-instance-identifier {env}-address-api-postgres \\
-  --region ap-south-1
-```
-
-3. **If failed, check RDS events**:
-```bash
-aws rds describe-events \\
-  --source-identifier {env}-address-api-postgres \\
-  --source-type db-instance \\
-  --region ap-south-1
-```
-
-4. **Restore from backup** if necessary:
-```bash
-aws rds restore-db-instance-to-point-in-time \\
-  --source-db-instance-identifier {env}-address-api-postgres \\
-  --target-db-instance-identifier {env}-address-api-postgres-restored \\
-  --restore-time 2024-12-18T10:00:00Z \\
-  --region ap-south-1
-```
+3. If the instance is in a failed state, check CloudWatch logs for RDS
+4. Consider restoring from a snapshot if the instance is corrupted
 
 ### 2. Connection pool exhausted
 
 **Symptoms**:
-- Slow response times
-- Timeouts on requests
-- Logs show "connection pool exhausted"
+- Requests timeout or fail
+- Health check shows `acquired_connections` near `max_connections`
+- CloudWatch logs show: \"connection pool exhausted\"
 
-**Error message**:
-```json
-{
-  "level": "error",
-  "message": "failed to acquire connection",
-  "error": "all connections in use"
-}
-```
+**Fix**:
 
-**Solution**:
+1. Check current pool usage:
+   ```bash
+   curl https://address.in.staging.commenda.io/healthz
+   ```
 
-1. **Check connection pool metrics** in `/healthz`:
-```bash
-curl https://address.in.staging.commenda.io/healthz
-```
+2. Increase connection pool size:
+   - Edit `configs/postgres.config.go`
+   - Increase `MaxConns` (currently 48)
+   - Deploy the change
 
-2. **Increase max connections** in Terraform:
-```hcl
-# In variables.tf
-variable "db_max_connections" {
-  default = 100  # Increase from default
-}
-```
+3. Check for connection leaks:
+   ```sql
+   SELECT 
+     datname,
+     usename,
+     application_name,
+     state,
+     COUNT(*)
+   FROM pg_stat_activity
+   WHERE datname = 'address_api'
+   GROUP BY datname, usename, application_name, state;
+   ```
 
-3. **Scale up RDS instance** if needed:
-```hcl
-variable "db_instance_class" {
-  default = "db.t4g.large"  # Upgrade from db.t4g.medium
-}
-```
+4. Kill idle connections if needed:
+   ```sql
+   SELECT pg_terminate_backend(pid)
+   FROM pg_stat_activity
+   WHERE datname = 'address_api'
+     AND state = 'idle'
+     AND state_change < NOW() - INTERVAL '10 minutes';
+   ```
 
-4. **Check for connection leaks** in application code
+### 3. Database credentials invalid
 
-### 3. Storage full
+**Symptoms**:
+- Server fails to start
+- CloudWatch logs show: \"password authentication failed\"
+
+**Fix**:
+
+1. Verify credentials in Secrets Manager
+2. Reset RDS password if needed:
+   ```bash
+   aws rds modify-db-instance \
+     --db-instance-identifier staging-address-api-postgres \
+     --master-user-password NEW_PASSWORD \
+     --region ap-south-1
+   ```
+
+3. Update Secrets Manager with new password
+4. Restart ECS service
+
+### 4. Database disk full
 
 **Symptoms**:
 - Write operations fail
-- RDS status shows "storage-full"
-- CloudWatch alarm triggered
+- CloudWatch logs show: \"disk full\" or \"no space left on device\"
 
-**Solution**:
+**Fix**:
 
-1. **Check storage usage**:
-```bash
-aws rds describe-db-instances \\
-  --db-instance-identifier {env}-address-api-postgres \\
-  --query 'DBInstances[0].[AllocatedStorage,MaxAllocatedStorage]'
-```
+1. Check disk usage:
+   ```bash
+   aws rds describe-db-instances \
+     --db-instance-identifier staging-address-api-postgres \
+     --query 'DBInstances[0].AllocatedStorage' \
+     --region ap-south-1
+   ```
 
-2. **Increase max allocated storage**:
-```hcl
-variable "db_max_allocated_storage" {
-  default = 1000  # Increase from 500
-}
-```
+2. Increase storage:
+   ```bash
+   aws rds modify-db-instance \
+     --db-instance-identifier staging-address-api-postgres \
+     --allocated-storage 100 \
+     --region ap-south-1
+   ```
 
-3. **Clean up old data** if appropriate:
-```sql
--- Delete old cache entries
-DELETE FROM address_cache WHERE cached_at < EXTRACT(EPOCH FROM NOW() - INTERVAL '90 days');
-```
+3. Clean up old data:
+   ```sql
+   -- Delete old cache entries
+   DELETE FROM address_cache 
+   WHERE cached_at < EXTRACT(EPOCH FROM NOW() - INTERVAL '90 days');
+   
+   -- Vacuum to reclaim space
+   VACUUM FULL address_cache;
+   ```
 
 ## ISO 3166 content issues
 
 ### Missing state code
 
 **Symptoms**:
-- Geocoding returns state code but not full state name
-- No error, just incomplete data
+- Geocoding works but returns Google's short name instead of ISO code
+- No error is thrown
 
-**Example response**:
+**Behavior**:
+When Google returns a state code that doesn't exist in the ISO 3166 database:
+1. The API tries to match the code against `subdivision_code`
+2. If not found, tries to match against `subdivision_name`
+3. If not found, tries to match against `subdivision_local_variant`
+4. If still not found, returns Google's short name without failing
+
+**Example**:
 ```json
 {
-  "state": null,
-  "state_code": "CA"
+  \"state\": \"California\",
+  \"state_code\": \"CA\"  // Google's short name, not from ISO 3166 database
 }
 ```
 
-**Behavior**:
-- The API doesn't fail
-- Returns the short name from Google
-- Logs a warning
+**Fix**:
 
-**Solution**:
+1. Ingest the missing state code:
+   ```bash
+   curl -X POST https://address.in.commenda.io/api/v1/internal/iso_3166/ingest/json \
+     -H \"x-commenda-key: your-api-key\" \
+     -H \"Content-Type: application/json\" \
+     -d '{
+       \"items\": [{
+         \"country_code\": \"US\",
+         \"subdivision_code\": \"CA\",
+         \"subdivision_name\": \"California\",
+         \"subdivision_local_variant\": null
+       }]
+     }'
+   ```
 
-1. **Ingest the missing state**:
-```bash
-curl -X POST https://address.in.staging.commenda.io/api/v1/internal/iso_3166/ingest/json \\
-  -H "x-commenda-key: your-api-key" \\
-  -H "Content-Type: application/json" \\
-  -d '{
-    "items": [{
-      "country_code": "US",
-      "subdivision_code": "CA",
-      "subdivision_name": "California",
-      "subdivision_local_variant": null
-    }]
-  }'
-```
+2. Verify the state code is now in the database:
+   ```sql
+   SELECT * FROM iso_3166 
+   WHERE country_code = 'US' AND subdivision_code = 'CA';
+   ```
 
-2. **Verify the data**:
-```sql
-SELECT * FROM iso_3166 WHERE country_code = 'US' AND subdivision_code = 'CA';
-```
+3. Clear the cache for affected addresses:
+   ```sql
+   DELETE FROM address_cache 
+   WHERE state_code = 'CA' AND country_code = 'US';
+   ```
 
-## Deployment failures
+### Incorrect state mapping
 
-### 1. Circuit breaker triggered
+**Symptoms**:
+- Wrong state name returned for a state code
+
+**Fix**:
+
+1. Update the ISO 3166 record:
+   ```sql
+   UPDATE iso_3166
+   SET subdivision_name = 'Correct Name'
+   WHERE country_code = 'US' AND subdivision_code = 'CA';
+   ```
+
+2. Clear affected cache entries:
+   ```sql
+   DELETE FROM address_cache 
+   WHERE state_code = 'CA' AND country_code = 'US';
+   ```
+
+## ECS deployment issues
+
+### Task fails to start
 
 **Symptoms**:
 - Deployment fails
-- ECS automatically rolls back
-- New tasks fail health checks
-
-**Solution**:
-
-1. **Check CloudWatch logs** for errors
-2. **Verify environment variables** are correct
-3. **Test Docker image locally**:
-```bash
-docker run -p 8080:80 \\
-  -e RDS_USERNAME=test \\
-  -e RDS_PASSWORD=test \\
-  -e RDS_HOSTNAME=localhost \\
-  -e RDS_PORT=5432 \\
-  -e RDS_DBNAME=test \\
-  {image-uri}
-```
-4. **Fix the issue** and redeploy
-
-### 2. Terraform apply failed
-
-**Symptoms**:
-- GitHub Actions workflow fails at Terraform step
-- Infrastructure changes not applied
-
-**Solution**:
-
-1. **Review Terraform error** in GitHub Actions logs
-2. **Check for resource conflicts**
-3. **Manually apply** if needed:
-```bash
-cd infrastructure/modules/region
-terraform workspace select staging
-terraform plan
-terraform apply
-```
-
-## Health check failures
-
-### Symptoms
-
-- ALB marks tasks as unhealthy
-- Tasks are repeatedly replaced
-- Service is unstable
+- ECS tasks in \"STOPPED\" state
+- CloudWatch logs show startup errors
 
 **Common causes**:
 
-1. **Database connection issues**
-2. **Slow startup time** (exceeds grace period)
-3. **Application crashes**
+1. **Missing environment variables**:
+   - Check task definition environment variables
+   - Verify Secrets Manager secrets are accessible
 
-**Solution**:
+2. **Port conflict**:
+   - Ensure container port matches ALB target group port
+   - Check security group rules
 
-1. **Check health endpoint**:
-```bash
-curl -v https://address.in.staging.commenda.io/healthz
-```
+3. **Health check failures**:
+   - Verify `/healthz` endpoint is accessible
+   - Check database connectivity
 
-2. **Increase health check grace period**:
-```hcl
-resource "aws_ecs_service" "app" {
-  health_check_grace_period_seconds = 120  # Increase from 60
-}
-```
+**Fix**:
 
-3. **Fix application issues** causing slow startup
+1. Check task stopped reason:
+   ```bash
+   aws ecs describe-tasks \
+     --cluster staging-ecs-cluster \
+     --tasks TASK_ARN \
+     --region ap-south-1
+   ```
+
+2. Review CloudWatch logs for the failed task
+3. Fix the issue and redeploy
+
+### Service fails to stabilize
+
+**Symptoms**:
+- Deployment times out
+- New tasks keep failing health checks
+- Old tasks continue running
+
+**Fix**:
+
+1. Check ALB target group health:
+   ```bash
+   aws elbv2 describe-target-health \
+     --target-group-arn TARGET_GROUP_ARN \
+     --region ap-south-1
+   ```
+
+2. Common issues:
+   - Health check path incorrect
+   - Security group not allowing ALB traffic
+   - Application not listening on correct port
+
+3. Rollback if needed (see [Deployment](/engine/address-api/operations/deployment#rollback))
+
+## Monitoring and alerts
+
+### Better Stack not receiving data
+
+**Symptoms**:
+- No uptime data in Better Stack
+- Missing alerts
+
+**Fix**:
+
+1. Verify Better Stack heartbeat URL is configured
+2. Check if `/healthz` endpoint is accessible externally
+3. Verify Better Stack API key is valid
+
+### False positive alerts
+
+**Symptoms**:
+- Alerts triggered but service is working
+
+**Fix**:
+
+1. Adjust alert thresholds in Better Stack
+2. Increase alert delay (e.g., alert after 3 failures instead of 1)
+3. Review health check configuration
 
 ## Next steps
 
 - [Debugging guide](/engine/address-api/operations/debugging)
 - [Database connection](/engine/address-api/operations/database-connection)
-- [Deployment guide](/engine/address-api/operations/deployment)
+- [Deployment](/engine/address-api/operations/deployment)
