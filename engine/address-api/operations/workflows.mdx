@@ -300,7 +300,7 @@ Waits for ECS rolling deployment to complete.
 ```yaml
 - name: Smoke test
   run: |
-    curl -f https://address.in.${{ env.DOMAIN_SUFFIX }}.commenda.io/healthz
+    curl -f https://address.in.\${{ env.DOMAIN_SUFFIX }}.commenda.io/healthz
 ```
 
 Verifies the deployment is healthy.
