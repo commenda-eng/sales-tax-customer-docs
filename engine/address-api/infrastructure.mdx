@@ -1,0 +1,319 @@
+---
+title: Infrastructure
+description: AWS infrastructure and Terraform configuration
+---
+
+The Address API is deployed on AWS using Terraform for infrastructure as code. This guide provides an overview of the infrastructure components.
+
+## Infrastructure overview
+
+The Address API uses a combination of shared base infrastructure and service-specific resources.
+
+### Base infrastructure (shared)
+
+These resources are shared across multiple services in the Commenda platform:
+
+| Component | Description | Managed by |
+|-----------|-------------|------------|
+| **VPC** | Virtual Private Cloud with public and private subnets | Base Terraform |
+| **Subnets** | Public subnets for ALB, private subnets for ECS and RDS | Base Terraform |
+| **Internet Gateway** | Allows outbound internet access | Base Terraform |
+| **NAT Gateway** | Allows private subnets to access internet | Base Terraform |
+| **Route Tables** | Routing configuration for subnets | Base Terraform |
+| **Security Groups** | Base security group rules | Base Terraform |
+| **Domain (Route 53)** | `commenda.io` hosted zone | Base Terraform |
+| **SSL Certificates** | Wildcard certificates for `*.commenda.io` | Base Terraform |
+
+### Service-specific infrastructure
+
+These resources are created specifically for the Address API:
+
+| Component | Description | Location |
+|-----------|-------------|----------|
+| **ECS Cluster** | Container orchestration | `infrastructure/ecs.tf` |
+| **ECS Service** | Service definition and task configuration | `infrastructure/ecs.tf` |
+| **ECS Task Definition** | Container configuration | `infrastructure/ecs.tf` |
+| **Application Load Balancer** | HTTPS traffic routing | `infrastructure/alb.tf` |
+| **Target Group** | ALB target group for ECS tasks | `infrastructure/alb.tf` |
+| **RDS PostgreSQL** | Database instance | `infrastructure/rds.tf` |
+| **RDS Subnet Group** | Subnet configuration for RDS | `infrastructure/rds.tf` |
+| **ECR Repository** | Docker image registry | `infrastructure/ecr.tf` |
+| **CloudWatch Log Group** | Centralized logging | `infrastructure/cloudwatch.tf` |
+| **Secrets Manager** | Environment variables and credentials | `infrastructure/secrets.tf` |
+| **IAM Roles** | ECS task execution and task roles | `infrastructure/iam.tf` |
+| **Security Groups** | Service-specific firewall rules | `infrastructure/security_groups.tf` |
+
+## Architecture diagram
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                         Internet                             │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         │ HTTPS (443)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│              Application Load Balancer (ALB)                 │
+│                    (Public Subnets)                          │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         │ HTTP (8080)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                    ECS Fargate Tasks                         │
+│                  (Private Subnets)                           │
+│  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
+│  │   Task 1     │  │   Task 2     │  │   Task 3     │      │
+│  │ address-api  │  │ address-api  │  │ address-api  │      │
+│  └──────────────┘  └──────────────┘  └──────────────┘      │
+└────────────────────────┬────────────────────────────────────┘
+                         │
+                         │ PostgreSQL (5432)
+                         │
+┌────────────────────────▼────────────────────────────────────┐
+│                  RDS PostgreSQL 15                           │
+│                  (Private Subnets)                           │
+└─────────────────────────────────────────────────────────────┘
+```
+
+## Key components
+
+### VPC and networking
+
+**VPC CIDR**: `10.0.0.0/16`
+
+**Subnets**:
+- **Public subnets**: `10.0.1.0/24`, `10.0.2.0/24` (for ALB)
+- **Private subnets**: `10.0.10.0/24`, `10.0.11.0/24` (for ECS and RDS)
+
+**Availability Zones**: `ap-south-1a`, `ap-south-1b`
+
+### Application Load Balancer (ALB)
+
+**Purpose**: Routes HTTPS traffic to ECS tasks
+
+**Configuration**:
+- **Scheme**: Internet-facing
+- **Subnets**: Public subnets
+- **Security Group**: Allows inbound HTTPS (443)
+- **SSL Certificate**: `*.commenda.io` wildcard certificate
+- **Health Check**: `GET /healthz` every 30 seconds
+
+**Routing**:
+- `address.in.staging.commenda.io` → Staging ECS tasks
+- `address.in.commenda.io` → Production ECS tasks
+
+### ECS Fargate
+
+**Purpose**: Run containerized Address API
+
+**Configuration**:
+- **Launch Type**: Fargate (serverless)
+- **CPU**: 256 (0.25 vCPU)
+- **Memory**: 512 MB
+- **Desired Count**: 2 tasks (for high availability)
+- **Network Mode**: awsvpc
+- **Subnets**: Private subnets
+- **Security Group**: Allows inbound from ALB on port 8080
+
+**Task Definition**:
+```json
+{
+  \"family\": \"address-api\",
+  \"networkMode\": \"awsvpc\",
+  \"requiresCompatibilities\": [\"FARGATE\"],
+  \"cpu\": \"256\",
+  \"memory\": \"512\",
+  \"containerDefinitions\": [{
+    \"name\": \"address-api\",
+    \"image\": \"ECR_IMAGE_URI\",
+    \"portMappings\": [{
+      \"containerPort\": 8080,
+      \"protocol\": \"tcp\"
+    }],
+    \"environment\": [
+      {\"name\": \"PORT\", \"value\": \"8080\"}
+    ],
+    \"secrets\": [
+      {\"name\": \"RDS_USERNAME\", \"valueFrom\": \"arn:aws:secretsmanager:...\"},
+      {\"name\": \"RDS_PASSWORD\", \"valueFrom\": \"arn:aws:secretsmanager:...\"}
+    ],
+    \"logConfiguration\": {
+      \"logDriver\": \"awslogs\",
+      \"options\": {
+        \"awslogs-group\": \"/ecs/address-api\",
+        \"awslogs-region\": \"ap-south-1\",
+        \"awslogs-stream-prefix\": \"ecs\"
+      }
+    }
+  }]
+}
+```
+
+### RDS PostgreSQL
+
+**Purpose**: Store address cache and ISO 3166 content
+
+**Configuration**:
+- **Engine**: PostgreSQL 15
+- **Instance Class**: `db.t3.micro` (staging), `db.t3.small` (production)
+- **Storage**: 20 GB (General Purpose SSD)
+- **Multi-AZ**: No (staging), Yes (production)
+- **Backup Retention**: 7 days
+- **Subnets**: Private subnets
+- **Security Group**: Allows inbound from ECS tasks on port 5432
+
+**Encryption**:
+- **At rest**: Enabled (AWS KMS)
+- **In transit**: Enabled (SSL/TLS)
+
+### ECR (Elastic Container Registry)
+
+**Purpose**: Store Docker images
+
+**Repository**: `address-api`
+
+**Image Tags**:
+- `v0.1.0-rc.1` (staging releases)
+- `v0.1.0` (production releases)
+- `latest` (most recent build)
+
+**Lifecycle Policy**: Keep last 10 images, delete older ones
+
+### CloudWatch
+
+**Purpose**: Centralized logging and monitoring
+
+**Log Groups**:
+- `/ecs/staging-address-api` (7-day retention)
+- `/ecs/prod-address-api` (30-day retention)
+
+**Metrics**:
+- ECS CPU and memory utilization
+- ALB request count and latency
+- RDS connections and query performance
+
+### Secrets Manager
+
+**Purpose**: Store sensitive configuration
+
+**Secrets**:
+- `staging-address-api-secrets`
+- `prod-address-api-secrets`
+
+**Contents**:
+```json
+{
+  \"RDS_USERNAME\": \"postgres\",
+  \"RDS_PASSWORD\": \"...\",
+  \"RDS_HOSTNAME\": \"staging-address-api-postgres.abc123.ap-south-1.rds.amazonaws.com\",
+  \"RDS_PORT\": \"5432\",
+  \"RDS_DBNAME\": \"address_api\",
+  \"GOOGLE_GEOCODING_API_KEY\": \"...\"
+}
+```
+
+### IAM Roles
+
+**ECS Task Execution Role**:
+- Pull images from ECR
+- Write logs to CloudWatch
+- Read secrets from Secrets Manager
+
+**ECS Task Role**:
+- Access to AWS services (if needed)
+- Currently minimal permissions
+
+### Security Groups
+
+**ALB Security Group**:
+- **Inbound**: HTTPS (443) from anywhere
+- **Outbound**: HTTP (8080) to ECS tasks
+
+**ECS Security Group**:
+- **Inbound**: HTTP (8080) from ALB
+- **Outbound**: PostgreSQL (5432) to RDS, HTTPS (443) to internet
+
+**RDS Security Group**:
+- **Inbound**: PostgreSQL (5432) from ECS tasks
+- **Outbound**: None
+
+**Bastion Host Security Group**:
+- **Inbound**: SSH (22) from specific IPs (for Session Manager)
+- **Outbound**: All traffic (for database access)
+
+## Terraform state
+
+**Backend**: S3 bucket with DynamoDB locking
+
+**State Files**:
+- `staging/address-api/terraform.tfstate`
+- `prod/address-api/terraform.tfstate`
+
+**Locking**: DynamoDB table prevents concurrent modifications
+
+## Infrastructure management
+
+### Viewing infrastructure
+
+```bash
+# Staging
+cd infrastructure
+terraform workspace select staging
+terraform show
+
+# Production
+terraform workspace select prod
+terraform show
+```
+
+### Applying changes
+
+```bash
+# Plan changes
+terraform plan
+
+# Apply changes
+terraform apply
+
+# Target specific resource
+terraform apply -target=aws_ecs_service.address_api
+```
+
+### Destroying resources
+
+```bash
+# Destroy all resources (use with caution!)
+terraform destroy
+
+# Destroy specific resource
+terraform destroy -target=aws_ecs_service.address_api
+```
+
+## Cost optimization
+
+**Current monthly costs** (approximate):
+
+| Resource | Staging | Production |
+|----------|---------|------------|
+| ECS Fargate | $15 | $30 |
+| RDS PostgreSQL | $15 | $50 |
+| ALB | $20 | $20 |
+| Data Transfer | $5 | $20 |
+| CloudWatch Logs | $2 | $5 |
+| **Total** | **$57** | **$125** |
+
+**Optimization tips**:
+- Use Fargate Spot for non-production
+- Enable RDS auto-scaling
+- Implement log retention policies
+- Use S3 for long-term log storage
+
+## Detailed infrastructure guide
+
+For more detailed infrastructure information, including Terraform code examples and setup instructions, see the [Infrastructure README](https://github.com/commenda-eng/address-api/blob/main/infrastructure/README.md) in the repository.
+
+## Next steps
+
+- [Deployment process](/engine/address-api/operations/deployment)
+- [Database connection](/engine/address-api/operations/database-connection)
