@@ -95,13 +95,13 @@ The ingestion process uses an **upsert** strategy:
 ### Ingest US states
 
 ```bash
-curl -X POST https://address-api.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "US",\n        "subdivision_code": "CA",\n        "subdivision_name": "California",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "US",\n        "subdivision_code": "TX",\n        "subdivision_name": "Texas",\n        "subdivision_local_variant": null\n      }\n    ]\n  }'
+curl -X POST https://address.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "US",\n        "subdivision_code": "CA",\n        "subdivision_name": "California",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "US",\n        "subdivision_code": "TX",\n        "subdivision_name": "Texas",\n        "subdivision_local_variant": null\n      }\n    ]\n  }'
 ```
 
 ### Ingest Canadian provinces
 
 ```bash
-curl -X POST https://address-api.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "CA",\n        "subdivision_code": "ON",\n        "subdivision_name": "Ontario",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "CA",\n        "subdivision_code": "QC",\n        "subdivision_name": "Quebec",\n        "subdivision_local_variant": "Québec"\n      }\n    ]\n  }'
+curl -X POST https://address.in.commenda.io/api/v1/internal/iso_3166/ingest/json \\\n  -H "x-commenda-key: your-api-key" \\\n  -H "Content-Type: application/json" \\\n  -d '{\n    "items": [\n      {\n        "country_code": "CA",\n        "subdivision_code": "ON",\n        "subdivision_name": "Ontario",\n        "subdivision_local_variant": null\n      },\n      {\n        "country_code": "CA",\n        "subdivision_code": "QC",\n        "subdivision_name": "Quebec",\n        "subdivision_local_variant": "Québec"\n      }\n    ]\n  }'
 ```
 
 ## Error responses
