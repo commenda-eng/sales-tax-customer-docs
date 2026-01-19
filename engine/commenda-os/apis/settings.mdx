@@ -1,7 +1,7 @@
 ---
-title: Settings API
-description: Create, query, and manage scoped configuration settings
-icon: sliders
+title: "Settings API"
+description: "Create, query, and manage scoped configuration settings"
+icon: "sliders"
 ---
 
 ## Overview
@@ -10,8 +10,8 @@ The Settings API manages key-value configuration for application behavior across
 
 A setting is uniquely identified by:
 
-- **key** – the setting identifier  
-- **entitiesHash** – a deterministic hash of the sorted `entities[]` array  
+- **key** – the setting identifier
+- **entitiesHash** – a deterministic hash of the sorted `entities[]` array
 
 Authorization is enforced per entity using entity-specific access rules.
 
@@ -20,9 +20,11 @@ Authorization is enforced per entity using entity-specific access rules.
 ## Authentication & Authorization
 
 **Authentication**
+
 - Bearer token required
 
 **Authorized roles**
+
 - `MAIN_APP_USER`
 - `MAIN_APP_ADMIN`
 - `AGENT_APP_USER`
@@ -41,7 +43,7 @@ Create or update a setting scoped to one or more entities.
 
 ```http
 POST /settings
-````
+```
 
 ### Request body
 
@@ -76,8 +78,8 @@ POST /settings
 ```
 
 <Note>
-- `entities` must contain at least one entity  
-- Entities are sorted before hashing to ensure deterministic storage
+  - `entities` must contain at least one entity
+  - Entities are sorted before hashing to ensure deterministic storage
 </Note>
 
 ---
@@ -217,35 +219,30 @@ AuthorizationService.isUserAuthorizedToAccessSettings()
 
 ### Rules by entity type
 
-**COMPANY**
-User must have access to the company
+**COMPANY** User must have access to the company
 
-**CORPORATION**
-User must have access to the corporation
+**CORPORATION** User must have access to the corporation
 
-**USER**
-`entityId` must match `guardUser.user.id`
+**USER** `entityId` must match `guardUser.user.id`
 
-**AGENT_FIRM**
-User must belong to the agent firm
+**AGENT_FIRM** User must belong to the agent firm
 
-**ROOTFI_COMPANY**
-Requires both:
+**ROOTFI_COMPANY** Requires both:
 
-* access to the RootFi company
-* presence of a `CORPORATION` entity in the same request
+- access to the RootFi company
+- presence of a `CORPORATION` entity in the same request
 
 <Warning>
-If any entity authorization fails, the entire request fails.
+  If any entity authorization fails, the entire request fails.
 </Warning>
 
 ---
 
 ## Validation behavior
 
-* Each `SettingKey` has a dedicated validator
-* Missing validators result in a `BadRequestException`
-* Invalid values return a key-specific validation error message
+- Each `SettingKey` has a dedicated validator
+- Missing validators result in a `BadRequestException`
+- Invalid values return a key-specific validation error message
 
 ---
 
@@ -319,6 +316,5 @@ enum SettingEntityType {
 5. Add authorization tests
 
 <Note>
-If the entity depends on another entity (for example `ROOTFI_COMPANY → CORPORATION`), enforce that dependency explicitly.
+  If the entity depends on another entity (for example `ROOTFI_COMPANY → CORPORATION`), enforce that dependency explicitly.
 </Note>
-```
