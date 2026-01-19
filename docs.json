@@ -9,6 +9,30 @@
   },
   "favicon": "/favicon-32x32.png",
   "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Commenda Public Docs",
+          "icon": "book-open-cover",
+          "href": "https://sales-tax-docs.commenda.io/introduction"
+        },
+        {
+          "anchor": "Rootfi Public Docs",
+          "icon": "book-open-cover",
+          "href": "https://rootfi-commenda.mintlify.app/documentation/general/introduction"
+        },
+        {
+          "anchor": "Status",
+          "icon": "triangle-exclamation",
+          "href": "https://commenda.betteruptime.com/"
+        },
+        {
+          "anchor": "Baserow",
+          "icon": "table",
+          "href": "https://baserow.io/login"
+        }
+      ]
+    },
     "tabs": [
       {
         "tab": "Engine",
@@ -25,7 +49,8 @@
                   "engine/commendaos/registrations",
                   "engine/commendaos/locations",
                   "engine/commendaos/credentials",
-                  "engine/commendaos/documents"
+                  "engine/commendaos/documents",
+                  "engine/commenda-os/apis/settings"
                 ]
               }
             ]
@@ -216,34 +241,9 @@
         ]
       },
       {
-        "tab": "Rootfi",
-        "groups": []
+        "tab": "Rootfi"
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Commenda Public Docs",
-          "href": "https://sales-tax-docs.commenda.io/introduction",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Rootfi Public Docs",
-          "href": "https://rootfi-commenda.mintlify.app/documentation/general/introduction",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Status",
-          "href": "https://commenda.betteruptime.com/",
-          "icon": "triangle-exclamation"
-        },
-        {
-          "anchor": "Baserow",
-          "href": "https://baserow.io/login",
-          "icon": "table"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/FullLogoLockupBlack.svg",

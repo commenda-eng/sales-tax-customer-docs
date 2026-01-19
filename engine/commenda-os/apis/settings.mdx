@@ -1,0 +1,324 @@
+---
+title: Settings API
+description: Create, query, and manage scoped configuration settings
+icon: sliders
+---
+
+## Overview
+
+The Settings API manages key-value configuration for application behavior across multiple scopes (for example, company, corporation, user, or agent firm).
+
+A setting is uniquely identified by:
+
+- **key** – the setting identifier  
+- **entitiesHash** – a deterministic hash of the sorted `entities[]` array  
+
+Authorization is enforced per entity using entity-specific access rules.
+
+---
+
+## Authentication & Authorization
+
+**Authentication**
+- Bearer token required
+
+**Authorized roles**
+- `MAIN_APP_USER`
+- `MAIN_APP_ADMIN`
+- `AGENT_APP_USER`
+- `COMMENDA_INTERNAL_USER`
+- `MAIN_APP_ADMIN_WITHOUT_2FA`
+
+Authorization is evaluated for **every entity** in the request. If access to **any** entity is denied, the request fails.
+
+---
+
+## Core endpoints
+
+## Upsert setting
+
+Create or update a setting scoped to one or more entities.
+
+```http
+POST /settings
+````
+
+### Request body
+
+```json
+{
+  "key": "SALES_TAX_TEST_MODE",
+  "value": true,
+  "entities": [
+    {
+      "entityType": "COMPANY",
+      "entityId": "123"
+    }
+  ]
+}
+```
+
+### Parameters
+
+| Field      | Type                    | Description                          |
+| ---------- | ----------------------- | ------------------------------------ |
+| `key`      | `SettingKey`            | Setting key enum                     |
+| `value`    | `SettingValueType[key]` | Value type depends on the key        |
+| `entities` | `SettingEntity[]`       | Scope definition (must not be empty) |
+
+### Response
+
+```json
+{
+  "key": "SALES_TAX_TEST_MODE",
+  "value": true
+}
+```
+
+<Note>
+- `entities` must contain at least one entity  
+- Entities are sorted before hashing to ensure deterministic storage
+</Note>
+
+---
+
+## List settings by entities
+
+Retrieve all settings for a specific entity scope.
+
+```http
+POST /settings/list
+```
+
+### Request body
+
+```json
+{
+  "entities": [
+    {
+      "entityType": "COMPANY",
+      "entityId": "123"
+    }
+  ]
+}
+```
+
+### Response
+
+```json
+{
+  "message": "Settings retrieved successfully",
+  "value": [
+    {
+      "key": "SALES_TAX_TEST_MODE",
+      "value": true
+    },
+    {
+      "key": "TEST_ACCOUNT",
+      "value": false
+    }
+  ]
+}
+```
+
+---
+
+## Query single setting by key
+
+Retrieve a single setting for a given key and entity scope.
+
+```http
+POST /settings/query
+```
+
+### Request body
+
+```json
+{
+  "key": "SALES_TAX_TEST_MODE",
+  "entities": [
+    {
+      "entityType": "COMPANY",
+      "entityId": "123"
+    }
+  ]
+}
+```
+
+### Response (setting exists)
+
+```json
+{
+  "message": "Setting retrieved successfully",
+  "value": true
+}
+```
+
+### Response (setting does not exist)
+
+```json
+{
+  "message": "Setting retrieved successfully",
+  "value": null
+}
+```
+
+---
+
+## Supported settings
+
+### Available setting keys
+
+| Key                                          | Value type       | Validation                 |
+| -------------------------------------------- | ---------------- | -------------------------- |
+| `SALES_TAX_DISMISS_REGISTRATION_TASKS`       | `Jurisdiction[]` | Valid `Jurisdiction` enums |
+| `SALES_TAX_GENERATE_NEXUS_REPORT`            | `boolean`        | Boolean                    |
+| `SALES_TAX_TEST_MODE`                        | `boolean`        | Boolean                    |
+| `DEMO_MODE_AGENT_EMAIL`                      | `string`         | Valid email                |
+| `SALES_TAX_EXEMPTION_REPLY_TO_EMAIL`         | `string`         | Valid email                |
+| `SALES_TAX_EXEMPTION_ALLOW_CUSTOMER_REPLIES` | `boolean`        | Boolean                    |
+| `SALES_TAX_AUTO_APPROVE_SOURCE_RECORDS`      | `boolean`        | Boolean                    |
+| `STRIPE_INTEGRATION_SETTINGS`                | `object`         | Non-null JSON object       |
+| `GLOBAL_INDIRECT_TAX_SYNC_SETTINGS`          | `string[]`       | ISO 3166 2-alpha codes     |
+| `TEST_ACCOUNT`                               | `boolean`        | Boolean                    |
+
+---
+
+## Entity scoping
+
+Settings can be scoped to one or more entities.
+
+```json
+{
+  "entityType": "CORPORATION",
+  "entityId": "10"
+}
+```
+
+### Supported entity types
+
+| Entity type      | Description                                  |
+| ---------------- | -------------------------------------------- |
+| `COMPANY`        | Company-level scope                          |
+| `CORPORATION`    | Corporation-level scope                      |
+| `USER`           | User-level scope (must match logged-in user) |
+| `AGENT_FIRM`     | Agent firm scope                             |
+| `ROOTFI_COMPANY` | RootFi company scope                         |
+
+---
+
+## Authorization rules
+
+Authorization is handled by:
+
+```ts
+AuthorizationService.isUserAuthorizedToAccessSettings()
+```
+
+### Rules by entity type
+
+**COMPANY**
+User must have access to the company
+
+**CORPORATION**
+User must have access to the corporation
+
+**USER**
+`entityId` must match `guardUser.user.id`
+
+**AGENT_FIRM**
+User must belong to the agent firm
+
+**ROOTFI_COMPANY**
+Requires both:
+
+* access to the RootFi company
+* presence of a `CORPORATION` entity in the same request
+
+<Warning>
+If any entity authorization fails, the entire request fails.
+</Warning>
+
+---
+
+## Validation behavior
+
+* Each `SettingKey` has a dedicated validator
+* Missing validators result in a `BadRequestException`
+* Invalid values return a key-specific validation error message
+
+---
+
+## Data models
+
+### Setting
+
+```prisma
+model Setting {
+  id           String   @id @default(cuid())
+  key          String
+  value        Json
+  entitiesHash String
+
+  entityLinks  SettingACL[]
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@unique([key, entitiesHash])
+}
+```
+
+### SettingACL
+
+```prisma
+model SettingACL {
+  id         String           @id @default(cuid())
+  setting    Setting          @relation(fields: [settingId], references: [id], onDelete: Cascade)
+  settingId  String
+
+  entityType SettingEntityType
+  entityId   String
+
+  createdAt  DateTime @default(now())
+}
+```
+
+### SettingEntityType
+
+```prisma
+enum SettingEntityType {
+  COMPANY
+  CORPORATION
+  USER
+  AGENT_FIRM
+  ROOTFI_COMPANY
+}
+```
+
+---
+
+## Extending the Settings API
+
+### Add a new setting key
+
+1. Add the key to `SettingKey`
+2. Add its value type to `SettingValueType`
+3. Implement validation in `settingValidators`
+4. Add an error message in `settingValidationErrorMessages`
+5. Add coverage for upsert, query, and list behavior
+
+---
+
+### Add a new entity type
+
+1. Add the enum value to `SettingEntityType` in Prisma
+2. Run migrations and regenerate Prisma client
+3. Add an authorization handler in `AuthorizationService`
+4. Implement entity-specific access checks
+5. Add authorization tests
+
+<Note>
+If the entity depends on another entity (for example `ROOTFI_COMPANY → CORPORATION`), enforce that dependency explicitly.
+</Note>
+```
