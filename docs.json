@@ -272,5 +272,8 @@
     "socials": {
       "github": "https://github.com/commenda-eng"
     }
+  },
+  "seo": {
+    "indexHiddenPages": false
   }
 }
