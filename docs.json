@@ -147,6 +147,12 @@
         "tab": "Product",
         "groups": [
           {
+            "group": "Entities",
+            "pages": [
+              "product/entities/bank-accounts"
+            ]
+          },
+          {
             "group": "Indirect Tax",
             "pages": [
               "product/indirect-tax/guarantees",
