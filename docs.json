@@ -12,30 +12,16 @@
     "global": {
       "anchors": [
         {
-          "anchor": "Commenda Public Docs",
-          "icon": "book-open-cover",
-          "href": "https://sales-tax-docs.commenda.io/introduction"
-        },
-        {
-          "anchor": "Rootfi Public Docs",
-          "icon": "book-open-cover",
-          "href": "https://rootfi-commenda.mintlify.app/documentation/general/introduction"
-        },
-        {
-          "anchor": "Status",
-          "icon": "triangle-exclamation",
-          "href": "https://commenda.betteruptime.com/"
-        },
-        {
-          "anchor": "Baserow",
-          "icon": "table",
-          "href": "https://baserow.io/login"
+          "anchor": "Commenda Unified Integrations",
+          "icon": "circle-nodes",
+          "href": "https://integrations.docs.commenda.io/documentation/general/introduction"
         }
       ]
     },
     "tabs": [
       {
-        "tab": "Engine",
+        "tab": "APIs",
+        "icon": "code",
         "groups": [
           {
             "group": "CommendaOS",
@@ -145,6 +131,7 @@
       },
       {
         "tab": "Product",
+        "icon": "computer-classic",
         "groups": [
           {
             "group": "Entities",
