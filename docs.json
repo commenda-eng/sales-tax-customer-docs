@@ -20,7 +20,7 @@
     },
     "tabs": [
       {
-        "tab": "APIs",
+        "tab": "API Documentation",
         "icon": "code",
         "groups": [
           {
@@ -130,7 +130,7 @@
         ]
       },
       {
-        "tab": "Product",
+        "tab": "Product Guides",
         "icon": "computer-classic",
         "groups": [
           {
