@@ -45,6 +45,7 @@
                 "group": "APIs",
                 "pages": [
                   "engine/commendaos/business-entity",
+                  "engine/commendaos/bank-accounts",
                   "engine/commendaos/government-identifiers",
                   "engine/commendaos/registrations",
                   "engine/commendaos/locations",
