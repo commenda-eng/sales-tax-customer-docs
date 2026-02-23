@@ -1,6 +1,6 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "linden",
+  "theme": "mint",
   "name": "Commenda Platform Documentation",
   "colors": {
     "primary": "#026EB9",
@@ -254,14 +254,21 @@
   },
   "logo": {
     "light": "/logo/FullLogoLockupBlack.svg",
-    "dark": "/logo/FullLogoLockupWhite.svg"
+    "dark": "/logo/FullLogoLockupWhite.svg",
+    "href": "https://www.commenda.io/"
   },
   "navbar": {
     "primary": {
       "type": "button",
       "label": "Report a bug",
       "href": "https://linear.app/commenda/team/ONC/new?template=a04ed671-96f2-4df0-882c-62e7ccf8a27c"
-    }
+    },
+    "links": [
+      {
+        "label": "test link",
+        "href": "https://www.commenda.io/"
+      }
+    ]
   },
   "contextual": {
     "options": [
@@ -277,7 +284,9 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/commenda-eng"
+      "github": "https://github.com/commenda-eng",
+      "x": "https://x.com/commendahq",
+      "linkedin": "https://www.linkedin.com/company/commenda/"
     }
   },
   "seo": {
