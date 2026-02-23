@@ -1,0 +1,213 @@
+---
+title: 'Bank accounts'
+description: 'How to add or update bank accounts for corporations'
+icon: 'building-columns'
+---
+
+## Overview
+
+Use bank accounts to manage financial institution information for your business entities. Bank accounts store account details, routing information, and account types for corporations and other legal entities.
+
+## Prerequisites
+
+Before adding a bank account, ensure you have:
+
+- A business entity created in CommendaOS
+- The business entity ID
+- Bank account details (account number, routing number, bank name)
+- Account type information (checking, savings, etc.)
+
+## Add a bank account
+
+To add a new bank account to a corporation:
+
+### Step 1: Gather required information
+
+Collect the following details:
+
+- **Bank name**: Full legal name of the financial institution
+- **Account number**: Full bank account number
+- **Routing number**: Bank routing/transit number (US) or equivalent
+- **Account type**: Checking, savings, or other account type
+- **Account holder name**: Legal name on the account (should match business entity)
+- **Currency**: Account currency (USD, EUR, etc.)
+
+### Step 2: Create the bank account
+
+```http
+POST /business-entity/:businessEntityId/bank-accounts
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Unique identifier for the business entity |
+
+**Request body**
+
+```json
+{
+  "bankName": "First National Bank",
+  "accountNumber": "123456789",
+  "routingNumber": "021000021",
+  "accountType": "CHECKING",
+  "accountHolderName": "Acme Corporation",
+  "currency": "USD",
+  "isPrimary": true
+}
+```
+
+**Response**
+
+```json
+{
+  "id": 456,
+  "businessEntityId": 123,
+  "bankName": "First National Bank",
+  "accountNumber": "****6789",
+  "routingNumber": "021000021",
+  "accountType": "CHECKING",
+  "accountHolderName": "Acme Corporation",
+  "currency": "USD",
+  "isPrimary": true,
+  "createdAt": "2024-01-15T10:30:00Z"
+}
+```
+
+### Step 3: Verify the account
+
+After creating the bank account, verify the details are correct:
+
+```http
+GET /business-entity/:businessEntityId/bank-accounts/:bankAccountId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `bankAccountId` | integer | Bank account ID |
+
+## Update a bank account
+
+To update existing bank account information:
+
+### Step 1: Retrieve current details
+
+First, get the current bank account information:
+
+```http
+GET /business-entity/:businessEntityId/bank-accounts/:bankAccountId
+```
+
+### Step 2: Update the account
+
+```http
+PATCH /business-entity/:businessEntityId/bank-accounts/:bankAccountId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `bankAccountId` | integer | Bank account ID |
+
+**Request body**
+
+Include only the fields you want to update:
+
+```json
+{
+  "bankName": "First National Bank - Updated",
+  "isPrimary": false
+}
+```
+
+**Response**
+
+Returns the updated bank account object with `200 OK` status.
+
+## List all bank accounts
+
+To view all bank accounts for a corporation:
+
+```http
+GET /business-entity/:businessEntityId/bank-accounts
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+
+**Response**
+
+```json
+{
+  "accounts": [
+    {
+      "id": 456,
+      "bankName": "First National Bank",
+      "accountNumber": "****6789",
+      "accountType": "CHECKING",
+      "currency": "USD",
+      "isPrimary": true
+    },
+    {
+      "id": 457,
+      "bankName": "Second Bank",
+      "accountNumber": "****1234",
+      "accountType": "SAVINGS",
+      "currency": "USD",
+      "isPrimary": false
+    }
+  ]
+}
+```
+
+## Remove a bank account
+
+To delete a bank account from a corporation:
+
+```http
+DELETE /business-entity/:businessEntityId/bank-accounts/:bankAccountId
+```
+
+**Path parameters**
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `businessEntityId` | integer | Business entity ID |
+| `bankAccountId` | integer | Bank account ID |
+
+**Response**
+
+Returns `204 No Content` on success.
+
+## Best practices
+
+- **Set a primary account**: Mark one account as primary for default transactions
+- **Verify account numbers**: Double-check account and routing numbers before saving
+- **Update regularly**: Keep bank account information current when accounts change
+- **Secure storage**: Account numbers are automatically masked in responses for security
+- **Currency matching**: Ensure the currency matches your business operations
+- **Account holder names**: Use the exact legal name registered with the bank
+
+## Common account types
+
+| Type | Description | Use case |
+|------|-------------|----------|
+| `CHECKING` | Standard checking account | Daily operations, payroll |
+| `SAVINGS` | Savings account | Reserve funds |
+| `MONEY_MARKET` | Money market account | Short-term investments |
+| `ESCROW` | Escrow account | Held funds, transactions |
+
+## Related resources
+
+- [Business Entity API](/engine/commendaos/business-entity) - Manage corporations and entities
+- [Credentials API](/engine/commendaos/credentials) - Store banking portal credentials
+- [Documents API](/engine/commendaos/documents) - Upload bank statements and documents
