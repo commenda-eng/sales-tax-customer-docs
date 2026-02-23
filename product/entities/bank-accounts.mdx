@@ -1,0 +1,175 @@
+---
+title: 'Manage bank accounts'
+description: 'How to add or update bank accounts for your corporations in the dashboard'
+icon: 'building-columns'
+---
+
+## Overview
+
+Use the bank accounts section to store and manage banking information for your business entities. You can add multiple bank accounts, set a primary account, and update account details as needed.
+
+## Add a bank account
+
+### Step 1: Navigate to corporations
+
+1. Log in to your Commenda dashboard
+2. Click **Corporations** in the left sidebar
+3. Select the corporation you want to add a bank account to
+
+### Step 2: Open bank accounts
+
+1. In the corporation details page, click the **Bank Accounts** tab
+2. Click the **Add Bank Account** button in the top right
+
+### Step 3: Enter bank details
+
+Fill in the required information:
+
+- **Bank name**: Enter the full name of your financial institution (e.g., "Chase Bank", "Bank of America")
+- **Account holder name**: Enter the legal name on the account (should match your corporation name)
+- **Account number**: Enter your full bank account number
+- **Routing number**: Enter your bank's routing number (9 digits for US banks)
+- **Account type**: Select the type of account:
+  - **Checking**: For daily business operations
+  - **Savings**: For reserve funds
+  - **Money Market**: For short-term investments
+  - **Escrow**: For held funds
+- **Currency**: Select the account currency (USD, EUR, etc.)
+- **Set as primary**: Check this box if this should be your default account for transactions
+
+### Step 4: Save the account
+
+1. Review all information for accuracy
+2. Click **Save** to add the bank account
+3. You'll see a confirmation message and the account will appear in your list
+
+<Tip>
+Double-check your account and routing numbers before saving. Incorrect numbers can cause payment failures.
+</Tip>
+
+## Update a bank account
+
+### Step 1: Find the account
+
+1. Navigate to **Corporations** in the left sidebar
+2. Select the corporation
+3. Click the **Bank Accounts** tab
+4. Find the account you want to update in the list
+
+### Step 2: Edit account details
+
+1. Click the **Edit** button (pencil icon) next to the account
+2. Update any of the following fields:
+   - Bank name
+   - Account holder name
+   - Account type
+   - Currency
+   - Primary account status
+
+<Warning>
+You cannot edit the account number or routing number after creation. If these need to change, delete the old account and create a new one.
+</Warning>
+
+### Step 3: Save changes
+
+1. Review your updates
+2. Click **Save Changes**
+3. The updated information will appear immediately
+
+## Set a primary account
+
+Your primary account is used as the default for transactions and payments.
+
+**To change your primary account:**
+
+1. Navigate to the **Bank Accounts** tab for your corporation
+2. Find the account you want to set as primary
+3. Click the **Set as Primary** button, or
+4. Edit the account and check the **Set as primary** box
+5. Click **Save**
+
+<Info>
+Only one account can be primary at a time. Setting a new primary account will automatically remove the primary status from the previous account.
+</Info>
+
+## View account details
+
+To view full details of a bank account:
+
+1. Navigate to **Corporations** > Select corporation > **Bank Accounts**
+2. Click on any account in the list
+3. View the account details panel showing:
+   - Bank name
+   - Account holder name
+   - Masked account number (last 4 digits visible)
+   - Routing number
+   - Account type
+   - Currency
+   - Primary status
+   - Date added
+
+<Note>
+For security, account numbers are masked and only show the last 4 digits in the dashboard.
+</Note>
+
+## Remove a bank account
+
+<Warning>
+Deleting a bank account is permanent and cannot be undone. Make sure you no longer need this account before deleting.
+</Warning>
+
+**To delete a bank account:**
+
+1. Navigate to the **Bank Accounts** tab for your corporation
+2. Find the account you want to remove
+3. Click the **Delete** button (trash icon)
+4. Confirm the deletion in the popup dialog
+5. The account will be removed immediately
+
+<Tip>
+You cannot delete a primary account if it's the only account. Either add another account first, or remove the primary status before deleting.
+</Tip>
+
+## Best practices
+
+- **Keep information current**: Update bank details immediately when accounts change
+- **Use descriptive names**: If your bank name isn't clear, add location details (e.g., "Chase Bank - Main Street Branch")
+- **Verify before saving**: Always double-check account and routing numbers
+- **Set a primary account**: Designate one account as primary for streamlined operations
+- **Regular audits**: Review your bank accounts quarterly to ensure all information is accurate
+- **Match legal names**: Use the exact legal name registered with your bank to avoid payment issues
+
+## Troubleshooting
+
+### I can't save my bank account
+
+**Common causes:**
+- Missing required fields (bank name, account number, routing number)
+- Invalid routing number format (must be 9 digits for US banks)
+- Account number contains invalid characters
+
+**Solution:** Check that all required fields are filled and formatted correctly.
+
+### My account number isn't showing
+
+**This is normal.** For security, account numbers are masked in the dashboard and only show the last 4 digits. The full number is securely stored and used for transactions.
+
+### I need to change my account number
+
+**You cannot edit account or routing numbers after creation.** To update these:
+1. Add a new bank account with the correct information
+2. Set it as primary if needed
+3. Delete the old account
+
+### The primary account won't change
+
+**Check that:**
+- You have permission to edit bank accounts
+- The new account is fully saved before setting as primary
+- You're clicking **Save** after making changes
+
+## Related resources
+
+- [Business entities](/engine/commendaos/business-entity) - Manage your corporations
+- [Bank Accounts API](/engine/commendaos/bank-accounts) - Technical API documentation
+- [Credentials](/engine/commendaos/credentials) - Store banking portal login information
