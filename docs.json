@@ -20,6 +20,111 @@
     },
     "tabs": [
       {
+        "tab": "Product Guides",
+        "icon": "computer-classic",
+        "groups": [
+          {
+            "group": "Entities",
+            "pages": [
+              "product/entities/bank-accounts"
+            ]
+          },
+          {
+            "group": "Indirect Tax",
+            "pages": [
+              "product/indirect-tax/guarantees",
+              {
+                "group": "Incident Response SOP",
+                "pages": [
+                  "product/indirect-tax/incident-response-sop/overview",
+                  "product/indirect-tax/incident-response-sop/scenarios",
+                  "product/indirect-tax/incident-response-sop/remediation",
+                  "product/indirect-tax/incident-response-sop/templates",
+                  "product/indirect-tax/incident-response-sop/assessment"
+                ]
+              },
+              {
+                "group": "Integrations",
+                "pages": [
+                  "integrations/supported-integrations",
+                  {
+                    "group": "Integration Guidelines",
+                    "pages": [
+                      "integrations/guidelines/overview",
+                      {
+                        "group": "Integration Checklist",
+                        "pages": [
+                          "integrations/guidelines/integration-checklist/general-behaviors",
+                          "integrations/guidelines/integration-checklist/syncing",
+                          "integrations/guidelines/integration-checklist/calculation"
+                        ]
+                      },
+                      {
+                        "group": "Existing Integration Behaviors",
+                        "pages": [
+                          "integrations/guidelines/existing-integration-behaviors/stripe",
+                          "integrations/guidelines/existing-integration-behaviors/shopify",
+                          "integrations/guidelines/existing-integration-behaviors/xero",
+                          "integrations/guidelines/existing-integration-behaviors/netsuite",
+                          "integrations/guidelines/existing-integration-behaviors/quickbooks",
+                          "integrations/guidelines/existing-integration-behaviors/zoho",
+                          "integrations/guidelines/existing-integration-behaviors/woocommerce"
+                        ]
+                      },
+                      "integrations/guidelines/fallback-address-resolver",
+                      "integrations/guidelines/sales-tax-address-resolution-hierarchy",
+                      "integrations/guidelines/shipping-tax-calculations"
+                    ]
+                  },
+                  {
+                    "group": "Stripe",
+                    "pages": [
+                      "integrations/stripe/overview"
+                    ]
+                  },
+                  {
+                    "group": "Shopify",
+                    "pages": [
+                      "integrations/shopify/overview"
+                    ]
+                  },
+                  {
+                    "group": "Xero",
+                    "pages": [
+                      "integrations/xero/overview"
+                    ]
+                  },
+                  {
+                    "group": "Zoho",
+                    "pages": [
+                      "integrations/zoho/overview"
+                    ]
+                  },
+                  {
+                    "group": "WooCommerce",
+                    "pages": [
+                      "integrations/woocommerce/setup"
+                    ]
+                  },
+                  {
+                    "group": "QuickBooks",
+                    "pages": [
+                      "integrations/quickbooks/overview"
+                    ]
+                  },
+                  {
+                    "group": "NetSuite",
+                    "pages": [
+                      "integrations/netsuite/overview"
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
         "tab": "API Documentation",
         "icon": "code",
         "groups": [
@@ -128,111 +233,6 @@
             ]
           }
         ]
-      },
-      {
-        "tab": "Product Guides",
-        "icon": "computer-classic",
-        "groups": [
-          {
-            "group": "Entities",
-            "pages": [
-              "product/entities/bank-accounts"
-            ]
-          },
-          {
-            "group": "Indirect Tax",
-            "pages": [
-              "product/indirect-tax/guarantees",
-              {
-                "group": "Incident Response SOP",
-                "pages": [
-                  "product/indirect-tax/incident-response-sop/overview",
-                  "product/indirect-tax/incident-response-sop/scenarios",
-                  "product/indirect-tax/incident-response-sop/remediation",
-                  "product/indirect-tax/incident-response-sop/templates",
-                  "product/indirect-tax/incident-response-sop/assessment"
-                ]
-              },
-              {
-                "group": "Integrations",
-                "pages": [
-                  "integrations/supported-integrations",
-                  {
-                    "group": "Integration Guidelines",
-                    "pages": [
-                      "integrations/guidelines/overview",
-                      {
-                        "group": "Integration Checklist",
-                        "pages": [
-                          "integrations/guidelines/integration-checklist/general-behaviors",
-                          "integrations/guidelines/integration-checklist/syncing",
-                          "integrations/guidelines/integration-checklist/calculation"
-                        ]
-                      },
-                      {
-                        "group": "Existing Integration Behaviors",
-                        "pages": [
-                          "integrations/guidelines/existing-integration-behaviors/stripe",
-                          "integrations/guidelines/existing-integration-behaviors/shopify",
-                          "integrations/guidelines/existing-integration-behaviors/xero",
-                          "integrations/guidelines/existing-integration-behaviors/netsuite",
-                          "integrations/guidelines/existing-integration-behaviors/quickbooks",
-                          "integrations/guidelines/existing-integration-behaviors/zoho",
-                          "integrations/guidelines/existing-integration-behaviors/woocommerce"
-                        ]
-                      },
-                      "integrations/guidelines/fallback-address-resolver",
-                      "integrations/guidelines/sales-tax-address-resolution-hierarchy",
-                      "integrations/guidelines/shipping-tax-calculations"
-                    ]
-                  },
-                  {
-                    "group": "Stripe",
-                    "pages": [
-                      "integrations/stripe/overview"
-                    ]
-                  },
-                  {
-                    "group": "Shopify",
-                    "pages": [
-                      "integrations/shopify/overview"
-                    ]
-                  },
-                  {
-                    "group": "Xero",
-                    "pages": [
-                      "integrations/xero/overview"
-                    ]
-                  },
-                  {
-                    "group": "Zoho",
-                    "pages": [
-                      "integrations/zoho/overview"
-                    ]
-                  },
-                  {
-                    "group": "WooCommerce",
-                    "pages": [
-                      "integrations/woocommerce/setup"
-                    ]
-                  },
-                  {
-                    "group": "QuickBooks",
-                    "pages": [
-                      "integrations/quickbooks/overview"
-                    ]
-                  },
-                  {
-                    "group": "NetSuite",
-                    "pages": [
-                      "integrations/netsuite/overview"
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
       }
     ]
   },
@@ -275,5 +275,9 @@
   },
   "seo": {
     "indexHiddenPages": false
+  },
+  "appearance": {
+    "strict": true,
+    "default": "light"
   }
 }
