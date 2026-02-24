@@ -4,7 +4,7 @@
   "name": "Commenda Platform Documentation",
   "colors": {
     "primary": "#026EB9",
-    "light": "#F8F6F1",
+    "light": "#026EB9",
     "dark": "#F8F6F1"
   },
   "favicon": "/favicon-32x32.png",
@@ -247,12 +247,7 @@
       "label": "Report a bug",
       "href": "https://linear.app/commenda/team/ONC/new?template=a04ed671-96f2-4df0-882c-62e7ccf8a27c"
     },
-    "links": [
-      {
-        "label": "test link",
-        "href": "https://www.commenda.io/"
-      }
-    ]
+    "links": []
   },
   "contextual": {
     "options": [
