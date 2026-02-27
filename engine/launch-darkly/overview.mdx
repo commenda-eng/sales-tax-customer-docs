@@ -1,0 +1,69 @@
+---
+title: LaunchDarkly feature flags
+description: Control feature rollouts across environments without deployments
+---
+
+LaunchDarkly enables feature flagging to control whether specific features are enabled or disabled across different environments (`dev`, `staging`, `production`) without requiring a new deployment.
+
+## How it works
+
+Each LaunchDarkly project contains multiple environments, and each environment has its own SDK key. The SDK key must match the environment in which the backend service is running.
+
+## Creating a feature flag
+
+1. Create a new flag in LaunchDarkly
+2. Assign a unique flag key (e.g., `enable-new-checkout-flow`)
+3. Configure targeting rules for each environment
+
+## Using flags in code
+
+Reference the flag key in your backend code using the global feature flag module:
+
+```typescript
+import { featureFlags } from '@commenda/feature-flags';
+
+// Check if a feature is enabled
+const isEnabled = await featureFlags.evaluate('enable-new-checkout-flow', {
+  userId: user.id,
+  environment: process.env.ENVIRONMENT
+});
+
+if (isEnabled) {
+  // New feature logic
+} else {
+  // Existing behavior
+}
+```
+
+The module initializes the LaunchDarkly SDK with the correct environment SDK key and evaluates the flag at runtime.
+
+## Best practices
+
+- **Clear naming**: Use descriptive flag keys (e.g., `enable-feature-name` or `rollout-feature-name`)
+- **Environment targeting**: Configure proper targeting rules for each environment
+- **Safe fallbacks**: Always define fallback behavior when flag evaluation fails
+- **Clean up**: Remove flags and associated code once a feature is fully rolled out
+
+## Flag cleanup process
+
+After a feature has been released using a feature flag, the flag must be cleaned up within **7 days** to avoid long-term technical debt.
+
+### Automated tracking
+
+The backend is configured to automatically track all issues labeled as `feature flag`. When such an issue is marked as done:
+
+1. The system automatically creates a sub-issue for flag cleanup
+2. The sub-issue is scheduled for 7 days later
+3. The sub-issue is assigned to the same assignee as the parent issue
+
+### Cleanup responsibilities
+
+The assignee must complete the following within the 7-day window:
+
+- Remove the flag check from the codebase
+- Delete the flag from LaunchDarkly (if no longer needed)
+- Ensure no stale conditional logic remains
+
+<Warning>
+Temporary flags that are not cleaned up become permanent maintenance overhead. Always complete cleanup within the 7-day deadline.
+</Warning>
