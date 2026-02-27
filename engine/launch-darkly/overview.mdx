@@ -15,6 +15,33 @@ Each LaunchDarkly project contains multiple environments, and each environment h
 2. Assign a unique flag key (e.g., `enable-new-checkout-flow`)
 3. Configure targeting rules for each environment
 
+## Registering flags in the backend
+
+Before using a flag in code, register it in `feature-flag.registry.ts`. This ensures type safety, consistency, and proper fallback behavior.
+
+Each flag entry must include:
+
+| Field | Description |
+|-------|-------------|
+| `key` | Unique identifier (must match LaunchDarkly key) |
+| `type` | Data type (e.g., `boolean`) |
+| `defaultValue` | Fallback value if evaluation fails |
+| `description` | Purpose of the flag |
+
+```typescript
+// feature-flag.registry.ts
+hello_world: {
+  key: "hello_world",
+  type: "boolean",
+  defaultValue: false,
+  description: "Hello world feature flag for testing",
+},
+```
+
+<Warning>
+  All new feature flags must be added to this registry before being used in code.
+</Warning>
+
 ## Using flags in code
 
 Reference the flag key in your backend code using the global feature flag module:
