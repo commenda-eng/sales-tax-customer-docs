@@ -9,6 +9,20 @@ LaunchDarkly enables feature flagging to control whether specific features are e
 
 Each LaunchDarkly project contains multiple environments, and each environment has its own SDK key. The SDK key must match the environment in which the backend service is running.
 
+## SDK key configuration
+
+Each LaunchDarkly environment (`dev`, `staging`, `production`) has its own SDK key. By default, the application uses the **staging** SDK key.
+
+To test in a different environment:
+
+1. Obtain the SDK key from the desired LaunchDarkly environment
+2. Update the corresponding SDK key in the GitHub repository secrets
+3. Deploy the application
+
+<Info>
+  SDK keys are stored in GitHub repository secrets and injected at deployment time.
+</Info>
+
 ## Creating a feature flag
 
 1. Create a new flag in LaunchDarkly
