@@ -43,3 +43,27 @@ The module initializes the LaunchDarkly SDK with the correct environment SDK key
 - **Environment targeting**: Configure proper targeting rules for each environment
 - **Safe fallbacks**: Always define fallback behavior when flag evaluation fails
 - **Clean up**: Remove flags and associated code once a feature is fully rolled out
+
+## Flag cleanup process
+
+After a feature has been released using a feature flag, the flag must be cleaned up within **7 days** to avoid long-term technical debt.
+
+### Automated tracking
+
+The backend is configured to automatically track all issues labeled as `feature flag`. When such an issue is marked as done:
+
+1. The system automatically creates a sub-issue for flag cleanup
+2. The sub-issue is scheduled for 7 days later
+3. The sub-issue is assigned to the same assignee as the parent issue
+
+### Cleanup responsibilities
+
+The assignee must complete the following within the 7-day window:
+
+- Remove the flag check from the codebase
+- Delete the flag from LaunchDarkly (if no longer needed)
+- Ensure no stale conditional logic remains
+
+<Warning>
+Temporary flags that are not cleaned up become permanent maintenance overhead. Always complete cleanup within the 7-day deadline.
+</Warning>
