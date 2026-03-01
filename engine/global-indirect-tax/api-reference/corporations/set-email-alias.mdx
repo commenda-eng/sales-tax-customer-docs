@@ -1,0 +1,106 @@
+---
+title: "Set email alias"
+description: "Configure email forwarding for a corporation"
+openapi: "POST /corporations/{id}/email-alias"
+---
+
+Sets the email addresses that will receive emails sent to the corporation's email alias. The email alias is used for filing-related communications.
+
+<ParamField path="corporation_id" type="string" required>
+  The unique identifier of the corporation.
+</ParamField>
+
+<ParamField body="emails" type="array" required>
+  Array of email addresses to receive forwarded emails. Each email must be a valid email format.
+</ParamField>
+
+<ResponseField name="email_alias" type="string" required>
+  The email alias that was configured for the corporation.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request POST \
+  --url https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "emails": [
+      "accounting@example.com",
+      "tax@example.com"
+    ]
+  }'
+```
+
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <token>',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    emails: [
+      'accounting@example.com',
+      'tax@example.com'
+    ]
+  })
+});
+
+const data = await response.json();
+```
+
+
+```python Python
+import requests
+
+response = requests.post(
+  'https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias',
+  headers={'Authorization': 'Bearer <token>'},
+  json={
+    'emails': [
+      'accounting@example.com',
+      'tax@example.com'
+    ]
+  }
+)
+
+data = response.json()
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Successfully updated email alias.",
+  "data": {
+    "email_alias": "acme@filings.commenda.io"
+  }
+}
+```
+
+
+```json 400
+{
+  "error": {
+    "code": "INVALID_REQUEST_BODY",
+    "message": "Invalid email format"
+  }
+}
+```
+
+
+```json 404
+{
+  "error": {
+    "code": "CORPORATION_NOT_FOUND",
+    "message": "Corporation not found"
+  }
+}
+```
+
+</ResponseExample>

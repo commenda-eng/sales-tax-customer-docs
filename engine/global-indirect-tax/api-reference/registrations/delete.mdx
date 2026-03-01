@@ -1,0 +1,97 @@
+---
+title: "Delete Registration"
+api: "DELETE https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}"
+description: "Permanently delete a registration"
+---
+
+Permanently delete a registration. This action cannot be undone.
+
+<Warning>
+  Registrations with `validation_status: VALID` cannot be deleted via API. If you need to remove a validated registration, please contact [Commenda support](mailto:support@commenda.io).
+</Warning>
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to delete.
+</ParamField>
+
+## When to Use Delete vs. Close vs. Archive
+
+| Action | Use Case | Effect |
+|--------|----------|--------|
+| **Delete** | Remove a duplicate, test, or erroneous registration | Permanently removes the registration |
+| [**Close**](/api-reference/global-indirect-tax/registrations/registrations-id-close-POST) | Stop selling in a jurisdiction | Sets end date, keeps for historical records |
+| [**Archive**](/api-reference/global-indirect-tax/registrations/registrations-id-archive-POST) | Completely disable | Stops all calculations, hidden from list |
+
+## Deletable Registrations
+
+A registration can only be deleted when `validation_status` is one of:
+
+- `PENDING` — Default status, validation not yet requested
+- `VALIDATION_IN_PROGRESS` — Validation underway but not complete
+- `INVALID` — Validation failed
+
+## Non-Deletable Registrations
+
+Registrations with `validation_status: VALID` cannot be deleted because:
+
+1. Filing history may be associated with the registration
+2. Tax calculations reference the registration
+3. Compliance records must be preserved
+
+For these cases, use the [Close endpoint](/api-reference/global-indirect-tax/registrations/registrations-id-close-POST) instead.
+
+<RequestExample>
+```bash
+curl --request DELETE \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 204
+No content - Registration successfully deleted
+```
+
+```json 400 - Cannot Delete Valid Registration
+{
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Failed to delete registration.",
+    "detail": "registration with validation_status of VALID cannot be deleted through api; please contact Commenda team",
+    "status": 500,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Missing Parameter
+{
+  "error": {
+    "type": "CLIENT_MISSING_PARAMS",
+    "title": "Missing required parameter.",
+    "status": 400,
+    "instance": "/api/v1/registrations/{registration_id}"
+  }
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Close Registration](/api-reference/global-indirect-tax/registrations/registrations-id-close-POST) — End on a specific date
+- [Archive Registration](/api-reference/global-indirect-tax/registrations/registrations-id-archive-POST) — Completely disable
+- [Tax Registrations Overview](/api-reference/global-indirect-tax/registrations/registrations) — Registration lifecycle

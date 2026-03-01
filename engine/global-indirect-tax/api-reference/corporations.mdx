@@ -1,0 +1,23 @@
+---
+title: "Corporations"
+description: "Understand how Commenda's Global Indirect Tax API manages corporations for both single and multi-entity implementations."
+---
+
+## API Authentication for Partner vs. Business Implementations
+
+Each Commenda Global Indirect Tax API user receives a unique api_token, whether they are setting up a solution for multiple corporations (Partner Implementation) or just one (Business Implementation). This api_token is essential for making API calls and must be included in the request headers as `Authorization: Bearer <api_token>`.
+
+## Corporations
+In Commenda's system, a corporation refers to a distinct legal entity or business that the API interacts with. Users can set up corporations in two main ways:
+
+
+- **Partner Implementations:** For users managing multiple businesses (such as merchants or clients), each entity they handle is treated as a separate corporation within the API. This is useful when different legal entities require separate records or compliance processes.
+- **Business Implementations:** For users building the API for their own company, only one corporation needs to be created, representing the user's business.
+
+### Use Case Labels
+- **Partner Implementations:** For users managing multiple corporations.
+- **Business Implementations:** For users managing a single corporation for their own business.
+
+## Corporations and Their Relationship with Other Resources
+
+Most resources in the system, such as transactions, registrations, filings, and files, are linked to a specific corporation. When working with these resources, you'll need to provide the corporation id for context. You can retrieve all corporations associated with your account by using the `GET /corporations` endpoint.

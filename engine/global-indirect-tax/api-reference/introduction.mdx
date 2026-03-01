@@ -1,0 +1,75 @@
+Commenda allows your team to manage your entire global indirect tax workflow via API, from registration to tax calculations, filings, and nexus tracking.
+
+## API Capabilities
+
+**1. Global Indirect Tax Calculation**
+
+- Calculate accurate global indirect tax rates to charge for each transaction.
+
+**2. Transaction Management**
+
+- Create new transactions to track tax liability.
+- Retrieve transaction details.
+- Amend existing transactions.
+- Archive transactions.
+- Get detailed tax reports including `expected`, `actual` and `adjusted` tax amounts.
+
+
+**3. Nexus Information**
+
+- Track your progress towards economic nexus in each state.
+- Track your historical liabilities on state and local jurisdictions.
+- File VDAs.
+
+**4. Tax Registration Management**
+
+- Submit your existing registrations to Commenda.
+- Request a new state registration.
+- Retrieve existing registration details.
+- Update existing registrations.
+
+**5. Filing Information**
+
+- Get your historical and present compliance calendar. This includes all the state and local filings. 
+- Generate filings and assign them to Commenda. Commenda will then take care of your filings and programmatically keep you updated using Webhook events and jobs.  
+
+**6. Customer Information**
+
+- Create and update customer profiles.
+- Submit customer exemption certificates.
+
+**7. Exemptions**
+
+- Create exemption certificates for customers.
+- Retrieve all exemption certificates.
+- Update exemption certificates.
+
+**8. Files**
+
+- CRUD APIs for files managed on Commenda.
+
+## Base URL
+
+All API endpoints use the following base URL:
+
+```
+https://transaction-tax.api.in.commenda.io/api/v1
+```
+
+All endpoint paths documented in this reference are relative to this base URL. For example, the tax calculation endpoint `POST /calculate` should be called as:
+
+```
+POST https://transaction-tax.api.in.commenda.io/api/v1/calculate
+```
+
+## Authentication
+
+We implement Bearer token authentication to secure our APIs. This method requires you to include a valid token in the Authorization header of each request. The format is as follows:
+
+```json
+"Authorization": "Bearer <your_token>"
+```
+
+Replace `<your_token>` with the actual token provided to you by Commenda.
+
+Request API keys from the Commenda team for both testing and production.

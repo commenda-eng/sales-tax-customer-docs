@@ -1,0 +1,140 @@
+---
+title: "Close Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}/close"
+description: "Close a registration by setting an effective end date"
+---
+
+Close a registration when you stop doing business in a jurisdiction. This sets an `effective_end_date` and stops tax calculations and filings for transactions after that date.
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to close.
+</ParamField>
+
+## Request Body
+
+<ParamField body="effective_end_date" type="string" required>
+  ISO date (YYYY-MM-DD) when the registration ends. Must not be before the `effective_start_date`.
+  
+  Example: `"2024-12-31"`
+</ParamField>
+
+## When to Close a Registration
+
+Close a registration when:
+
+- **Leaving a state** — You're no longer selling to customers in that jurisdiction
+- **Closing a tax account** — You've closed your account with the state
+- **Business closure** — The corporation is ceasing operations in that jurisdiction
+
+## Effect of Closing
+
+After the `effective_end_date`:
+
+1. **Tax calculations** — The `/calculate` endpoint returns zero tax for this jurisdiction
+2. **Filing** — No returns are filed for periods after the end date
+3. **Historical data** — All transaction and filing history is preserved
+
+<Note>
+  Closing a registration does **not** affect filings for periods up to and including the end date. Commenda will still file final returns as needed.
+</Note>
+
+### Cascade Behavior
+
+| Registration Type | Effect |
+|-------------------|--------|
+| **State registration** | Closes the state **and all local registrations** under it with the same `effective_end_date` |
+| **Local registration** | Closes only the local registration (no cascade) |
+
+<Warning>
+  Closing a state registration will automatically close all local registrations under that state with the same end date. This is a bulk operation.
+</Warning>
+
+## Close vs. Archive vs. Delete
+
+| Action | Use Case | Effect on Calculations | Preserves History |
+|--------|----------|----------------------|-------------------|
+| **Close** | Stop selling on a date | Tax calculated only within date range | Yes |
+| [**Archive**](/api-reference/global-indirect-tax/registrations/registrations-id-archive-POST) | Completely disable | **Stopped entirely** | Yes |
+| [**Delete**](/api-reference/global-indirect-tax/registrations/registrations-id-DELETE) | Remove entirely | Removed immediately | No |
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/close' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"effective_end_date": "2024-12-31"}'
+```
+
+```json Request Body
+{
+  "effective_end_date": "2024-12-31"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Successfully closed registration."
+}
+```
+
+```json 400 - Invalid End Date
+{
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Invalid effective_end_date.",
+    "detail": "Effective end date (2024-01-01) cannot be before the effective start date (2024-06-01).",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/close"
+  }
+}
+```
+
+```json 400 - Invalid Date Format
+{
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Invalid effective_end_date format.",
+    "detail": "Date must be in ISO format (YYYY-MM-DD).",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/close"
+  }
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/close"
+  }
+}
+```
+</ResponseExample>
+
+## After Closing
+
+The registration will show the `effective_end_date` field:
+
+```json
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "effective_start_date": "2024-01-01",
+  "effective_end_date": "2024-12-31",
+  "validation_status": "VALID",
+  "...": "..."
+}
+```
+
+If you need to reopen a closed registration, contact [Commenda support](mailto:support@commenda.io).
+
+## Related
+
+- [Archive Registration](/api-reference/global-indirect-tax/registrations/registrations-id-archive-POST) — Completely disable (stops all calculations)
+- [Tax Registrations Overview](/api-reference/global-indirect-tax/registrations/registrations) — Registration lifecycle
