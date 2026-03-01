@@ -1,0 +1,133 @@
+---
+title: "Request Validation"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}/request-validation"
+description: "Request Commenda to validate your registration credentials and begin automated filing"
+---
+
+Request validation of a registration to enable automated tax filing. Once validated, Commenda will automatically file returns and remit payments on your behalf.
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to validate.
+</ParamField>
+
+## Before Requesting Validation
+
+Ensure your registration includes:
+
+1. **Tax registration ID** — Your state-issued permit number or account number
+2. **Portal credentials** — `portal_id` and `credential_id` for the state's tax portal
+3. **Frequency** — Filing frequency for the jurisdiction
+4. **Effective start date** — When the registration became effective
+
+<Note>
+  Missing any required information will cause validation to fail. Use [Get Registration](/api-reference/global-indirect-tax/registrations/registrations-id-GET) to check what's been provided, and [Update Registration](/api-reference/global-indirect-tax/registrations/registrations-id-POST) to add missing fields.
+</Note>
+
+<Info>
+  Need to know what portal credentials are required? Use the [Portal Fields](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) endpoint to get the credential requirements for your registration.
+</Info>
+
+## What Happens During Validation
+
+When you call this endpoint, Commenda will:
+
+1. **Verify your tax registration** — Confirm your tax ID is valid with the state
+2. **Test portal credentials** — Log into the state's tax portal to verify access
+3. **Configure for filing** — Set up the account for automated filing
+
+The `validation_status` will change from `PENDING` to `VALIDATION_IN_PROGRESS`.
+
+## Validation Outcomes
+
+### Success: `validation_status: VALID`
+
+Your registration is validated and ready for automated filing:
+- `auto_filing_status` will change to `FILING`
+- Commenda will file returns at the end of each filing period
+
+### Failure: `validation_status: INVALID`
+
+Something went wrong during validation. Common issues:
+- Invalid tax registration ID
+- Incorrect portal credentials
+- Account not configured correctly with the state
+
+Check the registration for error details and update the registration to correct the issues, then request validation again.
+
+## Monitoring Validation Progress
+
+Poll the registration using [Get Registration](/api-reference/global-indirect-tax/registrations/registrations-id-GET) to check status:
+
+```bash
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>'
+```
+
+The `validation_status` field will show:
+- `VALIDATION_IN_PROGRESS` — Validation is underway
+- `VALID` — Validation succeeded
+- `INVALID` — Validation failed (check for error details)
+
+<RequestExample>
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/request-validation' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 - Validation Started
+{
+  "message": "Successfully started validation process for your registration."
+}
+```
+
+```json 200 - Already In Progress
+{
+  "message": "Validation is already in progress."
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/request-validation"
+  }
+}
+```
+
+```json 500 - Validation Failed to Start
+{
+  "message": "Failed to request validation.",
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Failed to request validation.",
+    "detail": "Unable to initiate validation. Please ensure all required fields are provided.",
+    "status": 500,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/request-validation"
+  }
+}
+```
+</ResponseExample>
+
+## Next Steps
+
+After validation succeeds:
+
+1. **Start collecting tax** — Use the `/calculate` endpoint to get accurate tax amounts
+2. **Record transactions** — Submit completed transactions via the `/transactions` endpoint
+3. **Monitor filings** — Use the `/filings` endpoints to track filing status
+4. **Check for issues** — Subscribe to registration webhooks to be notified of any problems
+
+## Related
+
+- [Update Registration](/api-reference/global-indirect-tax/registrations/registrations-id-POST) — Add missing fields before validation
+- [Portal Fields](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) — Get portal credential requirements
+- [Tax Registrations Overview](/api-reference/global-indirect-tax/registrations/registrations) — Full workflow
