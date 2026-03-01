@@ -1,0 +1,101 @@
+---
+title: Create corporation
+description: Create a new corporation in your organization
+openapi: "POST /corporations"
+---
+
+Creates a new corporation entity in your organization. A corporation represents a distinct legal entity or business.
+
+<ParamField body="legal_name" type="string" required>
+  Legal name of the entity, including the type suffix (e.g., "Inc.", "LLC").
+</ParamField>
+
+<ParamField body="jurisdiction" type="string" required>
+  The ISO 3166 2-alpha country code where the business entity is registered.
+</ParamField>
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/corporations' \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "legal_name": "Acme Corporation Inc.",
+    "jurisdiction": "US",
+    "email_alias": "acme"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/corporations', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <token>',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    legal_name: 'Acme Corporation Inc.',
+    jurisdiction: 'US',
+    email_alias: 'acme'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+  'https://transaction-tax.api.in.commenda.io/api/v1/corporations',
+  headers={'Authorization': 'Bearer <token>'},
+  json={
+    'legal_name': 'Acme Corporation Inc.',
+    'jurisdiction': 'US',
+    'email_alias': 'acme'
+  }
+)
+
+data = response.json()
+```
+</RequestExample>
+
+<ResponseExample>
+```json 201
+{
+  "message": "Corporation created successfully.",
+  "data": {
+    "id": "corp_123abc",
+    "legal_name": "Acme Corporation Inc.",
+    "created_at": 1704067200,
+    "jurisdiction": "US",
+    "email_alias": "acme@filings.commenda.io"
+  }
+}
+```
+
+```json 400
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request body",
+    "details": [
+      {
+        "field": "legal_name",
+        "message": "Legal name is required"
+      }
+    ]
+  }
+}
+```
+
+```json 409
+{
+  "error": {
+    "code": "CORPORATION_ALREADY_EXISTS",
+    "message": "A corporation with this legal name already exists"
+  }
+}
+```
+</ResponseExample>
