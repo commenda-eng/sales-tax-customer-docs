@@ -1,0 +1,131 @@
+---
+title: "Calculate tax"
+openapi: "POST /calculate"
+---
+
+<RequestExample>
+```json Request
+{
+  "corporation_id": "b6d009b0-d174-463f-b030-94643c28e209",
+  "transaction_date": "2023-12-25",
+  "transaction_currency": "USD",
+  "transaction_type": "SALE",
+  "discount": 0,
+  "addresses": {
+    "ship_to": {
+      "address_line_1": "1776 Main St",
+      "address_line_2": "Apt. #123",
+      "postal_code": "90401",
+      "city": "Santa Monica",
+      "state": "CA",
+      "country": "US"
+    },
+    "ship_from": {
+      "address_line_1": "1776 Main St",
+      "address_line_2": "Apt. #123",
+      "postal_code": "90401",
+      "city": "Santa Monica",
+      "state": "CA",
+      "country": "US"
+    }
+  },
+  "customer_details": {
+    "customer_id": "customer_123"
+  },
+  "line_items": {
+    "items": [
+      {
+        "line_number": 1,
+        "product_taxability_code": "TPP",
+        "quantity": 1,
+        "amount": 100.00,
+        "discount": 0,
+        "product_id": "prod_123"
+      }
+    ]
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "id": "calc_123",
+    "corporation_id": "b6d009b0-d174-463f-b030-94643c28e209",
+    "transaction_date": "2023-12-25",
+    "transaction_currency": "USD",
+    "discount": 0,
+    "calculation_currency": "USD",
+    "exchange_rate": 1.0,
+    "total_amount": 100.00,
+    "total_tax": 9.50,
+    "total_due": 109.50,
+    "customer_details": {
+      "customer_id": "customer_123"
+    },
+    "tax_currency": "USD",
+    "addresses": {
+      "ship_from": {
+        "address_line_1": "1776 Main St",
+        "address_line_2": "Apt. #123",
+        "postal_code": "90401",
+        "city": "Santa Monica",
+        "state": "CA",
+        "country": "US"
+      },
+      "ship_to": {
+        "address_line_1": "1776 Main St",
+        "address_line_2": "Apt. #123",
+        "postal_code": "90401",
+        "city": "Santa Monica",
+        "state": "CA",
+        "country": "US"
+      }
+    },
+    "line_items": [
+      {
+        "line_item_id": "line_123",
+        "amount": 100.00,
+        "taxable_amount": 100.00,
+        "quantity": 1,
+        "tax_code": "TPP",
+        "product_id": "prod_123",
+        "line_number": 1,
+        "effective_tax_rate": 9.5,
+        "base_tax_rate": 6.0,
+        "tax_breakdown": [
+          {
+            "jurisdiction_name": "California",
+            "jurisdiction_type": "STATE",
+            "rate": 6.0,
+            "base_rate": 6.0,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": ""
+          },
+          {
+            "jurisdiction_name": "Los Angeles County",
+            "jurisdiction_type": "COUNTY",
+            "rate": 2.25,
+            "base_rate": 2.25,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": ""
+          },
+          {
+            "jurisdiction_name": "Santa Monica",
+            "jurisdiction_type": "CITY",
+            "rate": 1.25,
+            "base_rate": 1.25,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": ""
+          }
+        ],
+        "total_tax_due": 9.50
+      }
+    ]
+  },
+  "message": "Successfully calculated tax."
+}
+```
+</ResponseExample>
