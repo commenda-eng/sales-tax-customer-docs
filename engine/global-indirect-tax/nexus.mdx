@@ -1,0 +1,88 @@
+---
+title: "Nexus"
+---
+
+## Understanding Sales Tax Nexus
+
+Sales tax nexus refers to the connection between a seller and a state that requires the seller to register, collect, and remit sales tax in that state. Historically, nexus was based primarily on physical presence. However, following the 2018 South Dakota v. Wayfair Supreme Court decision, states can now require remote sellers to collect and remit sales tax based on their economic activity, known as "economic nexus."
+
+### Variability in State Nexus Rules
+
+Each state sets its own rules for determining nexus, including:
+
+1. **Thresholds:** States establish different sales and/or transaction thresholds that trigger economic nexus. For example, one state may have a USD 100,000 sales threshold, while another sets a USD 500,000 threshold.
+
+2. **Threshold Types**: Some states consider only sales revenue, some consider only the number of transactions, and some consider both.
+
+3. **Evaluation Periods**: The period over which economic activity is measured varies. Common periods include the previous calendar year, the current or previous calendar year, or a rolling 12-month period.
+
+## Nexus Tracking
+
+Commenda automatically tracks your progress towards state sales tax nexus thresholds based on the transactions you post to the `/transactions` endpoint.
+
+You can use our nexus API endpoint to get a comprehensive overview of a company's nexus status across all states, taking into account each state's specific rules and thresholds.
+
+### API Response Structure
+
+The Nexus API returns an array of state nexus objects. Each state nexus object contains details about your progress towards economic nexus in one state.
+
+## State Nexus Object Structure
+
+```json
+{
+  "data": {
+    "corporation_id": "74df772f-9260-42cf-9c20-3b613b60fecd",
+    "states": [
+      {
+        "state": "VT",
+        "rule": {
+          "sales_threshold": 100000,
+          "transactions_threshold": 200,
+          "threshold_type": "SALES_OR_TRANSACTIONS",
+          "evaluation_period_type": "PRECEDING_12_MONTHS",
+          "includable_sales_type": "GROSS"
+        },
+        "calculation": {
+          "total_sales": 0,
+          "total_transactions": 0,
+          "gross_sales": 0,
+          "gross_transactions": 0,
+          "taxable_sales": 0,
+          "taxable_transactions": 0,
+          "retail_sales": 0,
+          "retail_transactions": 0,
+          "sales_exposure_percentage": 0,
+          "transactions_exposure_percentage": 0,
+          "includable_sales_type": "GROSS"
+        },
+        "is_nexus_breached": false
+      },
+      {
+        "state": "MI",
+        "rule": {
+          "sales_threshold": 100000,
+          "transactions_threshold": 200,
+          "threshold_type": "SALES_OR_TRANSACTIONS",
+          "evaluation_period_type": "PREVIOUS_CALENDAR_YEAR",
+          "includable_sales_type": "GROSS"
+        },
+        "calculation": {
+          "total_sales": 0,
+          "total_transactions": 0,
+          "gross_sales": 0,
+          "gross_transactions": 0,
+          "taxable_sales": 0,
+          "taxable_transactions": 0,
+          "retail_sales": 0,
+          "retail_transactions": 0,
+          "sales_exposure_percentage": 0,
+          "transactions_exposure_percentage": 0,
+          "includable_sales_type": "GROSS"
+        },
+        "is_nexus_breached": false
+      }
+    ]
+  },
+  "message": "Successfully fetched nexus."
+}
+```
