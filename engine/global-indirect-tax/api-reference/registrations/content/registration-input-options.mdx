@@ -1,0 +1,176 @@
+---
+title: "Get Registration Options"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/registration-input-options"
+description: "Get available tax types, frequencies, and registration content IDs for jurisdictions"
+---
+
+Retrieve the registration options for one or more jurisdictions. This endpoint returns the `registration_content_id` you'll need to create a registration, along with available tax types and filing frequencies.
+
+## Request Body
+
+<ParamField body="filters" type="object" required>
+  <ParamField body="filters.jurisdiction_ids" type="array" required>
+    Array of jurisdiction IDs to get options for. Get these from the [Available Jurisdictions](/api-reference/global-indirect-tax/registrations/content/available-jurisdictions-POST) endpoint.
+    
+    Example: `["JUR_US_STATE_CA", "JUR_US_STATE_TX"]`
+  </ParamField>
+</ParamField>
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `options` | array | Registration options for each jurisdiction |
+| `options[].jurisdiction_id` | string | The jurisdiction ID |
+| `options[].jurisdiction_name` | string | Human-readable name |
+| `options[].registrations` | array | Available registration types |
+| `options[].registrations[].registration_content_id` | string | Content ID to use when creating a registration |
+| `options[].registrations[].tax_type` | string | Primary tax type for this registration |
+| `options[].registrations[].frequencies` | array | Valid filing frequencies |
+| `options[].registrations[].related_tax_types` | array | Additional tax types that can/must be included |
+
+### Related Tax Types
+
+Some jurisdictions require or allow multiple tax types to be registered together:
+
+- `optional: false` — This tax type **must** be included with the primary type
+- `optional: true` — This tax type **may** be included (your choice)
+
+For example, California requires RST + DTT together, while some states allow RST alone.
+
+<RequestExample>
+```bash cURL - Single
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/registration-input-options' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "jurisdiction_ids": ["JUR_US_STATE_CA"]
+    }
+  }'
+```
+
+```bash cURL - Multiple
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/registration-input-options' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "jurisdiction_ids": ["JUR_US_STATE_CA", "JUR_US_STATE_TX", "JUR_US_STATE_NY"]
+    }
+  }'
+```
+
+```json Single Jurisdiction
+{
+  "filters": {
+    "jurisdiction_ids": ["JUR_US_STATE_CA"]
+  }
+}
+```
+
+```json Multiple Jurisdictions
+{
+  "filters": {
+    "jurisdiction_ids": ["JUR_US_STATE_CA", "JUR_US_STATE_TX", "JUR_US_STATE_NY"]
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "options": [
+      {
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "registrations": [
+          {
+            "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+            "tax_type": "RST",
+            "frequencies": ["MONTHLY", "QUARTERLY", "ANNUAL_CALENDAR_YEAR"],
+            "related_tax_types": [
+              {
+                "tax_type": "DTT",
+                "optional": false
+              }
+            ]
+          },
+          {
+            "registration_content_id": "CCT_US_STATE_CEN_06_RUT",
+            "tax_type": "RUT",
+            "frequencies": ["MONTHLY", "QUARTERLY", "ANNUAL_CALENDAR_YEAR"],
+            "related_tax_types": [
+              {
+                "tax_type": "DTT",
+                "optional": false
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_name": "Texas",
+        "registrations": [
+          {
+            "registration_content_id": "CCT_US_STATE_CEN_48_RST",
+            "tax_type": "RST",
+            "frequencies": ["MONTHLY", "QUARTERLY", "ANNUAL_CALENDAR_YEAR"]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+```json 400 - Missing Jurisdiction IDs
+{
+  "message": "Invalid request.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Missing required field",
+    "detail": "filters.jurisdiction_ids is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/content/registration-input-options"
+  }
+}
+```
+</ResponseExample>
+
+## Using the Response
+
+From the response, extract:
+
+1. **`registration_content_id`** — Use this when calling `POST /registrations`
+2. **`tax_type`** + **`related_tax_types`** — Combine to form the `tax_types` array
+3. **`frequencies`** — Pick one for the `frequency` field
+
+### Example: Creating a California Registration
+
+From the response above, California requires RST + DTT:
+
+```json
+{
+  "corporation_id": "your-corporation-id",
+  "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+  "tax_types": ["RST", "DTT"],
+  "frequency": "QUARTERLY"
+}
+```
+
+## Next Steps
+
+After getting registration options, use the [Portal Fields](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) endpoint to understand what credentials are needed for automated filing.
+
+Then [Create a Registration](/api-reference/global-indirect-tax/registrations/registrations-POST) using the `registration_content_id` from this response.
+
+## Related
+
+- [List Available Jurisdictions](/api-reference/global-indirect-tax/registrations/content/available-jurisdictions-POST) — Find jurisdictions first
+- [Registration Content Overview](/api-reference/global-indirect-tax/registrations/content/content) — Full content API workflow
