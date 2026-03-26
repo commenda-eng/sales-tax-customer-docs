@@ -55,11 +55,13 @@ Signature tasks display one of the following statuses:
 
 | Status | Description |
 |--------|-------------|
-| **Pending** | Recipient is waiting to be notified |
+| **Pending** | Recipient is waiting to be notified, or waiting for a previous signer to complete (when using signing order) |
 | **Sent** | Email has been sent to the recipient |
 | **Viewed** | Recipient has opened the document |
 | **Signed** | Recipient has completed signing |
 | **Canceled** | Signature request has been canceled |
+
+**Note on signing order:** If you configure an explicit signing order (e.g., Signer 1 must sign before Signer 2), subsequent signers will remain in "Pending" status until the previous signer completes their signature. Once the previous signer completes, the next signer's status will update to "Sent" and they will receive their email notification.
 
 ## Managing signature requests
 
