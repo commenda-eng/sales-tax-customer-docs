@@ -30,6 +30,12 @@
             ]
           },
           {
+            "group": "Tools",
+            "pages": [
+              "product/tools/esign"
+            ]
+          },
+          {
             "group": "Indirect Tax",
             "pages": [
               "product/indirect-tax/guarantees",
