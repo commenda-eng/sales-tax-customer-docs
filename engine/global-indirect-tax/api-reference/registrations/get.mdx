@@ -1,0 +1,109 @@
+---
+title: "Get Registration"
+api: "GET https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}"
+description: "Retrieve details of a specific registration by ID"
+---
+
+Retrieve the full details of a registration, including its current status, jurisdiction information, and configuration.
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to retrieve.
+</ParamField>
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the registration |
+| `corporation_id` | string | The corporation this registration belongs to |
+| `registration_content_id` | string | Content ID identifying the jurisdiction and tax type |
+| `jurisdiction_id` | string | Unique identifier for the jurisdiction |
+| `jurisdiction_type` | string | Type: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, etc. |
+| `jurisdiction_name` | string | Human-readable name of the jurisdiction |
+| `country` | string | ISO 3166-1 alpha-2 country code |
+| `state_or_province` | string | State or province code (e.g., "CA", "TX") |
+| `tax_types` | array | Tax types registered for (e.g., `["RST", "DTT"]`) |
+| `frequency` | string | Filing frequency |
+| `effective_start_date` | string | When the registration became effective (YYYY-MM-DD) |
+| `effective_end_date` | string | When the registration ended (YYYY-MM-DD), if closed |
+| `tax_registration_id` | string | State-issued tax ID or permit number |
+| `portal_id` | string | Tax portal identifier |
+| `credential_id` | string | Reference to stored portal credentials |
+| `registration_status` | string | `REGISTRATION_IN_PROGRESS` or `REGISTERED` |
+| `validation_status` | string | `PENDING`, `VALIDATION_IN_PROGRESS`, `VALID`, or `INVALID` |
+| `registration_type` | string | `EXISTING` or `NEW` |
+| `registered_by` | string | Who created the registration: `API`, `USER`, `COMMENDA` |
+| `email_alias` | string | Email alias for tax correspondence |
+| `archived_at` | string | Timestamp if archived, otherwise null |
+| `created_at` | string | When the registration was created |
+| `updated_at` | string | When the registration was last updated |
+
+<RequestExample>
+```bash
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Successfully fetched registration.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+    "jurisdiction_id": "JUR_US_STATE_CA",
+    "jurisdiction_type": "STATE_OR_PROVINCE",
+    "jurisdiction_name": "California",
+    "country": "US",
+    "state_or_province": "CA",
+    "tax_types": ["RST", "DTT"],
+    "frequency": "QUARTERLY",
+    "effective_start_date": "2024-01-15",
+    "tax_registration_id": "123-456789",
+    "portal_id": "PORTAL_CA_CDTFA",
+    "credential_id": "cred_abc123",
+    "registration_status": "REGISTERED",
+    "validation_status": "VALID",
+    "registration_type": "EXISTING",
+    "registered_by": "API",
+    "email_alias": "tax-ca@acme.commenda.io",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-20T15:45:00Z"
+  }
+}
+```
+
+```json 400 - Missing Parameter
+{
+  "error": {
+    "type": "CLIENT_MISSING_PARAMS",
+    "title": "Missing required parameter.",
+    "status": 400,
+    "instance": "/api/v1/registrations/{registration_id}"
+  }
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "detail": "The registration '7c9e6679-7425-40de-944b-e07fc1f90ae7' does not exist or you don't have access.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [List Registrations](/api-reference/global-indirect-tax/registrations/registrations-GET) — Get all registrations with filters
+- [Update Registration](/api-reference/global-indirect-tax/registrations/registrations-id-POST) — Modify this registration
+- [Request Validation](/api-reference/global-indirect-tax/registrations/registrations-id-request-validation-POST) — Begin automated filing

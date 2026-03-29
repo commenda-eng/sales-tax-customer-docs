@@ -1,0 +1,57 @@
+---
+title: "Indirect Tax Transactions"
+description: "Learn how to use the Commenda API to manage your taxes."
+---
+
+## Transactions
+
+Commenda provides a range of endpoints to manage transactions:
+
+1. `/calculate` endpoint:
+
+   - Used to estimate sales tax for a potential transaction.
+   - The response includes the calculated tax amount.
+
+2. `/transactions` endpoints:
+   - Used to submit completed transactions to our system.
+   - Commenda uses this data to file sales tax in states where the seller is registered and track the seller's progress towards nexus.
+
+3. `/nexus` endpoint:
+   - Used to view the seller's progress towards sales tax nexus.
+
+4. `/registrations` endpoints:
+   - Used to manage sales tax registrations.
+   - Commenda uses information about registrations on the `/calculate` endpoint to determine if tax should be collected on transactions.
+
+5. `/filings` endpoints:
+    - View the contents and status of a seller's periodic sales tax filings.
+
+## Typical Usage
+
+While the `/calculate` and `/transactions` endpoints can be used independently, a typical workflow is as follows:
+
+<ol>
+  <li>
+    {" "}
+    A customer visits your website, adds something to their cart, and clicks 'check
+    out'.
+  </li>
+  <li>
+    {" "}
+    You call our `/calculate` API to determine the correct amount of sales tax to charge the customer.
+  </li>
+  <li>
+    {" "}
+    The customer pays the total amount, including the sales tax. You save the transaction details, including the subtotal and tax amount.
+  </li>
+  <li>
+    {" "}
+    After the transaction is completed, you call the `/transactions` API to submit the transaction details to our system.
+  </li>
+</ol>
+
+## Discounts
+
+Typically, discounts are treated as a reduction in the overall sales price. To account for this, simply call our `/calculate` and `/transactions` endpoints using the post-discount price as the `amount` and `subtotal`.
+
+For accounting purposes, some customers may prefer to recognize the full sale amount and treat the discount as an expense. If you need this setup, please contact the Commenda team.

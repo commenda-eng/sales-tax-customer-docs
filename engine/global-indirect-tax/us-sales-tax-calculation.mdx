@@ -1,0 +1,81 @@
+---
+title: "US Sales Tax Calculation"
+description: "Learn how to calculate sales tax on transactions using Commenda's APIs."
+---
+
+## Overview
+
+Commenda helps you calculate sales tax on transactions using our APIs. This guide walks you through the complete workflow for US sales tax calculation, from initial setup to calculating taxes on your transactions.
+
+## Prerequisites
+
+Before you can calculate sales tax, you need:
+
+1. **Organization**: Contact Commenda to set up your organization.
+2. **Corporation**: Create a corporation that reflects one real-world business entity.
+3. **API Token**: Use your API token for authentication.
+
+## Understanding US sales tax nexus
+
+In the US, you are not required to collect sales tax from customers unless you breach physical or economic nexus in a state. Once you breach nexus (setting aside grace periods), you must:
+
+1. Register in the state where you have breached nexus
+2. Collect sales tax from customers in that state
+3. File and remit the collected taxes
+
+## Workflow
+
+### 1. Create a corporation
+
+Create a corporation using the [Create Corporation API](/api-reference/global-indirect-tax/corporations/corporations-POST). A corporation represents a real-world business entity (e.g., Commenda Technologies Inc.) that will be collecting and remitting taxes.
+
+- Provide your organization ID and corporation details
+- Save the corporation ID returned in the response for subsequent API calls
+- Each corporation should map to one legal entity in your business
+
+### 2. Monitor nexus exposure
+
+Use the [Nexus API](/api-reference/global-indirect-tax/nexus/nexus-GET) to track your latest nexus exposure across states:
+
+- Monitor your transaction volume and revenue by state
+- Identify states where you are approaching or have breached nexus thresholds
+- Determine which states require registration
+
+### 3. Ingest transactions
+
+Use the [Transactions API](/api-reference/global-indirect-tax/transaction/transaction-POST) to submit your transaction data:
+
+- Submit completed transactions to track nexus progress
+- Include transaction details such as amounts, locations, and dates
+- Use [bulk import](/api-reference/global-indirect-tax/transaction/bulk-transactions-POST) for large transaction volumes
+
+### 4. Register in exposed states
+
+Once you have breached nexus in a state, create a registration using the [Create Registration API](/api-reference/global-indirect-tax/registrations/registrations-POST):
+
+- Provide your API token and corporation ID
+- Specify the state where you need to register
+- Include registration details such as effective date and tax ID
+
+<Warning>
+If you attempt to calculate sales tax without a registration in a state, the calculation results will return zero. You must have an active registration to collect tax in that state.
+
+For sandbox environment testing, feel free to create a registration using the [Create Registration endpoint](/api-reference/global-indirect-tax/registrations/registrations-POST) rather than requesting a new one to perform tests.
+</Warning>
+
+### 5. Calculate sales tax
+
+After creating registrations in exposed states, use the [Calculate API](/api-reference/global-indirect-tax/calculate/calculate-POST) to calculate taxes on your transactions.
+
+#### Minimum required fields
+
+To calculate US sales tax, you must provide:
+
+- **Destination address**: The ship-to address of the invoice
+- **Calculation date**: The date of the transaction
+- **Invoice information**: Basic invoice details including:
+  - Invoice total or subtotal
+  - Line items with amounts and descriptions
+  - Product tax codes (if applicable)
+
+See the [Calculate endpoint documentation](/api-reference/global-indirect-tax/calculate/calculate-POST) for complete field requirements and examples.

@@ -1,0 +1,222 @@
+---
+title: "Get Portal Fields"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/portal-fields"
+description: "Get portal credential requirements for registration content IDs"
+---
+
+Retrieve the portal information and credential fields required for automated tax filing. Each state has one or more tax portals where credentials are needed to file returns.
+
+## Request Body
+
+<ParamField body="filters" type="object" required>
+  <ParamField body="filters.registration_content_ids" type="array" required>
+    Array of registration content IDs to get portal fields for. Get these from the [Registration Input Options](/api-reference/global-indirect-tax/registrations/content/registration-input-options-POST) endpoint.
+    
+    Example: `["CCT_US_STATE_CEN_06_RST", "CCT_US_STATE_CEN_48_RST"]`
+  </ParamField>
+</ParamField>
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `forms` | array | Portal requirements for each registration content |
+| `forms[].registration_content_id` | string | The registration content ID |
+| `forms[].jurisdiction_id` | string | The jurisdiction ID |
+| `forms[].jurisdiction_name` | string | Human-readable jurisdiction name |
+| `forms[].tax_type` | string | Tax type for this registration |
+| `forms[].portals` | array | Available portals for this registration |
+
+### Portal Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `portal_id` | string | Unique identifier for the portal (use in registration) |
+| `portal_name` | string | Human-readable portal name |
+| `portal_url` | string | URL to the state's tax portal website |
+| `credential_fields` | array | Required credential fields |
+
+### Credential Field Object
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `credential_key` | string | Field identifier |
+| `credential_name` | string | Human-readable field name |
+| `credential_type` | string | Field type: `text`, `password`, `pin`, etc. |
+| `required` | boolean | Whether the field is required |
+| `is_unique_per_registration` | boolean | Whether each registration needs a unique value |
+| `regex` | string | Validation regex pattern (if applicable) |
+| `display_order` | integer | Suggested display order for UI |
+
+<RequestExample>
+```bash cURL - Single
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/portal-fields' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "registration_content_ids": ["CCT_US_STATE_CEN_06_RST"]
+    }
+  }'
+```
+
+```bash cURL - Multiple
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/portal-fields' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "registration_content_ids": ["CCT_US_STATE_CEN_06_RST", "CCT_US_STATE_CEN_48_RST"]
+    }
+  }'
+```
+
+```json Single Registration
+{
+  "filters": {
+    "registration_content_ids": ["CCT_US_STATE_CEN_06_RST"]
+  }
+}
+```
+
+```json Multiple Registrations
+{
+  "filters": {
+    "registration_content_ids": [
+      "CCT_US_STATE_CEN_06_RST",
+      "CCT_US_STATE_CEN_48_RST",
+      "CCT_US_STATE_CEN_36_RST"
+    ]
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "forms": [
+      {
+        "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "tax_type": "RST",
+        "portals": [
+          {
+            "portal_id": "PORTAL_CA_CDTFA",
+            "portal_name": "California Department of Tax and Fee Administration",
+            "portal_url": "https://onlineservices.cdtfa.ca.gov/",
+            "credential_fields": [
+              {
+                "credential_key": "username",
+                "credential_name": "Username",
+                "credential_type": "text",
+                "required": true,
+                "is_unique_per_registration": false,
+                "display_order": 1
+              },
+              {
+                "credential_key": "password",
+                "credential_name": "Password",
+                "credential_type": "password",
+                "required": true,
+                "is_unique_per_registration": false,
+                "display_order": 2
+              },
+              {
+                "credential_key": "security_question",
+                "credential_name": "Security Question Answer",
+                "credential_type": "text",
+                "required": true,
+                "is_unique_per_registration": false,
+                "display_order": 3
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "registration_content_id": "CCT_US_STATE_CEN_48_RST",
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_name": "Texas",
+        "tax_type": "RST",
+        "portals": [
+          {
+            "portal_id": "PORTAL_TX_COMPTROLLER",
+            "portal_name": "Texas Comptroller WebFile",
+            "portal_url": "https://comptroller.texas.gov/taxes/file-pay/",
+            "credential_fields": [
+              {
+                "credential_key": "taxpayer_number",
+                "credential_name": "Taxpayer Number",
+                "credential_type": "text",
+                "required": true,
+                "is_unique_per_registration": true,
+                "regex": "^[0-9]{11}$",
+                "display_order": 1
+              },
+              {
+                "credential_key": "webfile_number",
+                "credential_name": "WebFile Number",
+                "credential_type": "text",
+                "required": true,
+                "is_unique_per_registration": true,
+                "display_order": 2
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+```json 400 - Missing Content IDs
+{
+  "message": "Invalid request.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Missing required field",
+    "detail": "filters.registration_content_ids is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/content/portal-fields"
+  }
+}
+```
+</ResponseExample>
+
+## Using Portal Information
+
+### Storing Credentials
+
+Credentials are stored separately from registrations for security. The typical flow:
+
+1. Collect credentials from the user based on `credential_fields`
+2. Store credentials securely (via your credentials management system)
+3. Reference the stored credentials via `credential_id` when updating the registration
+
+### Multiple Portals
+
+Some registrations may have multiple portal options. Present all options to the user and use the selected `portal_id` when creating/updating the registration.
+
+### Credential Reuse
+
+When `is_unique_per_registration` is `false`, the same credentials can be used across multiple registrations (common for multi-state sellers using a single account).
+
+## Next Steps
+
+With the portal requirements understood, you can:
+
+1. Build UI forms to collect credentials from sellers
+2. [Create registrations](/api-reference/global-indirect-tax/registrations/registrations-POST) with the `registration_content_id`
+3. [Update registrations](/api-reference/global-indirect-tax/registrations/registrations-id-POST) to add portal credentials
+4. [Request validation](/api-reference/global-indirect-tax/registrations/registrations-id-request-validation-POST) to enable automated filing
+
+## Related
+
+- [Registration Content Overview](/api-reference/global-indirect-tax/registrations/content/content) — Full content API workflow
+- [Tax Registrations](/api-reference/global-indirect-tax/registrations/registrations) — Registration concepts and lifecycle

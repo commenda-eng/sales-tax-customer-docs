@@ -1,0 +1,110 @@
+---
+title: "Tax Calculations"
+description: Calculates the tax amount for a given transaction.
+---
+
+## Overview
+
+The `/calculate` endpoint allows you to determine the amount of sales tax to charge on a transaction. By providing details such as customer information, line items, and pricing, you'll receive accurate tax calculations based on applicable jurisdictions and rates.
+
+## Factors Affecting Tax Rates
+
+Our system considers the following factors to determine the appropriate tax for a transaction:
+
+1. **Seller Information**
+
+   - **State Registrations**:
+     - If your corporation is not registered to pay taxes in a state, the `/calculate` endpoint will return a tax amount of 0 for that state.
+     - If your corporation is registered in a state, we calculate the tax amount based on that state's rates and rules.
+
+2. **Product-Specific Information**
+
+   - **Product Taxability**:
+     - **Product Configuration**: Each corporation can define and manage its product catalog via our `/products` endpoints. (Coming soon)
+     - **Product Code Assignment**: For every product in the catalog, you can assign a specific product code using the API.
+     - **Tax Rate Computation**: When the `/calculate` endpoint is called, each line item includes a product id. We use this id to retrieve the pre-configured product code for that product, determining its taxability for the transaction.
+       - If a product is classified as non-taxable based on its product code, the tax amount for that specific line item will be 0.
+       - If a product is taxable, the tax is calculated based on the product's price and applicable tax rates.
+
+3. **Customer Information**
+   - **Shipping Address**: We compute the tax rate based on the shipping address provided for each transaction.
+   - **Customer Exemptions**: Transactions can be exempted from sales tax based on properties of the customer making the purchase. You can read more about these exemptions [here](/api-reference/global-indirect-tax/core-concepts/exemptions#purpose-exemptions).
+
+## Sample Calculation Object
+
+The `/calculate` endpoint returns a JSON object containing the transaction details and calculated taxes.
+
+Example response:
+
+```json
+{
+  "data": {
+    "id": "a7850851-be24-4c71-b9a3-3035e2d0c617",
+    "corporation_id": "74df772f-9260-42cf-9c20-3b613b60fecd",
+    "transaction_date": "2025-07-01",
+    "transaction_currency": "USD",
+    "discount": 0,
+    "total_amount": 14338.01,
+    "total_tax": 1190.05,
+    "total_due": 15528.06,
+    "customer_details": {},
+    "tax_currency": "USD",
+    "addresses": {
+      "ship_from": null,
+      "ship_to": {
+        "address_line_1": "123 N Central Ave",
+        "address_line_2": "",
+        "address_line_3": "",
+        "postal_code": "85004",
+        "city": "Phoenix city",
+        "state": "AZ",
+        "country": "US"
+      }
+    },
+    "line_items": [
+      {
+        "line_item_id": "51f4ac30-e4f6-42e9-bb34-80305ea870b2",
+        "amount": 14338.01,
+        "taxable_amount": 14338.01,
+        "quantity": 1,
+        "tax_code": "TPP",
+        "product_id": "",
+        "line_number": 1,
+        "effective_tax_rate": 8.3,
+        "base_tax_rate": 9.1,
+        "tax_breakdown": [
+          {
+            "jurisdiction_name": "ARIZONA",
+            "jurisdiction_type": "STATE_OR_PROVINCE",
+            "rate": 5.6,
+            "base_rate": 5.6,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": "TAX_APPLIED"
+          },
+          {
+            "jurisdiction_name": "MARICOPA COUNTY",
+            "jurisdiction_type": "COUNTY",
+            "rate": 0.7,
+            "base_rate": 0.7,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": "TAX_APPLIED"
+          },
+          {
+            "jurisdiction_name": "PHOENIX CITY",
+            "jurisdiction_type": "CITY",
+            "rate": 2,
+            "base_rate": 2.8,
+            "tax_class": "TAXABLE",
+            "tax_class_reason": "TAX_APPLIED"
+          }
+        ],
+        "total_tax_due": 1190.05,
+        "tax_collected": 0,
+        "is_tax_included": false,
+        "product_source_platform": "",
+        "product_source_platform_id": ""
+      }
+    ]
+  }
+}
+```

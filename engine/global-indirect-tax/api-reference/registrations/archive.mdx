@@ -1,0 +1,108 @@
+---
+title: "Archive Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}/archive"
+description: "Archive a registration to stop tax calculations and hide from views"
+---
+
+Archive a registration to completely exclude it from tax calculations and hide it from default list views. Archived registrations are preserved for historical records but no longer participate in tax processing.
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to archive.
+</ParamField>
+
+## What Happens When You Archive
+
+- **Tax calculations stop** — The registration is no longer considered when calculating taxes for transactions
+- **Hidden from views** — Excluded from list results unless you set `include_archived: true`
+- **Data preserved** — All historical data remains intact for reference and auditing
+
+### Cascade Behavior
+
+| Registration Type | Effect |
+|-------------------|--------|
+| **State registration** | Archives the state **and all local registrations** (cities, counties, districts) under it |
+| **Local registration** | Archives only the local registration (no cascade) |
+
+<Warning>
+  Archiving a state registration will automatically archive all local registrations under that state. This is a bulk operation that cannot be partially undone.
+</Warning>
+
+## When to Archive
+
+Use archive when you want to:
+
+- **Completely disable a registration** — Stop all tax calculations without deleting historical data
+- **Remove duplicates** — Archive an erroneously created duplicate
+- **Clean up test data** — Hide test registrations while preserving them for reference
+
+## Archive vs. Close vs. Delete
+
+| Action | Use Case | Tax Calculations | Reversible |
+|--------|----------|------------------|------------|
+| **Archive** | Completely disable | **Stopped entirely** | Yes (contact support) |
+| **Close** | Stop selling on a specific date | Active within date range (start → end date) | No |
+| **Delete** | Remove entirely | N/A - data removed | No |
+
+<Note>
+  If you need to stop collecting tax starting from a specific date but preserve calculations for the historical period, use [Close](/api-reference/global-indirect-tax/registrations/registrations-id-close-POST) instead. Close keeps the registration active for transactions within the effective date range.
+</Note>
+
+## Viewing Archived Registrations
+
+To include archived registrations in list results, set `include_archived: true`:
+
+```json
+POST /registrations/list
+{
+  "corporation_id": "your-corp-id",
+  "include_archived": true
+}
+```
+
+Archived registrations will have a non-null `archived_at` timestamp.
+
+<RequestExample>
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Successfully archived registration."
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive"
+  }
+}
+```
+
+```json 500 - Archive Failed
+{
+  "error": {
+    "type": "SERVER_INTERNAL_ERROR",
+    "title": "Failed to archive registration.",
+    "status": 500,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Close Registration](/api-reference/global-indirect-tax/registrations/registrations-id-close-POST) — Stop on a specific date (preserves historical calculations)
+- [Delete Registration](/api-reference/global-indirect-tax/registrations/registrations-id-DELETE) — Permanently remove
+- [List Registrations](/api-reference/global-indirect-tax/registrations/registrations-GET) — Use `include_archived: true` to see archived registrations

@@ -1,0 +1,126 @@
+---
+title: Update corporation
+description: Update an existing corporation
+openapi: "POST /corporations/{id}"
+---
+
+Updates the details of an existing corporation. Only the fields provided in the request will be updated.
+
+<ParamField path="id" type="string" required>
+  Unique identifier of the corporation to update.
+</ParamField>
+
+<ParamField body="legal_name" type="string">
+  Legal name of the entity, including the type suffix (e.g., "Inc.", "LLC").
+</ParamField>
+
+<ParamField body="jurisdiction" type="string">
+  Jurisdiction where the corporation is registered (e.g., "US", "CA").
+</ParamField>
+
+<ParamField body="email_alias" type="string">
+  Custom email alias for the corporation.
+</ParamField>
+
+<ResponseField name="id" type="string" required>
+  Unique identifier for the corporation.
+</ResponseField>
+
+<ResponseField name="legal_name" type="string" required>
+  Legal name of the entity, including the type suffix.
+</ResponseField>
+
+<ResponseField name="created_at" type="integer" required>
+  Unix timestamp of when the corporation was created.
+</ResponseField>
+
+<ResponseField name="jurisdiction" type="string" required>
+  Jurisdiction of the corporation.
+</ResponseField>
+
+<ResponseField name="email_alias" type="string">
+  Email alias for the corporation.
+</ResponseField>
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/corporations/corp_123abc' \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "legal_name": "Acme Corporation LLC",
+    "jurisdiction": "US"
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/corporations/corp_123abc', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <token>',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    legal_name: 'Acme Corporation LLC',
+    jurisdiction: 'US'
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+  'https://transaction-tax.api.in.commenda.io/api/v1/corporations/corp_123abc',
+  headers={'Authorization': 'Bearer <token>'},
+  json={
+    'legal_name': 'Acme Corporation LLC',
+    'jurisdiction': 'US'
+  }
+)
+
+data = response.json()
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Corporation updated successfully.",
+  "data": {
+    "id": "corp_123abc",
+    "legal_name": "Acme Corporation LLC",
+    "created_at": 1704067200,
+    "jurisdiction": "US",
+    "email_alias": "acme@filings.commenda.io"
+  }
+}
+```
+
+```json 404
+{
+  "error": {
+    "code": "CORPORATION_NOT_FOUND",
+    "message": "Corporation with the specified ID was not found"
+  }
+}
+```
+
+```json 400
+{
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid request body",
+    "details": [
+      {
+        "field": "jurisdiction",
+        "message": "Invalid jurisdiction code"
+      }
+    ]
+  }
+}
+```
+</ResponseExample>

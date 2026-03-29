@@ -1,0 +1,122 @@
+---
+title: "Registration Content"
+description: "Discover available jurisdictions, tax types, and portal requirements for creating registrations"
+---
+
+## Overview
+
+The Registration Content API provides a data-driven approach to creating tax registrations. Instead of manually specifying jurisdiction details, you use these endpoints to:
+
+1. **Discover jurisdictions** where you can register
+2. **Get registration options** (tax types, frequencies) for each jurisdiction
+3. **Get portal requirements** (credentials needed for automated filing)
+
+This ensures that registrations are created with valid, up-to-date information that matches each jurisdiction's actual requirements.
+
+<Info>
+  After gathering content information, use the [Create Registration](/api-reference/global-indirect-tax/registrations/registrations-POST) endpoint to create your registration.
+</Info>
+
+## Workflow
+
+<Steps>
+  <Step title="Search Available Jurisdictions">
+    Use [List Available Jurisdictions](/api-reference/global-indirect-tax/registrations/content/available-jurisdictions-POST) to find jurisdictions where you can register. Returns `jurisdiction_id` for each matching jurisdiction.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"filters": {"countries": ["US"], "types": ["STATE_OR_PROVINCE"]}}'
+    ```
+  </Step>
+  <Step title="Get Registration Options">
+    Use [Get Registration Options](/api-reference/global-indirect-tax/registrations/content/registration-input-options-POST) to get the `registration_content_id`, available `tax_types`, and `frequencies` for your selected jurisdictions.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/registration-input-options' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"filters": {"jurisdiction_ids": ["JUR_US_STATE_CA"]}}'
+    ```
+  </Step>
+  <Step title="Get Portal Requirements">
+    Use [Get Portal Fields](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) to get the portal credentials needed for automated filing (username, password, PIN, etc.).
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/portal-fields' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"filters": {"registration_content_ids": ["CCT_US_STATE_CEN_06_RST"]}}'
+    ```
+  </Step>
+  <Step title="Create Registration">
+    Use [Create Registration](/api-reference/global-indirect-tax/registrations/registrations-POST) with the `registration_content_id` from step 2.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{
+        "corporation_id": "your-corporation-id",
+        "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+        "tax_types": ["RST", "DTT"],
+        "frequency": "QUARTERLY"
+      }'
+    ```
+  </Step>
+</Steps>
+
+## Key Concepts
+
+### Jurisdiction IDs
+
+Each tax jurisdiction has a unique `jurisdiction_id` like:
+- `JUR_US_STATE_CA` — California (state)
+- `JUR_US_COUNTY_CA_LOS_ANGELES` — Los Angeles County
+- `JUR_US_CITY_CO_DENVER` — Denver (city)
+
+### Registration Content IDs
+
+Each registration type has a `registration_content_id` that encodes the jurisdiction and tax type:
+- `CCT_US_STATE_CEN_06_RST` — California Retail Sales Tax
+- `CCT_US_STATE_CEN_48_RST` — Texas Retail Sales Tax
+- `CCT_US_STATE_CEN_36_RST` — New York Retail Sales Tax
+
+### Jurisdiction Types
+
+| Type | Description |
+|------|-------------|
+| `STATE_OR_PROVINCE` | State or province level (most common) |
+| `CITY` | City with separate filing requirements (home-rule) |
+| `COUNTY` | County with separate filing requirements |
+| `DISTRICT` | Special taxing district |
+| `LOCAL` | Other local jurisdiction |
+| `COUNTRY` | Country level (for non-US) |
+| `TERRITORY` | US territory |
+
+### Tax Types
+
+| Code | Name |
+|------|------|
+| `RST` | Retail Sales Tax |
+| `RUT` | Retailer's Use Tax |
+| `DTT` | District Transaction Tax |
+| `SST` | Simplified Sellers Use Tax |
+
+## API Endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| [`POST /registrations/content/available-jurisdictions`](/api-reference/global-indirect-tax/registrations/content/available-jurisdictions-POST) | Search for jurisdictions where you can register |
+| [`POST /registrations/content/registration-input-options`](/api-reference/global-indirect-tax/registrations/content/registration-input-options-POST) | Get tax types and frequencies for jurisdictions |
+| [`POST /registrations/content/portal-fields`](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) | Get portal credential requirements |
+
+## Related
+
+- [Tax Registrations Overview](/api-reference/global-indirect-tax/registrations/registrations) — Full registration workflow and concepts
+- [Create Registration](/api-reference/global-indirect-tax/registrations/registrations-POST) — Create a registration using content IDs

@@ -1,0 +1,225 @@
+---
+title: "List Available Jurisdictions"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions"
+description: "Search for jurisdictions where you can create tax registrations"
+---
+
+Search for tax jurisdictions where registrations are available. Returns jurisdictions that match your filters, with pagination support for large result sets.
+
+## Request Body
+
+<ParamField body="filters" type="object">
+  Filter criteria for jurisdictions.
+  
+  <Expandable title="Filter options">
+    <ParamField body="filters.countries" type="array">
+      Filter by ISO 3166-1 alpha-2 country codes.
+      
+      Example: `["US"]`
+    </ParamField>
+    
+    <ParamField body="filters.states" type="array">
+      Filter by state or province codes.
+      
+      Example: `["CA", "NY", "TX"]`
+    </ParamField>
+    
+    <ParamField body="filters.types" type="array">
+      Filter by jurisdiction type.
+      
+      Values: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `COUNTRY`, `TERRITORY`
+    </ParamField>
+    
+    <ParamField body="filters.tax_types" type="array">
+      Filter by available tax types.
+      
+      Values: `RST`, `RUT`, `DTT`, `SST`
+    </ParamField>
+    
+    <ParamField body="filters.registerable" type="boolean">
+      If `true`, only return jurisdictions that can be registered independently (not covered by another registration).
+    </ParamField>
+    
+    <ParamField body="filters.covering_registration_id" type="string">
+      Filter by jurisdictions covered by a specific registration. Useful for finding local jurisdictions under a state registration.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="search" type="string">
+  Free-text search across jurisdiction names.
+  
+  Example: `"Los Angeles"` or `"California"`
+</ParamField>
+
+<ParamField body="cursor" type="string">
+  Pagination cursor from a previous response. Leave empty for the first page.
+</ParamField>
+
+<ParamField body="limit" type="integer" default="10">
+  Maximum number of results to return (1-100).
+</ParamField>
+
+## Response Fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `jurisdictions` | array | List of matching jurisdictions |
+| `jurisdictions[].jurisdiction_id` | string | Unique identifier for the jurisdiction |
+| `jurisdictions[].jurisdiction_name` | string | Human-readable name |
+| `jurisdictions[].jurisdiction_type` | string | Type of jurisdiction |
+| `jurisdictions[].state_or_province` | string | State/province code if applicable |
+| `jurisdictions[].country` | string | ISO country code |
+| `total` | integer | Total number of matching jurisdictions |
+| `cursor` | string | Cursor for the next page (empty if no more results) |
+
+<RequestExample>
+```bash cURL - All US States
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "countries": ["US"],
+      "types": ["STATE_OR_PROVINCE"]
+    },
+    "limit": 50
+  }'
+```
+
+```bash cURL - Search by Name
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "search": "Los Angeles",
+    "filters": {"countries": ["US"]},
+    "limit": 20
+  }'
+```
+
+```bash cURL - Cities Only
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "countries": ["US"],
+      "states": ["CA"],
+      "types": ["CITY"]
+    },
+    "limit": 50
+  }'
+```
+
+```json All US States
+{
+  "filters": {
+    "countries": ["US"],
+    "types": ["STATE_OR_PROVINCE"]
+  },
+  "limit": 50
+}
+```
+
+```json Specific States
+{
+  "filters": {
+    "countries": ["US"],
+    "states": ["CA", "TX", "NY", "FL"]
+  },
+  "limit": 10
+}
+```
+
+```json Search by Name
+{
+  "search": "Los Angeles",
+  "filters": {
+    "countries": ["US"]
+  },
+  "limit": 20
+}
+```
+
+```json Cities in California
+{
+  "filters": {
+    "countries": ["US"],
+    "states": ["CA"],
+    "types": ["CITY"]
+  },
+  "limit": 50
+}
+```
+
+```json Paginated Request
+{
+  "filters": {
+    "countries": ["US"],
+    "types": ["STATE_OR_PROVINCE"]
+  },
+  "cursor": "SlVSX1VTX1NUQVRFX1dZ",
+  "limit": 10
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "jurisdictions": [
+      {
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "state_or_province": "CA",
+        "country": "US"
+      },
+      {
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_name": "Texas",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "state_or_province": "TX",
+        "country": "US"
+      },
+      {
+        "jurisdiction_id": "JUR_US_STATE_NY",
+        "jurisdiction_name": "New York",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "state_or_province": "NY",
+        "country": "US"
+      }
+    ],
+    "total": 45,
+    "cursor": "SlVSX1VTX1NUQVRFX05Z"
+  }
+}
+```
+
+```json 400 - Invalid Request
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "limit must be between 1 and 100",
+    "status": 400,
+    "instance": "/api/v1/registrations/content/available-jurisdictions"
+  }
+}
+```
+</ResponseExample>
+
+## Next Steps
+
+After finding jurisdictions, use the [Registration Input Options](/api-reference/global-indirect-tax/registrations/content/registration-input-options-POST) endpoint to get the `registration_content_id` and available tax types for each jurisdiction.
+
+## Related
+
+- [Registration Content Overview](/api-reference/global-indirect-tax/registrations/content/content) — Full content API workflow
+- [Tax Registrations](/api-reference/global-indirect-tax/registrations/registrations) — Registration concepts and lifecycle

@@ -1,0 +1,230 @@
+---
+title: "List Registrations"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/list"
+description: "Retrieve all registrations for a corporation with optional filters"
+---
+
+List all registrations for a corporation. Supports filtering by country, state, jurisdiction type, registration type, and validation status.
+
+<Note>
+  This endpoint uses POST (not GET) to support complex filtering via the request body.
+</Note>
+
+## Request Body
+
+<ParamField body="corporation_id" type="string" required>
+  The unique identifier for the corporation whose registrations you want to retrieve.
+</ParamField>
+
+<ParamField body="countries" type="array">
+  Filter by ISO 3166-1 alpha-2 country codes.
+  
+  Example: `["US", "CA"]`
+</ParamField>
+
+<ParamField body="states_or_provinces" type="array">
+  Filter by state or province codes.
+  
+  Example: `["CA", "NY", "TX"]`
+</ParamField>
+
+<ParamField body="jurisdiction_types" type="array">
+  Filter by jurisdiction type.
+  
+  Values: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `COUNTRY`, `TERRITORY`
+</ParamField>
+
+<ParamField body="jurisdiction_name" type="string">
+  Search by jurisdiction name (partial match).
+  
+  Example: `"California"` or `"Los Angeles"`
+</ParamField>
+
+<ParamField body="registration_type" type="string">
+  Filter by how the registration was created.
+  
+  Values:
+  - `EXISTING` — Registration created by the user for an existing tax account
+  - `NEW` — Registration created by Commenda for a new tax account
+</ParamField>
+
+<ParamField body="validation_status" type="string">
+  Filter by validation status.
+  
+  Values: `PENDING`, `VALIDATION_IN_PROGRESS`, `VALID`, `INVALID`
+</ParamField>
+
+<ParamField body="include_archived" type="boolean" default="false">
+  Whether to include archived registrations in the results.
+</ParamField>
+
+<RequestExample>
+```bash cURL - All
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+```bash cURL - By State
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "countries": ["US"],
+    "states_or_provinces": ["CA", "NY", "TX"]
+  }'
+```
+
+```bash cURL - Local Only
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "jurisdiction_types": ["CITY", "COUNTY", "DISTRICT"]
+  }'
+```
+
+```bash cURL - Include Archived
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "include_archived": true
+  }'
+```
+
+```json All
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+```json By State
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "countries": ["US"],
+  "states_or_provinces": ["CA", "NY", "TX"]
+}
+```
+
+```json By Status
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "validation_status": "PENDING"
+}
+```
+
+```json By Jurisdiction Type
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "jurisdiction_types": ["CITY", "COUNTY", "DISTRICT"]
+}
+```
+
+```json By Name
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "jurisdiction_name": "Los Angeles"
+}
+```
+
+```json Include Archived
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "include_archived": true
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Successfully listed registrations.",
+  "data": {
+    "registrations": [
+      {
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "jurisdiction_name": "California",
+        "country": "US",
+        "state_or_province": "CA",
+        "tax_types": ["RST", "DTT"],
+        "frequency": "QUARTERLY",
+        "effective_start_date": "2024-01-15",
+        "tax_registration_id": "123-456789",
+        "portal_id": "PORTAL_CA_CDTFA",
+        "credential_id": "cred_abc123",
+        "registration_status": "REGISTERED",
+        "validation_status": "VALID",
+        "registration_type": "EXISTING",
+        "registered_by": "API",
+        "email_alias": "tax-ca@acme.commenda.io",
+        "created_at": "2024-01-15T10:30:00Z"
+      },
+      {
+        "id": "8d9f7780-8536-51ef-a55c-c2851cbface8",
+        "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "registration_content_id": "CCT_US_STATE_CEN_48_RST",
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "jurisdiction_name": "Texas",
+        "country": "US",
+        "state_or_province": "TX",
+        "tax_types": ["RST"],
+        "frequency": "MONTHLY",
+        "effective_start_date": "2024-02-01",
+        "registration_status": "REGISTERED",
+        "validation_status": "PENDING",
+        "registration_type": "EXISTING",
+        "registered_by": "API",
+        "created_at": "2024-02-01T14:20:00Z"
+      }
+    ]
+  }
+}
+```
+
+```json 400 - Missing Corporation ID
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "corporation_id is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/list"
+  }
+}
+```
+
+```json 404 - Corporation Not Found
+{
+  "error": {
+    "type": "CORPORATION_NOT_FOUND",
+    "title": "Corporation not found.",
+    "detail": "The corporation_id '550e8400-e29b-41d4-a716-446655440000' does not exist or you don't have access.",
+    "status": 404,
+    "instance": "/api/v1/registrations/list"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Get Registration](/api-reference/global-indirect-tax/registrations/registrations-id-GET) — Get details for a specific registration
+- [Create Registration](/api-reference/global-indirect-tax/registrations/registrations-POST) — Create a new registration
+- [Tax Registrations Overview](/api-reference/global-indirect-tax/registrations/registrations) — Registration concepts and lifecycle

@@ -1,0 +1,269 @@
+---
+title: "Update Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/{registration_id}"
+description: "Update an existing registration's details"
+---
+
+Update a registration to add or modify tax types, frequency, credentials, and other configuration. Use this endpoint to complete a registration before [requesting validation](/api-reference/global-indirect-tax/registrations/registrations-id-request-validation-POST).
+
+<Info>
+  To find valid portal IDs for your registration, use the [Portal Fields](/api-reference/global-indirect-tax/registrations/content/portal-fields-POST) endpoint.
+</Info>
+
+<Warning>
+  **Cascade behavior:** When updating `tax_types` or `frequency` on a **state registration**, the changes automatically cascade to all local registrations (cities, counties, districts) under that state.
+</Warning>
+
+## Path Parameters
+
+<ParamField path="registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to update.
+</ParamField>
+
+## Request Body
+
+All fields are optional. Only the fields you provide will be updated; other fields remain unchanged.
+
+<ParamField body="tax_types" type="array">
+  Array of tax types to register for. Must be valid for the registration's jurisdiction.
+  
+  Values: `RST`, `RUT`, `DTT`, `SST`, etc.
+  
+  <Warning>
+    For local jurisdictions (cities, counties), tax types must match the parent state registration.
+  </Warning>
+</ParamField>
+
+<ParamField body="frequency" type="string">
+  Filing frequency for this registration.
+  
+  Values: `MONTHLY`, `QUARTERLY`, `SEMI_ANNUALLY`, `ANNUAL_CALENDAR_YEAR`, `FISCAL_YEAR`, `QUARTERLY_PREPAY_MONTHLY`, `MONTHLY_ACCELERATED_PREPAY_EARLY`
+</ParamField>
+
+<ParamField body="effective_start_date" type="string">
+  ISO date (YYYY-MM-DD) when the registration became or becomes effective.
+</ParamField>
+
+<ParamField body="tax_registration_id" type="string">
+  Your state-issued tax registration ID, permit number, or account number.
+</ParamField>
+
+<ParamField body="credential_id" type="string">
+  Reference to stored portal credentials for automated filing.
+</ParamField>
+
+<ParamField body="portal_id" type="string">
+  The portal ID for the state's tax filing portal. Must be a valid portal for the registration's content.
+</ParamField>
+
+## Common Workflows
+
+### Adding Credentials Before Validation
+
+After creating a registration, add the credentials needed for automated filing:
+
+```json
+{
+  "tax_registration_id": "123-456789-00",
+  "portal_id": "PORTAL_CA_CDTFA",
+  "credential_id": "cred_abc123def456"
+}
+```
+
+### Changing Filing Frequency
+
+Update the frequency before the next filing period:
+
+```json
+{
+  "frequency": "MONTHLY"
+}
+```
+
+### Updating Tax Types
+
+Switch between valid tax type combinations:
+
+```json
+{
+  "tax_types": ["RUT", "DTT"]
+}
+```
+
+## Validation Rules
+
+- **Tax types**: Must be valid for the jurisdiction. You can switch between valid combinations (e.g., RST+DTT to RUT+DTT).
+- **Frequency**: Must be one of the frequencies allowed for the jurisdiction.
+- **Portal ID**: Must be a valid portal for the registration's content.
+- **Date format**: `effective_start_date` must be in YYYY-MM-DD format.
+
+### State vs. Local Update Behavior
+
+| Registration Type | `tax_types` / `frequency` Update | Effect |
+|-------------------|----------------------------------|--------|
+| **State** | Allowed | **Cascades to all local registrations** under this state |
+| **Local** | Allowed only if matches parent state | Updates only the local registration |
+
+<Note>
+  If you need to change tax types or frequency for local registrations, update the parent state registration instead—the change will automatically cascade to all locals.
+</Note>
+
+<RequestExample>
+```bash cURL - Add Credentials
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "tax_registration_id": "123-456789-00",
+    "portal_id": "PORTAL_CA_CDTFA",
+    "credential_id": "cred_abc123def456"
+  }'
+```
+
+```bash cURL - Change Frequency
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"frequency": "MONTHLY"}'
+```
+
+```json Add Credentials
+{
+  "tax_registration_id": "123-456789-00",
+  "portal_id": "PORTAL_CA_CDTFA",
+  "credential_id": "cred_abc123def456"
+}
+```
+
+```json Change Frequency
+{
+  "frequency": "MONTHLY"
+}
+```
+
+```json Update Multiple Fields
+{
+  "tax_types": ["RST", "DTT"],
+  "frequency": "QUARTERLY",
+  "effective_start_date": "2024-02-01",
+  "tax_registration_id": "123-456789-NEW"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Successfully updated registration."
+}
+```
+
+```json 400 - Invalid Tax Type
+{
+  "error": {
+    "type": "REGISTRATION_INVALID_TAX_TYPE",
+    "title": "Invalid tax type for this jurisdiction.",
+    "detail": "Tax type 'XYZ' is not valid for California. Valid options: RST, RUT, DTT.",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Invalid Frequency
+{
+  "error": {
+    "type": "REGISTRATION_INVALID_FREQUENCY",
+    "title": "Invalid frequency for this jurisdiction.",
+    "detail": "Frequency 'WEEKLY' is not valid for California. Valid options: MONTHLY, QUARTERLY, ANNUAL_CALENDAR_YEAR.",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Invalid Portal ID
+{
+  "error": {
+    "type": "REGISTRATION_INVALID_PORTAL_ID",
+    "title": "Invalid portal for this registration.",
+    "detail": "Portal 'INVALID_PORTAL' is not valid for this registration content.",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Tax Type Mismatch with Parent
+{
+  "error": {
+    "type": "TAX_TYPE_MISMATCH_WITH_PARENT",
+    "title": "Tax types must match parent state registration.",
+    "detail": "Local registration tax types [RUT, DTT] do not match parent California state registration tax types [RST, DTT].",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Frequency Mismatch with Parent
+{
+  "error": {
+    "type": "FREQUENCY_MISMATCH_WITH_PARENT",
+    "title": "Frequency must match parent state.",
+    "detail": "Frequency 'MONTHLY' does not match the parent state registration frequency 'QUARTERLY'.",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Tax Type Not in Parent
+{
+  "error": {
+    "type": "TAX_TYPE_MISMATCH_WITH_PARENT",
+    "title": "Tax type not registered at state level.",
+    "detail": "Tax type 'RUT' is not registered at the state level. State tax types: [RST, DTT].",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Missing Required Tax Type from Parent
+{
+  "error": {
+    "type": "TAX_TYPE_MISMATCH_WITH_PARENT",
+    "title": "Missing required tax type from state.",
+    "detail": "Tax type 'DTT' from the state registration must be included.",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Invalid Date Format
+{
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Invalid effective_start_date format.",
+    "detail": "Date must be in ISO format (YYYY-MM-DD).",
+    "status": 400,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 404 - Not Found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+</ResponseExample>
