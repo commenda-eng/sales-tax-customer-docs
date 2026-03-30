@@ -1,0 +1,177 @@
+schemas: 
+  TaxCalculationRequest:
+    type: object
+    required:
+    - corporation_id
+    - transaction_date
+    - transaction_currency
+    - transaction_type
+    - addresses
+    - customer_details
+    - line_items
+    properties:
+      corporation_id:
+        type: string
+        description: The unique identifier for the corporation associated with this transaction.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+      transaction_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating date on which the transaction took place.
+      transaction_currency:
+        "$ref": "./primitives.yaml#/schemas/Currency"
+      transaction_type:
+        type: string
+        enum:
+        - SALE
+        - REFUND
+        description: Type of the transaction (sale or refund).
+      discount:
+        type: number
+        minimum: 0
+        example: 0.99
+        description: Total discount amount applied to the subtotal.
+      addresses:
+        type: object
+        required: 
+          - ship_to
+        properties:
+          ship_to:
+            "$ref": "./primitives.yaml#/schemas/Address"
+          ship_from:
+            "$ref": "./primitives.yaml#/schemas/Address"
+        description: The addresses for this transaction, including shipping origin and destination. If destination address is not set, we will attempt to extract it from the linked customer. If a customer is not linked, or if the linked customer does not have a shipping address, the tax calculation will fail.
+      customer_details:
+        type: object
+        properties:
+          customer_id:
+            type: string
+            description: Unique identifier for the customer for this transaction. Used for exemptions and for shipping address. If fields on the customer conflict with fields on this calculation, the ones on the calculation will be prioritized.
+        description: Customer details for this transaction.
+      line_items:
+        type: object
+        required:
+        - items
+        properties:
+          items:
+            description: >
+             Array of line items representing individual products or services in the transaction. 
+             For each line item either pass the tax_code or the product_id. If the product_id is passed the tax_code will be fetched from the product itself. If no `product_taxaiblity_code` is available, `TPP` will be used as the fallback.
+            type: array
+            items:
+              type: object
+              required:
+              - quantity
+              - amount
+              properties:
+                line_number:
+                  type: integer
+                  minimum: 1
+                  description: Optional line number for this item.
+                product_taxability_code:
+                 "$ref": "./primitives.yaml#/schemas/ProductTaxCode"
+                quantity:
+                  type: number
+                  minimum: 0.01
+                  description: Quantity of units purchased.
+                amount:
+                  type: number
+                  minimum: 0
+                  description: Total price for the line item.
+                discount:
+                  type: number
+                  minimum: 0
+                  description: Discount amount for this line item.
+                product_id:
+                  type: string
+                  description: The unique identifier for the product.
+  TaxCalculationResponse:
+    type: object
+    properties:
+      corporation_id:
+        type: string
+        description: The unique identifier for the corporation associated with this transaction.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+      transaction_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating date on which the transaction took place.
+      transaction_currency:
+        "$ref": "./primitives.yaml#/schemas/Currency"
+      discount:
+        type: number
+        format: float
+        example: 0.99
+        description: Total discount amount applied to the transaction.
+      customer_details:
+        type: object
+        properties:
+          customer_id:
+            type: string
+            description: Unique identifier for the customer for this transaction.
+        description: Customer details for this transaction.
+      tax_currency:
+        "$ref": "./primitives.yaml#/schemas/Currency"
+        description: ISO 4217 alpha-3 currency code representing the currency in which tax details are reported.
+      addresses:
+        type: object
+        properties:
+          ship_from:
+            "$ref": "./primitives.yaml#/schemas/Address"
+          ship_to:
+            "$ref": "./primitives.yaml#/schemas/Address"
+        description: The addresses for this transaction, including shipping origin and destination.
+      line_items:
+        type: array
+        items:
+          type: object
+          properties:
+            amount:
+              type: number
+              format: float
+              description: Total price for the line item.
+            taxable_amount:
+              type: number
+              format: float
+              description: The amount that is considered taxable for this line item.
+            quantity:
+              type: number
+              format: float
+              description: Quantity of units purchased.
+            tax_code:
+              type: string
+              description: The tax code used for this line item.
+            product_id:
+              type: string
+              description: The unique identifier for the product.
+            effective_tax_rate:
+              type: number
+              format: float
+              description: The effective tax rate applied to this line item.
+            tax_breakdown:
+              type: array
+              items:
+                type: object
+                properties:
+                  jurisdiction:
+                    type: string
+                    description: Name of the taxing jurisdiction.
+                    example: California
+                  jurisdiction_type:
+                    type: string
+                    enum:
+                    - STATE
+                    - COUNTY
+                    - CITY
+                    - SPECIAL_DISTRICT
+                    description: Type of tax jurisdiction.
+                  rate:
+                    type: number
+                    format: float
+                    example: 6.25
+                    description: Tax rate for this jurisdiction as a percentage.
+            total_tax_due:
+              type: number
+              format: float
+              example: 1.03
+              description: Total amount of sales tax to charge for line item.

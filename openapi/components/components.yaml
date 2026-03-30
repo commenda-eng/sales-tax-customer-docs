@@ -1,0 +1,602 @@
+---
+components:
+  schemas:
+    BulkTransactionMetadata:
+      type: object
+      properties:
+        upload_id:
+          type: string
+          description: The unique identifier for the bulk transaction upload.
+          example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+        file_name:
+          type: string
+          description: The name of the file uploaded.
+          example: example.csv
+        transaction_count:
+          type: integer
+          description: The number of transactions in the file.
+          example: 100
+        size:
+          type: integer
+          description: The size of the file in bytes.
+          example: 1024
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation.
+          example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+        created_at:
+          type: number
+          description: Timestamp in UTC when this bulk transaction upload was created.
+          example: 1727284490
+    GetWebhookResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for this webhook. You will need this if
+            you need to update or delete this webhook.
+          example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+        api_version:
+          type: string
+          description: The version of the API for which you registered the webhook.
+            This will be 'v1.0' for now. This helps to maintain backward compatibility.
+            If in newer versions the event payload is changed, your webhook will keep
+            receiving the payload from the original api version.
+          example: v1.0
+        name:
+          type: string
+          description: Optional name to define the purpose of the webhook.
+          example: handle_existing_registrations_validation_failure
+        topics:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTRATIONS.EXISTING.VALIDATION_FAILED
+            - REGISTRATIONS.EXISTING.VALIDATION_SUCCEEDED
+          description: An array of topics to listen to. When any of these topics are
+            triggered, the webhook will be pinged.
+        url:
+          type: string
+          description: Your webhook url that will be hit once a topic is triggered.
+            Only https:// urls will work.
+          example: https://bruno-simon.com/
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+          description: If the webhook is active or not. If a webhook id disabled it
+            won't be called when a topic is triggered.
+        created_at:
+          type: number
+          description: Timestamp in UTC when this webhook was created.
+          example: 1727284490
+    UpdateWebhookRequest:
+      type: object
+      properties:
+        api_version:
+          type: string
+          description: The version of the API for which you registered the webhook.
+            This helps to maintain backward compatibility. If in newer versions the
+            event payload is changed, your webhook will keep receiving the payload from
+            this api version. This will be 'v1.0' for now and we will come up with more
+            versions and a changelog later.
+        name:
+          type: string
+          description: Optional name to define the purpose of the webhook.
+        topics:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTRATIONS.EXISTING.VALIDATION_FAILED
+            - REGISTRATIONS.EXISTING.VALIDATION_SUCCEEDED
+          description: An array of topics to listen to. When any of these topics are
+            triggered, the webhook will be pinged.
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+          description: If the webhook is active or not. If a webhook is disabled it
+            won't be called when a topic is triggered.
+    CreateWebhookRequest:
+      type: object
+      required:
+      - api_version
+      - url
+      - key
+      - status
+      - topics
+      properties:
+        api_version:
+          type: string
+          description: The version of the API for which you registered the webhook.
+            This helps to maintain backward compatibility. If in newer versions the
+            event payload is changed, your webhook will keep receiving the payload from
+            this api version. This will be 'v1.0' for now and we will come up with more
+            versions and a changelog later.
+        name:
+          type: string
+          description: Optional name to define the purpose of the webhook.
+        topics:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTRATIONS.EXISTING.VALIDATION_FAILED
+            - REGISTRATIONS.EXISTING.VALIDATION_SUCCEEDED
+          description: An array of topics to listen to. When any of these topics are
+            triggered, the webhook will be pinged.
+        url:
+          type: string
+          description: Your webhook url that will be hit once an event happens. Only
+            HTTPS urls are allowed.
+        key:
+          type: string
+          description: Secure string provided by the user. It will be used during HMCA
+            process to keep the event payloads secure. Make sure to keep it safe as
+            you will need it during validating event payloads. This key won't be returned
+            back by any other endpoint.
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+          description: If the webhook is active or not. If a webhook is disabled it
+            won't be called when a topic is triggered.
+    CreateWebhookResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for this webhook. You will need this if
+            you need to update or delete this webhook.
+          example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+        api_version:
+          type: string
+          description: The version of the API for which you registered the webhook.
+            This will be 'v1.0' for now. This helps to maintain backward compatibility.
+            If in newer versions the event payload is changed, your webhook will keep
+            receiving the payload from the original api version.
+          example: v1.0
+        name:
+          type: string
+          description: Optional name to define the purpose of the webhook.
+          example: handle_existing_registrations_validation_failure
+        topics:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTRATIONS.EXISTING.VALIDATION_FAILED
+            - REGISTRATIONS.EXISTING.VALIDATION_SUCCEEDED
+          description: An array of topics to listen to. When any of these topics are
+            triggered, the webhook will be pinged.
+        url:
+          type: string
+          description: Your webhook url that will be hit once a topic is triggered.
+            Only https:// urls will work.
+          example: https://bruno-simon.com/
+        key:
+          type: string
+          description: Use for signing the event payloads. All the event payloads will
+            be signed using this key. Make sure to keep it safe as you will need it
+            during validating event payloads.
+          example: couabowugowubfvow2efgofqpifhdiubvafobafou2ee
+        status:
+          type: string
+          enum:
+          - ENABLED
+          - DISABLED
+          description: If the webhook is active or not. If a webhook id disabled it
+            won't be called when a topic is triggered.
+        created_at:
+          type: number
+          description: Timestamp in UTC when this webhook was created.
+          example: 1727284490
+    CreateRefundRequest:
+      "$ref": "./tax-transactions.yaml#/schemas/CreateRefundRequest"
+    Product:
+      "$ref": "./products.yaml#/schemas/Product"
+    CreateProduct:
+        $ref: "./products.yaml#/schemas/CreateProduct"
+    UpdateProduct:
+      $ref: "./products.yaml#/schemas/UpdateProduct"
+    TaxCalculationRequest: 
+      "$ref": "./tax-calculations.yaml#/schemas/TaxCalculationRequest"
+    TaxCalculationResponse: 
+      "$ref": "./tax-calculations.yaml#/schemas/TaxCalculationResponse"
+    AffiliatePublicError:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePublicError"
+    AffiliateCreateCompanyRequest:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateCreateCompanyRequest"
+    AffiliateCreateCompanyResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateCreateCompanyResponse"
+    AffiliateServiceCatalog:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceCatalog"
+    AffiliateCreateServiceRequest:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateCreateServiceRequest"
+    AffiliateCreateServiceResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateCreateServiceResponse"
+    AffiliatePaymentIntentStatus:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePaymentIntentStatus"
+    AffiliatePaymentIntent:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePaymentIntent"
+    AffiliateListPaymentIntentsResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateListPaymentIntentsResponse"
+    AffiliateServiceRequestStep:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceRequestStep"
+    AffiliateServiceRequest:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceRequest"
+    AffiliatePaymentIntentServiceStatusResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePaymentIntentServiceStatusResponse"
+    AffiliateDocumentCategory:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateDocumentCategory"
+    AffiliateDocument:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateDocument"
+    AffiliateListDocumentsResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateListDocumentsResponse"
+    AffiliateFileSignedUrlResponse:
+      $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateFileSignedUrlResponse"
+    CommendaOsPublicError:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsPublicError"
+    CommendaOsBusinessEntityResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntityResponse"
+    CommendaOsBusinessEntityListResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntityListResponse"
+    CommendaOsLocationResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsLocationResponse"
+    CommendaOsLocationsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsLocationsResponse"
+    CommendaOsBusinessEntityPersonsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntityPersonsResponse"
+    CommendaOsPersonsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsPersonsResponse"
+    CommendaOsGovernmentIdentifierResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifierResponse"
+    CommendaOsGovernmentIdentifiersResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifiersResponse"
+    CommendaOsDocumentsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsDocumentsResponse"
+    CommendaOsSupportedDocumentsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsSupportedDocumentsResponse"
+    CommendaOsRegistrationResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsRegistrationResponse"
+    CommendaOsRegistrationsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsRegistrationsResponse"
+    CommendaOsSupportedRegistrationsResponse:
+      $ref: "./commenda-os.yaml#/schemas/CommendaOsSupportedRegistrationsResponse"
+    CustomsDutyCalculationRequest:
+      type: object
+      required:
+      - corporation_id
+      - invoice_currency
+      - subtotal
+      - origin_country
+      - destination_country
+      - line_items
+      properties:
+        corporation_id:
+          type: string
+          description: The unique identifier for the corporation to calculate an import
+            duty rate for.
+          example: b6d009b0-d174-463f-b030-94643c28e209
+        invoice_currency:
+          "$ref": "#/components/schemas/Currency"
+        subtotal:
+          type: number
+          example: 10.99
+          description: Total amount before tax, shipping, handling, and discounts.
+        discount:
+          type: number
+          example: 0.99
+          description: Total discount amount applied to the subtotal.
+        shipping_and_handling:
+          type: number
+          example: 0
+          description: Total shipping and handling charges.
+        origin_country:
+          "$ref": "#/components/schemas/Country"
+        destination_country:
+          "$ref": "#/components/schemas/Country"
+        line_items:
+          type: object
+          required:
+          - amount
+          - quantity
+          properties:
+            items:
+              description: Array of line items representing individual products in the
+                shipment. For each line item, pass exactly one of `customs_code` or
+                the `product_id`. If the `product_id` is passed, the `customs_code`
+                will be fetched from the product itself.
+              type: array
+              items:
+                type: object
+                properties:
+                  amount:
+                    type: number
+                    description: Total price for the line item, including any discounts
+                      and shipping and handling costs.
+                  quantity:
+                    type: number
+                    description: Quantity of units purchased.
+                  # customs_code:
+                  #   "$ref": "#/components/schemas/customs_code"
+                  product_id:
+                    type: string
+                    description: The unique identifier for the product getting sold
+                      in this line item.
+    CreateTaxTransactionRequest:
+      "$ref": "./tax-transactions.yaml#/schemas/CreateTaxTransactionRequest"
+    TaxTransactionResponse:
+      "$ref": "./tax-transactions.yaml#/schemas/TaxTransactionResponse"
+    filing_frequency:
+      type: string
+      enum:
+      - MONTHLY
+      - QUARTERLY
+      - ANNUALLY
+      - SEMI_ANNUALLY
+      description: Filing frequency refers to how often a business is required to submit
+        its sales tax returns, which is typically determined by the state based on the
+        business's sales volume and tax liability.
+    Tax_filing_status:
+      type: string
+      enum:
+      - PENDING
+      - FILED
+      description: Current status of the filing.
+    FilingsForGetAll:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the filing.
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation associated with this
+            filing.
+        country:
+          "$ref": "#/components/schemas/Country"
+        country_specific_details:
+          "$ref": "./registrations.yaml#/schemas/CountrySpecificDetails"
+        frequency:
+          "$ref": "#/components/schemas/filing_frequency"
+        period_start_date:
+          type: string
+          format: date
+          description: ISO 8601 date string, identifying the start date of the period
+            period for which the sales tax is being filed (e.g., '2024-09-01' for September
+            2024). For a quarter 1 filing where the fiscal year starts in March, the
+            period_start_date will be 2024-03-01 and frequency will be QUARTERLY.
+        due_date:
+          type: string
+          format: date
+          description: ISO 8601 date string, identifying the date when by which the
+            filing must be submitted.
+        filing_status:
+          "$ref": "#/components/schemas/Tax_filing_status"
+        filed_on:
+          type: string
+          format: date
+          description: Date when the taxes were filed with the state, in ISO 8601 format.
+        registration_id:
+          type: string
+          description: The unique identifier for the tax registration associated with
+            this filing.
+        total_tax_filed:
+          type: number
+          description: Total amount of sales tax filed with various jurisdictions for
+            this period. May differ slightly from the total tax collected.
+          example: 135.92
+        payment_details:
+          type: object
+          properties:
+            amount_due:
+              type: number
+              description: Total amount due for this filing.
+            payment_status:
+              type: string
+              enum:
+              - PENDING
+              - COMPLETED
+              - FAILED
+              description: Status of the payment.
+            failure_details:
+              type: object
+              description: This object will be populated if the payment fails for any
+                reason.
+              properties:
+                failed_at:
+                  type: string
+                  format: date
+                  description: ISO 8601 date string, identifying the date when the payment
+                    failed.
+                reason:
+                  type: string
+                  description: Specific information why the payment failed.
+    FilingsGet:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for the filing.
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation associated with this
+            filing.
+        country:
+          "$ref": "#/components/schemas/Country"
+        country_specific_details:
+          "$ref": "./registrations.yaml#/schemas/CountrySpecificDetails"
+        frequency:
+          "$ref": "#/components/schemas/filing_frequency"
+        period_start_date:
+          type: string
+          format: date
+          description: ISO 8601 date string, identifying the start date of the period
+            period for which the sales tax is being filed (e.g., '2024-09-01' for September
+            2024). For a quarter 1 filing where the fiscal year starts in March, the
+            period_start_date will be 2024-03-01 and frequency will be QUARTERLY.
+        due_date:
+          type: string
+          format: date
+          description: ISO 8601 date string, identifying the date when by which the
+            filing must be submitted.
+        filing_status:
+          "$ref": "#/components/schemas/Tax_filing_status"
+        filed_on:
+          type: string
+          format: date
+          description: Date when the taxes were filed with the state, in ISO 8601 format.
+        registration_id:
+          type: string
+          description: The unique identifier for the tax registration associated with
+            this filing.
+        total_tax_filed:
+          type: number
+          description: Total amount of sales tax filed with various jurisdictions for
+            this period. May differ slightly from the total tax collected.
+          example: 135.92
+        sales_details:
+          type: object
+          properties:
+            total_sales:
+              type: number
+              description: Total sales amount for the filing period.
+              example: 12345.91
+            taxable_sales:
+              type: number
+              description: Total sales amount that was subject to sales tax for the
+                filing period.
+              example: 12345.91
+            sales_tax_collected:
+              type: number
+              description: Total sales tax collected during the period.
+              example: 771.62
+        payment_details:
+          type: object
+          properties:
+            amount_due:
+              type: number
+              description: Total amount due for this filing.
+              example: 771.62
+            payment_status:
+              type: string
+              enum:
+              - PENDING
+              - COMPLETED
+              - FAILED
+              description: Status of the payment.
+            failure_details:
+              type: object
+              description: This object will be populated if the payment fails for any
+                reason.
+              properties:
+                failed_at:
+                  type: string
+                  description: ISO 8601 date string, identifying the date when the payment
+                    failed.
+                reason:
+                  type: string
+                  description: Specific information why the payment failed.
+    RegistrationGet:
+      $ref: "./registrations.yaml#/schemas/RegistrationGet"
+    Country:
+      type: string
+      example: US
+      description: 'ISO 3166 2-letter country code. Ex: US, IN, GB.'
+    Currency:
+      type: string
+      example: USD
+      description: ISO 4217 alpha-3 currency code for the transaction.
+    State:
+      type: string
+      example: CA
+      description: '2-letter code for each state. Suffix of the ISO 3166-2 code. Ex:
+        CA, NY, TX.'
+    RegistrationPost:
+      $ref: "./registrations.yaml#/schemas/RegistrationPost"
+    RegistrationIdPost:
+      $ref: "./registrations.yaml#/schemas/RegistrationIdPost"
+    NexusResponse:
+      $ref: "./nexus.yaml#/schemas/NexusResponse"
+    CreateExemptionCertificateRequest:
+      $ref: "./exemption-certificates.yaml#/schemas/CreateExemptionCertificateRequest"
+    ExemptionCertificateResponse:
+      $ref: "./exemption-certificates.yaml#/schemas/ExemptionCertificateResponse"
+    FileInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the file
+        name:
+          type: string
+          example: example.pdf
+          description: File name.
+        size:
+          type: number
+          description: File size (bytes)
+          example: 102400
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation associated with this
+            file.
+    Error:
+      type: object
+      required:
+      - error
+      properties:
+        error:
+          type: object
+          properties:
+            type:
+              type: string
+              description: 'Specific Error type. Example: CLIENT_INVALID_REQUEST_BODY.'
+              example: CLIENT_INVALID_REQUEST_BODY
+            doc_url:
+              type: string
+              description: 'A link to the docs with details about this error. Example:
+                https://sales-tax-docs.commenda.io/'
+              example: https://sales-tax-docs.commenda.io/
+            title:
+              type: string
+              description: 'A short title describing the error. Example: Missing query
+                parameters.'
+              example: Failed to validate the request body
+            detail:
+              type: string
+              description: A json string with a description on how to fix the error.
+                Example {"description":"Please pass in a valid corporation_id"}
+            status:
+              type: number
+              description: 'The status code. It should be the same as the HTTP protocol
+                status code. Example: 200'
+              example: 400
+            instance:
+              type: string
+              description: 'The relative path that was hit by the user. Example: /api/v1/corporations/1'
+            Errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  details:
+                    type: string
+                    description: More details on how to solve this particular error.
+                  pointer:
+                    type: string
+                    description: Relative reference to missing or invalid piece of passed
+                      information.
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+    xApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key

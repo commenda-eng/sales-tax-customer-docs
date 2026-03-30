@@ -1,0 +1,328 @@
+---
+title: "Topics and Events"
+description: ""
+---
+
+## Topics
+
+A topic represents a category of notifications that your webhook can subscribe to. It groups related events under a single, descriptive label. Topics allow you to organize and filter the types of updates you want to receive.
+
+## Events
+
+An event is a notification that a specific action or change has occurred within Commenda’s system. Each event belongs to a topic and carries detailed information about the triggering action or change.
+
+All events share certain fields including the time they occur and the id of the affected organization. Events also have a field `data` which will be different for each topic.
+
+```json
+{
+  "id": "b252d757-a286-4508-b538-41ad676e8305",
+  "topic": "REGISTRATIONS.EXISTING.VALIDATION_SUCCEEDED",
+  "triggered_at": 1727284490,
+  "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+  "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+  "data": {
+    // topic specific fields go here.
+  },
+  "api_version": "v1.0"
+}
+```
+
+## Topic Categories
+
+Commenda provides webhook notifications for events related to the following objects. This list is not exhaustive and more topic categories will be added soon.
+
+1. Existing Registrations
+2. New Registrations
+3. Nexus
+4. Exemption Certificates
+5. Customs Duty
+
+## Existing Registrations
+
+1. #### `REGISTRATIONS.EXISTING.VALIDATION.SUCCEEDED`
+
+   In order to allow Commenda to do automated sales tax and use tax filings for a
+   corporation's existing registration, the registration needs to be validated by
+   Commenda. To initiate the validation process the user can call the `POST /registrations/request-validation`
+   endpoint. Validating a registration happens asynchronously and once the validation
+   is successful this webhook is triggered.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "REGISTRATIONS.EXISTING.VALIDATION.SUCCEEDED",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "registration_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b"
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+2. #### `REGISTRATIONS.EXISTING.VALIDATION.FAILED`
+
+   In some cases, a registration under validation will fail to pass our internal criteria. A non exhaustive list of failure cases is included below. More cases will be added over time.
+
+   - `INPUTS.INVALID_CREDENTIALS`
+
+     **Trigger:** To successfully file monthly sales tax for the customer, we need their tax portal credentials. If the entered credentials are wrong this error will be triggered.
+
+     **Resolution:** The user needs to re-enter their credentials by hitting the `POST registrations/:id`. Once all the details are confirmed, you can call the `POST /registrations/request-validation` API endpoint again to request revalidation.
+
+   - `INPUTS.INVALID_STATE_REGISTRATION_ID`
+
+     **Trigger:** If the entered state registration ID is invalid, this error will be triggered.
+
+     **Resolution:** The user needs to re-enter the invalid details by hitting the `POST registrations/:id`. Once all the details are confirmed, you can call the `POST /registrations/request-validation` API endpoint again to request revalidation.
+
+   - `PAYMENTS.PORTAL_HAS_EXISTING_PENDING_PAYMENTS`
+
+     **Trigger:** Every customer who is registered for sales tax needs to file and pay taxes to the state government. If during validation we find out that the customer has existing pending payments this error will be thrown.
+
+     **Resolution:** The customer will need to make the payment for their pending filings. Once all the dues are cleared, you can call the `POST /registrations/request-validation` API endpoint again to request revalidation.
+
+   - `OTHER`
+
+     **Trigger:** Something unexpected went wrong. A human readable message on how to resolve the error and what went wrong will be attached.
+
+     **Resolution:** The `data` interface of the event payload will contain a possible resolution for the error.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "REGISTRATIONS.EXISTING.VALIDATION.FAILED",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "registration_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b",
+       "errors" : [
+          {
+            "type": "PORTAL.INVALID_CREDENTIALS",
+            "doc_url": <link_to_documentation>,
+            "title": "Invalid credentials entered for California's sales tax portal.",
+            "detail": "The client provided invalid login credentials for their California's sales tax portal (https://onlineservices.cdtfa.ca.gov/).".
+            "resolution": "The user needs to re-enter their credentials by hitting the `POST registrations/:id`.Once all the details are confirmed, you can call the `POST /registrations/request-validation` API again and the validation process will start over."
+        }
+       ]
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+## New Registrations
+
+1. #### `REGISTRATIONS.NEW.SUCCEEDED`
+   This webhook triggers when a new registration is successfully created.
+
+````json
+    {
+      "id": "b252d757-a286-4508-b538-41ad676e8305",
+      "topic": "REGISTRATIONS.NEW.SUCCEEDED",
+      "triggered_at": 1727284490,
+      "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+      "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+      "data": {
+        "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+        "registration_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b"
+      },
+      "api_version": "v1.0"
+    }
+    ```
+
+2. #### `REGISTRATIONS.NEW.INVALID`
+  In the case of a missing value or a misconfigured field, Commenda will return an invalid state on the registration. In complex cases, we will also reach out to the customer directly to resolve registration difficulties as fast as possible.
+```json
+{
+  "id": "b252d757-a286-4508-b538-41ad676e8305",
+  "topic": "REGISTRATIONS.NEW.INVALID",
+  "triggered_at": 1727284490,
+  "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+  "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+  "data": {
+    "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+    "registration_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b",
+    "errors" : [
+       {
+         "type": "PORTAL.INVALID_CREDENTIALS",
+         "doc_url": <link_to_documentation>,
+         "title": "Invalid credentials entered for California's sales tax portal.",
+         "detail": "The client provided invalid login credentials for their California's sales tax portal (https://onlineservices.cdtfa.ca.gov/).".
+         "resolution": "The user needs to re-enter their credentials by hitting the `POST registrations/:id`.Once all the details are confirmed, you can call the `POST /registrations/request-validation` API again and the validation process will start over."
+     }
+    ]
+  },
+  "api_version": "v1.0"
+}
+````
+
+## Nexus
+
+1. #### `NEXUS.THRESHOLD.STATE.ALERT`
+
+   Commenda internally tracks each corporation's progress towards economic nexus. If nexus is about to be breached in a state where the customer is not registered, the customer will need to register in that state. Registrations generally take some time and it's better to register once you have reached around 80% of the nexus threshold.
+
+   This webhook is triggered everyday from the day when 80% threshold is crossed in a non registered state.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "NEXUS.THRESHOLD.STATE.ALERT",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "country": "US",
+       "state": "AK",
+       "nexus_rule": {
+         "sales_threshold": 100000,
+         "transaction_threshold": 200,
+         "threshold_type": "SALES_OR_TRANSACTIONS",
+         "evaluation_period_type": "PREVIOUS_CALENDAR_YEAR"
+       },
+       "calculation": {
+         "sales_exposure_percentage": 0.8,
+         "transaction_exposure_percentage": 0.06,
+         "total_sales": 80000,
+         "total_transactions": 12
+       },
+       "is_nexus_breached": false,
+       "date_of_breach": null
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+## Exemptions Certificates
+
+1. #### `EXEMPTION_CERTIFICATES.VERIFICATION.SUCCEEDED`
+
+   Once a customer uploads an exemption certificate Commenda begins the process of validating it. Once the validation is complete, Commenda begins treating related transactions as tax exempt. This webhook is triggered once the validation process succeeds.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "EXEMPTION_CERTIFICATES.VERIFICATION.SUCCEEDED",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "exemption_certificate_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b"
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+2. #### `EXEMPTION_CERTIFICATES.VERIFICATION.FAILED`
+
+   In some cases, a exemption certificate under validation will fail to pass our internal criteria. A non exhaustive list of failure cases is included below. More cases will be added over time.
+
+   - `INPUTS.NAME_MISMATCH`
+
+     **Trigger:** If the name of the customer doesn't matches the name mentioned on the exemption certificate.
+
+     **Resolution:** Either update the name of the customer or upload the right exemption certificate.
+
+   - `CERTIFICATE.CERTIFICATE_HAS_EXPIRED`
+
+     **Trigger:** The expiration date mentioned on the exemption certificate has already passed and the certificate is no longer valid.
+
+     **Resolution:** The customer will need to upload the latest version of the exemption certificate for the purchaser.
+
+   - `CERTIFICATE.INVALID_TYPE_OR_FORMAT`
+
+     **Trigger:** If the type of the certificate is invalid for this customer this webhook will be triggered.
+
+     **Resolution:** The customer will need to upload the latest version of the exemption certificate for the purchaser.
+
+   - `PURCHASER.MISSING_ADDRESS`
+
+     **Trigger:** Some states like Texas requires the address of the purchaser to be present on the exemption certificate. This webhook will be triggered if the address is missing.
+
+     **Resolution:** Upload a newer version of exemption certificate that contains the purchaser's address.
+
+   - `OTHER`
+
+     **Trigger:** This is to cover edge cases. A human readable message on how to resolve the error and what went wrong will be attached.
+
+     **Resolution:** The `data` interface of the event payload will contain a possible resolution for the error.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "EXEMPTION_CERTIFICATES.VERIFICATION.FAILED",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "registration_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b",
+       "error" : {
+          "type": "PURCHASER.NAME_MISMATCH",
+          "doc_url": <link_to_documentation>,
+          "title": "Purchaser's name doesn't match on the Customer's model and Exemption certificate.",
+          "detail": "The name of the customer doesn't match the name on the exemption certificate.".
+          "resolution": "Either update the name of the customer or upload the right exemption certificate."
+       }
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+   3. #### `EXEMPTION_CERTIFICATES.EXPIRATION`
+      We send out a notification two weeks before an exemption certificate is expiring, to give a customer notice that they'll need to upload a new one.
+      **Trigger:** The expiration date mentioned on the exemption certificate is passing and the certificate will no longer be valid.
+
+   **Resolution:** The customer will need to upload the latest version of the exemption certificate for the purchaser.
+
+   ```json
+   {
+     "id": "b252d757-a286-4508-b538-41ad676e8305",
+     "topic": "EXEMPTION_CERTIFICATES.EXPIRATION",
+     "triggered_at": 1727284490,
+     "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+     "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+     "data": {
+       "corporation_id": "a093d086-19e8-48c8-82d6-aba51f82eafc",
+       "certificate_id": "e3d97512-5415-4b3c-bcc9-f2d6ebf00d1b",
+       "expiration_date": "2025-02-27"
+     },
+     "api_version": "v1.0"
+   }
+   ```
+
+## Customs Duty
+
+1. #### `CUSTOMS_DUTY.CUSTOMS_CODE.UPDATE`
+
+When products are shipped internationally, importing countries may charge customs duties on the shipment. The duty can be based on the price of the shipment, or on some other property like its weight or volume.
+
+When the required properties change, Commenda will notify users who have webhooks registered in order to inform them that they need to collect additional information about those products in order to calculate customs duty.
+
+```json
+{
+  "id": "b252d757-a286-4508-b538-41ad676e8305",
+  "topic": "EXEMPTION_CERTIFICATES.VERIFICATION.SUCCEEDED",
+  "triggered_at": 1727284490,
+  "webhook_id": "2535af08-a139-4d0c-9827-1651e46dfbcf",
+  "organization_id": "c2710df6-c6cf-4cd0-aa38-63faa44f16bc",
+  "data": {
+    "customs_code": "1701.99.50.17",
+    "destination_country": "US",
+    "rules": [
+      {
+        "description": "Other",
+        "general_rate_of_duty": "35.74¢/kg",
+        "units": ["COUNT", "KG"]
+      }
+    ]
+  },
+  "api_version": "v1.0"
+}
+```

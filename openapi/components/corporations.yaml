@@ -1,0 +1,255 @@
+schemas:
+  Corporation:
+    type: object
+    description: A corporation registered with Commenda.
+    required:
+      - id
+      - legal_name
+    properties:
+      id:
+        type: string
+        description: The unique identifier for a corporation.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+      legal_name:
+        type: string
+        description: The legal name of the corporation.
+        example: Acme Corporation
+
+  CreateCorporation:
+    type: object
+    description: Request body for creating a new corporation.
+    required:
+      - legal_name
+    properties:
+      legal_name:
+        type: string
+        description: The legal name of the corporation.
+        example: Acme Corporation
+
+  ConnectCorporation:
+    type: object
+    description: Request body for connecting an existing corporation.
+    required:
+      - legal_name
+      - organization_api_key
+    properties:
+      legal_name:
+        type: string
+        description: The legal name of the corporation.
+        example: Acme Corporation
+      organization_api_key:
+        type: string
+        description: API key for the organization.
+        example: org_key_123456
+
+  UpdateCorporation:
+    type: object
+    description: Request body for updating a corporation.
+    properties:
+      legal_name:
+        type: string
+        description: The legal name of the corporation.
+        example: Acme Corporation
+
+  SetEmailsForEmailAlias:
+    type: object
+    description: Request body for setting email aliases.
+    required:
+      - emails
+    properties:
+      emails:
+        type: array
+        items:
+          type: string
+          format: email
+        description: List of email addresses to be used as aliases.
+        example: ["contact@acme.com", "support@acme.com"]
+
+  UpdateJurisdictionConfiguration:
+    type: object
+    description: Request body for updating jurisdiction configuration.
+    required:
+      - configuration
+    properties:
+      configuration:
+        type: object
+        description: Jurisdiction configuration details.
+        # Note: You might want to define the actual structure of JurisdictionConfiguration here
+
+  UpdateGlobalConfiguration:
+    type: object
+    description: Request body for updating global configuration.
+    required:
+      - country
+      - configuration
+    properties:
+      country:
+        "$ref": "./primitives.yaml#/schemas/Country"
+      configuration:
+        type: object
+        description: Global configuration details.
+        # Note: You might want to define the actual structure of GlobalConfiguration here
+
+  /corporations:
+    post:
+      summary: Add a new corporation.
+      description: Create a new corporation for a sales tax partner.
+      operationId: createCorporation
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/CreateCorporation'
+      responses:
+        '200':
+          description: Sales tax registration response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/schemas/Corporation'
+                  message:
+                    type: string
+                    example: Successfully created corporation.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    get:
+      summary: Get all corporations.
+      description: Get all corporations associated with a sales tax partner.
+      operationId: getCorporations
+      parameters:
+        - name: cursor
+          in: query
+          description: Cursor for pagination
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Number of items to return per page
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 10
+      responses:
+        '200':
+          description: Get all corporations response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: object
+                    required:
+                      - corporations
+                    properties:
+                      corporations:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Corporation'
+                      cursor:
+                        type: string
+                  message:
+                    type: string
+                    example: Successfully fetched corporations.
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /corporations/{id}:
+    get:
+      summary: Get corporation.
+      description: Get a corporation by id.
+      operationId: getCorporation
+      parameters:
+        - in: path
+          required: true
+          name: id
+          schema:
+            type: string
+          description: The unique identifier of the corporation to fetch.
+      responses:
+        '200':
+          description: Get one corporation response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/Corporation'
+                  message:
+                    type: string
+                    example: Successfully fetched corporation.
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      summary: Update a corporation.
+      description: Update details for a corporation.
+      operationId: updateCorporation
+      parameters:
+        - in: path
+          required: true
+          name: id
+          schema:
+            type: string
+          description: The unique identifier of the corporation to update.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/schemas/UpdateCorporation'
+      responses:
+        '200':
+          description: Update one corporation response.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: Successfully updated corporation.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete corporation.
+      description: Delete a corporation by id.
+      operationId: deleteCorporation
+      parameters:
+        - in: path
+          required: true
+          name: id
+          schema:
+            type: string
+          description: The unique identifier of the corporation to delete.
+      responses:
+        '204':
+          description: Delete one corporation response.
+        '404':
+          description: Not Found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

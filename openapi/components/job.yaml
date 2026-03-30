@@ -1,0 +1,23 @@
+schemas:
+  Job: 
+    type: object
+    properties:
+      id:
+        type: string
+        description: Unique identifier for the import job
+      status:
+        type: string
+        enum:
+          - PENDING
+          - IN_PROGRESS
+          - COMPLETED
+          - FAILED
+        description: Current status of the import job
+      created_at:
+        type: string
+        format: date-time
+        description: Timestamp when the job was created
+      updated_at:
+        type: string
+        format: date-time
+        description: Timestamp when the job was last updated

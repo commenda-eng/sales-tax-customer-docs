@@ -1,0 +1,1 @@
+The files in this directory should get bundled into an openapi.yaml file in the root directory before deployment to Mintlify. 

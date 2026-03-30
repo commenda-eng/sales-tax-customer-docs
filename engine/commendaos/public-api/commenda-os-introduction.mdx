@@ -1,0 +1,35 @@
+---
+title: "Commenda OS API"
+description: "Commenda's core data model for corporations, people, documents, and registrations."
+---
+
+Base URL:
+
+```text
+https://api.prod.commenda.io/api/v1/public
+```
+
+## Authentication
+
+Pass your affiliate API key in the `x-api-key` header on every request.
+
+```bash
+curl --request GET \
+  --url 'https://api.prod.commenda.io/api/v1/public/business-entities' \
+  --header 'x-api-key: <affiliate_api_key>'
+```
+
+## Response conventions
+
+- List endpoints return `{ <resourcePlural>, count }`.
+- Detail endpoints return `{ <resourceSingular> }`.
+- Business-entity-scoped endpoints return `403` when the authenticated affiliate cannot access the requested entity.
+
+## Available resources
+
+- [Business entities](/engine/commendaos/public-api/commenda-os-business-entities-GET)
+- [Locations](/engine/commendaos/public-api/commenda-os-business-entities-id-locations-GET)
+- [Persons](/engine/commendaos/public-api/commenda-os-persons-GET)
+- [Government identifiers](/engine/commendaos/public-api/commenda-os-business-entities-id-government-identifiers-GET)
+- [Documents](/engine/commendaos/public-api/commenda-os-business-entities-id-documents-GET)
+- [Registrations](/engine/commendaos/public-api/commenda-os-business-entities-id-registrations-GET)

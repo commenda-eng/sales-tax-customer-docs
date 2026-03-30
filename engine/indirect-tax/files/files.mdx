@@ -1,0 +1,14 @@
+---
+title: "Files"
+description: "Upload files to Commenda's servers."
+---
+
+## Overview
+
+A file object represents a file hosted on Commenda's servers. Currently, files are primarily used to manage exemption certificates, but other use cases are possible as well.
+
+### Linking an exemption certificate: 
+
+1. Create a file using the `POST /files` endpoint.
+2. Save the returned file id. 
+3. Link the file to a customer as their exemption certificate by using the `POST /customers/{id}` endpoint.

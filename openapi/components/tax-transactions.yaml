@@ -1,0 +1,357 @@
+schemas: 
+  transaction_type:
+    type: string
+    enum:
+    - SALE
+    - RETURN
+    - REFUND
+    description: |-
+      Type of transaction:
+      - SALE: Standard sales transaction (new sales, corrections, re-invoicing)
+      - RETURN: Return/refund transaction (full or partial returns of previous sales)
+      - REFUND: Legacy refund type (use RETURN instead for backward compatibility)
+  transaction_status:
+    type: string
+    enum:
+    - LOCKED
+    - UNCOMMITTED
+    - IGNORED
+    description: Status of the transaction. More details [here](/api-reference/global-indirect-tax/transaction/transaction#filing-status).
+  CreateTaxTransactionRequest:
+    type: object
+    required:
+    - corporation_id
+    - transacted_at
+    - invoice_currency
+    - transaction_type
+    - customer_details
+    - line_items
+    properties:
+      corporation_id:
+        type: string
+        description: The unique identifier for the corporation associated with this transaction.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+      transacted_at:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating date on which the transaction took place.
+      tax_date_override:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the date on which the tax liability should be recognized for filings and for nexus tracking, if different from the `transacted_at` date.
+      calculation_date_override:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the date to use for tax rate lookups, useful for ensuring returns use the same rates as the original sale.
+      reporting_date_override:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating when this transaction should appear in reports, if different from transacted_at.
+      invoice_currency:
+        "$ref": "./primitives.yaml#/schemas/Currency"
+      invoice_number:
+        type: string
+        description: Invoice or receipt number for this transaction.
+      subtotal:
+        type: number
+        format: float
+        minimum: 0
+        description: Total amount before tax, shipping, handling, and discounts.
+      discount:
+        type: number
+        format: float
+        minimum: 0
+        example: 0.99
+        description: Total discount amount applied to the transaction.
+      shipping_and_handling:
+        type: number
+        format: float
+        minimum: 0
+        description: Total shipping and handling charges.
+      total:
+        type: number
+        format: float
+        minimum: 0
+        description: This is the total amount charged to the customer, which includes the subtotal, shipping and handling fees, tax, and reflects any applied discounts.
+      tax_collected:
+        type: number
+        format: float
+        minimum: 0
+        description: Numeric value representing the amount of sales tax paid by the customer for this transaction.
+      transaction_type:
+        "$ref": "#/schemas/transaction_type"
+        description: |-
+          Type of the transaction. Can be `SALE` for standard sales or `RETURN` for returns/refunds.
+          For `RETURN` transactions, additional fields like `parent_invoice_id` and `refund_type` are required.
+      calculation_id:
+        type: string
+        description: Optional ID of a previous calculation used for this transaction.
+      parent_invoice_id:
+        type: string
+        description: |-
+          Required for RETURN transactions. The ID of the original sale transaction being returned.
+          This links the return to the original sale for proper tax accounting.
+      refund_type:
+        type: string
+        enum:
+        - FULL
+        - PARTIAL
+        description: |-
+          Required for RETURN transactions. Specifies whether this is a full or partial return.
+          - FULL: The entire transaction amount is refunded
+          - PARTIAL: Only specific items or amounts are refunded
+      customer_details:
+        type: object
+        required:
+        - customer_id
+        properties:
+          shipping_address:
+            "$ref": "./primitives.yaml#/schemas/Address"
+          customer_id:
+            type: string
+            description: Unique identifier for the customer for this transaction.
+          customer_external_id:
+            type: string
+            description: External identifier for the customer.
+      line_items:
+        type: object
+        required:
+        - items
+        properties:
+          items:
+            type: array
+            items:
+              type: object
+              required:
+              - amount
+              - quantity
+              properties:
+                amount:
+                  type: number
+                  format: float
+                  description: |-
+                    Total price for the line item. 
+                    For SALE transactions: Typically positive, but can be negative for corrections within an invoice.
+                    For RETURN transactions: Must be negative (can be achieved through negative quantity or negative price).
+                line_number:
+                  type: string
+                  description: |-
+                    Identifier for this line item. For RETURN transactions with line-level returns, 
+                    this should match the line_number from the original invoice.
+                quantity:
+                  type: integer
+                  description: |-
+                    Quantity of units purchased/returned. 
+                    For RETURN transactions: Can be negative if used with positive price_per_unit to achieve a negative amount.
+                price_per_unit:
+                  type: number
+                  format: float
+                  description: |-
+                    Price per unit of the product. 
+                    For RETURN transactions: Can be negative if used with positive quantity to achieve a negative amount.
+                discount_amount:
+                  type: number
+                  format: float
+                  minimum: 0
+                  description: Discount amount applied to this line item.
+                tax_collected:
+                  type: number
+                  format: float
+                  description: Amount of tax collected for this line item.
+                tax_code:
+                  type: string
+                  description: The product taxability code for this line item.
+                product_id:
+                  type: string
+                  description: Unique id in Commenda's system for the product being sold. Must match the `id` of a product in Commenda. No more than one of `product_id` and `product_sku` should be set.
+                product_sku:
+                  type: string
+                  description: The SKU (Stock Keeping Unit) for the product. Must match the `sku` of a product in Commenda. No more than one of `product_id` and `product_sku` should be set.
+                exemption_type:
+                  "$ref": "./primitives.yaml#/schemas/ExemptionType"
+                  description: If this field is present, this line item will be considered exempt.
+                exemption_reason:
+                  type: string
+                  description: Reason for tax exemption, if applicable.
+                exemption_certificate_id:
+                  type: string
+                  description: ID of exemption certificate, if applicable.
+      tax_included:
+        type: boolean
+        description: Whether tax is included in the line item prices.
+      exemption_type:
+        "$ref": "./primitives.yaml#/schemas/ExemptionType"
+        description: If this field is present, this transaction will be considered exempt.
+  TaxTransactionResponse:
+    type: object
+    properties:
+      id:
+        type: string
+        description: The unique identifier for a transaction.
+        example: 9753a999-6d64-4a4f-ad9b-345890d32722
+      corporation_id:
+        type: string
+        description: The unique identifier for the corporation associated with this transaction.
+        example: 74df772f-9260-42cf-9c20-3b613b60fecd
+      transacted_at:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the date on which the transaction took place.
+        example: "2025-11-30"
+      created_at:
+        type: integer
+        format: int64
+        description: Unix timestamp in microseconds indicating when the transaction was created.
+        example: 1765177896736899
+      reporting_date_override:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating when this transaction should appear in reports, if different from transacted_at.
+        example: "2025-11-30"
+      invoice_currency:
+        "$ref": "./primitives.yaml#/schemas/Currency"
+      subtotal:
+        type: number
+        format: float
+        description: Total amount before tax, shipping, handling, and discounts.
+        example: 46.15
+      discount:
+        type: number
+        format: float
+        description: Total discount amount applied to the transaction.
+        example: 0
+      shipping_and_handling:
+        type: number
+        format: float
+        description: Total shipping and handling charges.
+        example: 0
+      total:
+        type: number
+        format: float
+        description: The total amount charged to the customer, which includes the subtotal, shipping and handling fees, tax, and reflects any applied discounts.
+        example: 48.09
+      tax_collected:
+        type: number
+        format: float
+        description: Numeric value representing the amount of sales tax paid by the customer for this transaction.
+        example: 1.94
+      invoice_status:
+        type: string
+        enum:
+          - LOCKED
+          - UNCOMMITTED
+          - IGNORED
+        description: Status of the invoice/transaction.
+        example: LOCKED
+      invoice_type:
+        type: string
+        enum:
+          - SALE
+          - RETURN
+          - REFUND
+        description: Type of the invoice/transaction.
+        example: SALE
+      invoice_number:
+        type: string
+        description: Invoice or receipt number for this transaction.
+        example: c85100ab-7c61-4aa6-b207-c4dae0d40d13
+      creation_method:
+        type: string
+        description: Method used to create this transaction.
+        example: TRANSACTIONS_API_BULK
+      metadata:
+        type: object
+        nullable: true
+        description: Additional metadata associated with the transaction.
+      customer_details:
+        type: object
+        properties:
+          shipping_address:
+            "$ref": "./primitives.yaml#/schemas/Address"
+          customer_id:
+            type: string
+            description: Unique identifier for the customer for this transaction.
+      line_items:
+        type: object
+        properties:
+          items:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+                  description: Unique identifier for the line item.
+                  example: aec197ca-a1fa-4669-8496-f52c82da5d3c
+                amount:
+                  type: number
+                  format: float
+                  description: Total price for the line item.
+                  example: 46.15
+                quantity:
+                  type: integer
+                  description: Quantity of units purchased.
+                  example: 1
+                shipping:
+                  type: number
+                  format: float
+                  description: Shipping cost for this line item.
+                  example: 0
+                handling:
+                  type: number
+                  format: float
+                  description: Handling cost for this line item.
+                  example: 0
+                discount:
+                  type: number
+                  format: float
+                  description: Discount amount applied to this line item.
+                  example: 0
+                price_per_unit:
+                  type: number
+                  format: float
+                  description: Price per unit of the product.
+                  example: 46.15
+                tax_collected:
+                  type: number
+                  format: float
+                  description: Amount of tax collected for this line item.
+                  example: 1.94
+                tax_code:
+                  type: string
+                  description: The product taxability code for this line item.
+                product_id:
+                  type: string
+                  description: Unique id in Commenda's system for the product being sold.
+                exemption_certificate_id:
+                  type: string
+                  description: ID of the exemption certificate applied to this line item.
+                  example: 00000000-0000-0000-0000-000000000000
+  CreateRefundRequest:
+    type: object
+    required:
+    - refund_type
+    properties:
+      refund_type:
+        type: string
+        enum:
+        - FULL
+        - PARTIAL
+        description: Whether to refund an entire transaction or only specific line items.
+      line_items:
+        type: array
+        description: The line items to refund. Required if `refund_type` is `PARTIAL`.
+        items:
+          type: object
+          required:
+          - line_id
+          properties:
+            line_id:
+              type: string
+              description: Unique identifier for the line item to refund.
+            quantity:
+              type: number
+              description: Quantity to refund. Required for partial refunds.
+            price_per_unit:
+              type: number
+              description: Price per unit for the refund. Optional, defaults to the original price.

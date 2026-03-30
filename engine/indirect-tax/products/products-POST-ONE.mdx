@@ -1,0 +1,27 @@
+---
+title: "Update product"
+openapi: "POST /products/{id}"
+---
+
+<RequestExample>
+```json Request
+{
+  "name": "Updated Premium Widget",
+  "tax_code": "P0000000",
+  "description": "An updated premium quality widget",
+  "weight_in_kg": 2.5,
+  "volume_in_liters": 1.2,
+  "customs_jurisdiction_details": {
+    "US": "8471.30.0100"
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 Response
+{
+  "message": "Successfully updated product."
+}
+```
+</ResponseExample>

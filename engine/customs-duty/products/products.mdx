@@ -1,0 +1,15 @@
+---
+title: "Products for customs duty"
+description: "Manage customs information information belonging to products."
+---
+
+## Products
+
+Products are created and managed via our ordinary [/products](/engine/indirect-tax/products/products) endpoint collection, but additional information is required when calculating customs duties for products. This information is managed by the endpoints in this collection.
+
+Sellers should configure customs codes for each product in each jurisdiction that they sell to. Those codes will be used to determine the customs rate to apply to the transaction.
+
+## Mapping Customs Codes to Products
+
+- You can assign the customs code to each product by updating them via the `POST /products/:id/customs-code` endpoint. You can remove a customs code for a country with the `DELETE /products/:id/customs-code` endpoint.
+- When calculating tax using the `/calculate-customs-duty` endpoint, you can pass the `product_id` of each line item. The system will fetch the associated customs codes from the product itself.

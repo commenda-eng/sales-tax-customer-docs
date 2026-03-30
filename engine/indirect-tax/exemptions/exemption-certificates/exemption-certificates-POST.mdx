@@ -1,0 +1,162 @@
+---
+title: "Create exemption certificate"
+openapi: "POST /exemption-certificates"
+description: "Create an exemption certificate for a customer with one or more jurisdiction exemptions"
+---
+
+## Request body
+
+<ParamField body="customer_id" type="string" required>
+  The unique identifier of the customer this exemption certificate belongs to.
+</ParamField>
+
+<ParamField body="file_id" type="string">
+  The unique identifier of the file associated with this exemption certificate (e.g., scanned certificate document).
+</ParamField>
+
+<ParamField body="effective_date" type="string" required>
+  The date when the exemption certificate becomes effective. Format: ISO 8601 date (YYYY-MM-DD).
+</ParamField>
+
+<ParamField body="type" type="string" required>
+  The type of exemption certificate. Valid values:
+  - `SINGLE_STATE`: Certificate valid for a single state (maximum 1 jurisdiction)
+  - `MULTI_STATE`: Certificate valid for multiple states
+  - `BLANKET`: Blanket exemption certificate
+</ParamField>
+
+<ParamField body="exemption_certificate_number" type="string">
+  The certificate number assigned by the issuing authority. Maximum 20 characters.
+</ParamField>
+
+<ParamField body="jurisdictions" type="array" required>
+  Array of jurisdiction exemptions. Must contain at least one jurisdiction.
+  
+  <Expandable title="Jurisdiction object properties">
+    <ParamField body="identification_type" type="string" required>
+      Type of identification. Valid values:
+      - `FEIN`: Federal Employer Identification Number
+      - `STATE_ISSUED_EXEMPTION_ID`: State-issued exemption ID
+      - `DRIVERS_LICENSE`: Driver's license
+      - `FOREIGN_DIPLOMAT_ID`: Foreign diplomat ID
+    </ParamField>
+    
+    <ParamField body="identification_number" type="string" required>
+      The identification number corresponding to the identification type.
+    </ParamField>
+    
+    <ParamField body="country" type="string" required>
+      ISO 3166-1 alpha-2 country code (e.g., "US"). Currently only US is supported.
+    </ParamField>
+    
+    <ParamField body="state" type="string" required>
+      ISO 3166-2 subdivision code (e.g., "CA", "NY", "TX").
+    </ParamField>
+    
+    <ParamField body="reason" type="string" required>
+      Reason for the exemption. Valid values:
+      - `PURPOSE_RESALE`: Resale exemption
+      - `PURPOSE_MANUFACTURING`: Manufacturing exemption
+      - `PURPOSE_AGRICULTURE`: Agricultural exemption
+      - `ENTITY_GOVERNMENT`: Government entity
+      - `ENTITY_NONPROFIT`: Non-profit organization
+      - `ENTITY_EDUCATION`: Educational institution
+      - `ENTITY_RELIGIOUS`: Religious organization
+    </ParamField>
+    
+    <ParamField body="end_date" type="string">
+      Optional expiration date for the exemption. Format: ISO 8601 date (YYYY-MM-DD).
+    </ParamField>
+    
+    <ParamField body="is_active" type="boolean">
+      Whether the exemption is currently active. Defaults to true if not specified.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="object">
+  <Expandable title="ExemptionCertificate object">
+    <ResponseField name="id" type="string">
+      Unique identifier for the exemption certificate.
+    </ResponseField>
+    
+    <ResponseField name="customer_id" type="string">
+      The customer ID this certificate belongs to.
+    </ResponseField>
+    
+    <ResponseField name="file_id" type="string">
+      The file ID associated with this certificate, if any.
+    </ResponseField>
+    
+    <ResponseField name="type" type="string">
+      The type of exemption certificate (SINGLE_STATE, MULTI_STATE, or BLANKET).
+    </ResponseField>
+    
+    <ResponseField name="verification_status" type="string">
+      Current verification status of the certificate:
+      - `VERIFICATION_PENDING`: Awaiting verification
+      - `VERIFICATION_SUCCESS`: Successfully verified
+      - `VERIFICATION_FAILED`: Verification failed
+    </ResponseField>
+    
+    <ResponseField name="exemption_certificate_number" type="string">
+      The certificate number, if provided.
+    </ResponseField>
+    
+    <ResponseField name="effective_date" type="string">
+      The effective date of the certificate (ISO 8601 date).
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="integer">
+      Unix timestamp when the certificate was created.
+    </ResponseField>
+    
+    <ResponseField name="jurisdictions" type="array">
+      Array of jurisdiction exemptions associated with this certificate.
+      
+      <Expandable title="Jurisdiction object">
+        <ResponseField name="country" type="string">
+          ISO 3166-1 alpha-2 country code.
+        </ResponseField>
+        
+        <ResponseField name="state" type="string">
+          ISO 3166-2 subdivision code.
+        </ResponseField>
+        
+        <ResponseField name="reason" type="string">
+          Reason for the exemption.
+        </ResponseField>
+        
+        <ResponseField name="is_active" type="boolean">
+          Whether the exemption is currently active.
+        </ResponseField>
+        
+        <ResponseField name="end_date" type="string">
+          Expiration date, if applicable.
+        </ResponseField>
+        
+        <ResponseField name="identification_type" type="string">
+          Type of identification used.
+        </ResponseField>
+        
+        <ResponseField name="identification_number" type="string">
+          The identification number.
+        </ResponseField>
+        
+        <ResponseField name="is_expired" type="boolean">
+          Whether the exemption has expired.
+        </ResponseField>
+        
+        <ResponseField name="created_at" type="integer">
+          Unix timestamp when the jurisdiction exemption was created.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Success message.
+</ResponseField>

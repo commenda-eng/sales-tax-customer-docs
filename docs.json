@@ -1,14 +1,24 @@
 {
   "$schema": "https://mintlify.com/docs.json",
-  "theme": "linden",
+  "theme": "mint",
   "name": "Commenda Platform Documentation",
   "colors": {
     "primary": "#026EB9",
-    "light": "#F8F6F1",
-    "dark": "#F8F6F1"
+    "light": "#026EB9",
+    "dark": "#026EB9"
   },
   "favicon": "/favicon-32x32.png",
+  "openapi": ["openapi.yaml"],
   "navigation": {
+    "global": {
+      "anchors": [
+        {
+          "anchor": "Unified Finance Integrations",
+          "icon": "circle-nodes",
+          "href": "https://integrations.docs.commenda.io/documentation/general/introduction"
+        }
+      ]
+    },
     "tabs": [
       {
         "tab": "Introduction",
@@ -30,112 +40,17 @@
         "tab": "Engine",
         "groups": [
           {
-            "group": "CommendaOS",
+            "group": "Entities",
             "pages": [
-              "engine/commendaos/overview",
-              {
-                "group": "APIs",
-                "pages": [
-                  "engine/commendaos/business-entity",
-                  "engine/commendaos/government-identifiers",
-                  "engine/commendaos/registrations",
-                  "engine/commendaos/locations",
-                  "engine/commendaos/credentials",
-                  "engine/commendaos/documents"
-                ]
-              }
+              "product/entities/bank-accounts"
             ]
           },
           {
-            "group": "Indirect Tax",
+            "group": "Tools",
             "pages": [
-              "engine/indirect-tax/overview"
+              "product/tools/esign"
             ]
           },
-          {
-            "group": "Workflow Builder",
-            "pages": [
-              "engine/workflow-builder/overview",
-              "engine/workflow-builder/quickstart",
-              {
-                "group": "Concepts",
-                "pages": [
-                  "engine/workflow-builder/concepts/core-concepts",
-                  "engine/workflow-builder/concepts/step-types",
-                  "engine/workflow-builder/concepts/json-schemas"
-                ]
-              },
-              {
-                "group": "Guides",
-                "pages": [
-                  "engine/workflow-builder/guides/creating-workflows",
-                  "engine/workflow-builder/guides/local-development"
-                ]
-              },
-              {
-                "group": "Reference",
-                "pages": [
-                  "engine/workflow-builder/reference/dsl-types",
-                  "engine/workflow-builder/reference/definition-types",
-                  "engine/workflow-builder/reference/runtime-types",
-                  "engine/workflow-builder/reference/data-models",
-                  "engine/workflow-builder/reference/validation-rules",
-                  "engine/workflow-builder/reference/service-request-integration"
-                ]
-              }
-            ]
-          },
-          {
-            "group": "Form Builder",
-            "pages": [
-              "engine/form-builder/overview"
-            ]
-          },
-          {
-            "group": "Address API",
-            "pages": [
-              "engine/address-api/introduction",
-              {
-                "group": "API reference",
-                "pages": [
-                  "engine/address-api/api-reference/authorization",
-                  "engine/address-api/api-reference/geoencode",
-                  "engine/address-api/api-reference/ingestion"
-                ]
-              },
-              {
-                "group": "Development",
-                "pages": [
-                  "engine/address-api/development/local-setup",
-                  "engine/address-api/development/environment-configuration",
-                  "engine/address-api/development/testing",
-                  "engine/address-api/development/contributing"
-                ]
-              },
-              {
-                "group": "Operations",
-                "pages": [
-                  "engine/address-api/operations/deployment",
-                  "engine/address-api/operations/database-connection",
-                  "engine/address-api/operations/debugging",
-                  "engine/address-api/operations/common-failures"
-                ]
-              },
-              {
-                "group": "Infrastructure",
-                "pages": [
-                  "engine/address-api/infrastructure/overview",
-                  "engine/address-api/infrastructure/base-infrastructure"
-                ]
-              },
-              "engine/address-api/future-features"
-            ]
-          }
-        ]
-      },
-      {
-        "tab": "Product",
-        "groups": [
           {
             "group": "Indirect Tax",
             "pages": [
@@ -232,45 +147,385 @@
         ]
       },
       {
-        "tab": "Rootfi",
-        "groups": []
+        "tab": "API Documentation",
+        "icon": "code",
+        "menu": [
+          {
+            "item": "Global Indirect Tax",
+            "groups": [
+              {
+                "group": "Get Started",
+                "pages": [
+                  "engine/indirect-tax/introduction",
+                  "engine/indirect-tax/taxcode",
+                  {
+                    "group": "Core Concepts",
+                    "pages": [
+                      "engine/indirect-tax/core-concepts/transactions",
+                      "engine/indirect-tax/core-concepts/nexus",
+                      "engine/indirect-tax/core-concepts/exemptions"
+                    ]
+                  },
+                  {
+                    "group": "Common Use Cases",
+                    "pages": [
+                      "engine/indirect-tax/use-cases/us-sales-tax-calculation"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Corporations",
+            "pages": [
+              "engine/indirect-tax/corporation/corporation",
+              "engine/indirect-tax/corporation/corporation-POST",
+              "engine/indirect-tax/corporation/corporation-GET-ALL",
+              "engine/indirect-tax/corporation/corporation-GET-ONE",
+              "engine/indirect-tax/corporation/corporation-UPDATE",
+              "engine/indirect-tax/corporation/corporation-DELETE",
+              "engine/indirect-tax/corporation/corporation-GET-EMAIL-ALIAS",
+              "engine/indirect-tax/corporation/corporation-POST-EMAIL-ALIAS"
+            ]
+          },
+          {
+            "item": "Registrations",
+            "pages": [
+              "engine/indirect-tax/registrations/registrations",
+              "engine/indirect-tax/registrations/registrations-POST",
+              "engine/indirect-tax/registrations/registrations-GET",
+              "engine/indirect-tax/registrations/registrations-id-GET",
+              "engine/indirect-tax/registrations/registrations-id-POST",
+              "engine/indirect-tax/registrations/registrations-id-DELETE",
+              "engine/indirect-tax/registrations/registrations-id-request-validation-POST",
+              "engine/indirect-tax/registrations/registrations-id-archive-POST",
+              "engine/indirect-tax/registrations/registrations-id-close-POST",
+              {
+                "group": "Registration Content",
+                "pages": [
+                  "engine/indirect-tax/registrations/content/content",
+                  "engine/indirect-tax/registrations/content/available-jurisdictions-POST",
+                  "engine/indirect-tax/registrations/content/registration-input-options-POST",
+                  "engine/indirect-tax/registrations/content/portal-fields-POST"
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Tax Calculations",
+            "pages": [
+              "engine/indirect-tax/calculate/calculate",
+              "engine/indirect-tax/calculate/calculate-POST"
+            ]
+          },
+          {
+            "item": "Transactions",
+            "pages": [
+              "engine/indirect-tax/transaction/transaction",
+              "engine/indirect-tax/transaction/transaction-POST",
+              "engine/indirect-tax/transaction/transaction-GET-ONE",
+              "engine/indirect-tax/transaction/transaction-GET",
+              "engine/indirect-tax/transaction/transaction-DELETE",
+              {
+                "group": "Bulk Transactions Import",
+                "pages": [
+                  "engine/indirect-tax/transaction/bulk-transactions",
+                  "engine/indirect-tax/transaction/bulk-transactions-POST"
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Global Nexus",
+            "pages": [
+              "engine/indirect-tax/nexus/nexus-GET"
+            ]
+          },
+          {
+            "item": "Products",
+            "pages": [
+              "engine/indirect-tax/products/products",
+              "engine/indirect-tax/products/products-POST",
+              "engine/indirect-tax/products/products-POST-ONE",
+              "engine/indirect-tax/products/products-GET",
+              "engine/indirect-tax/products/products-DELETE",
+              {
+                "group": "Bulk Products Import",
+                "pages": [
+                  "engine/indirect-tax/products/bulk-products",
+                  "engine/indirect-tax/products/bulk-products-POST"
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Customers",
+            "pages": [
+              "engine/indirect-tax/customers/customer",
+              "engine/indirect-tax/customers/customers-POST",
+              "engine/indirect-tax/customers/customers-GET",
+              "engine/indirect-tax/customers/customers-id-GET",
+              "engine/indirect-tax/customers/customers-id-POST",
+              "engine/indirect-tax/customers/customers-id-DELETE"
+            ]
+          },
+          {
+            "item": "Exemption Certificates",
+            "pages": [
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates",
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-POST",
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-GET-ONE",
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-GET",
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-UPDATE",
+              "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-DELETE",
+              "engine/indirect-tax/exemptions/exemption-certificates/jurisdictions-POST",
+              "engine/indirect-tax/exemptions/exemption-certificates/jurisdictions-UPDATE",
+              "engine/indirect-tax/exemptions/exemption-certificates/jurisdictions-DELETE",
+              "engine/indirect-tax/exemptions/exemption-certificates/jurisdictions-BULK-UPSERT",
+              "engine/indirect-tax/exemptions/exemption-certificates/jurisdictions-BULK-DELETE"
+            ]
+          },
+          {
+            "item": "Exemptions",
+            "pages": [
+              "engine/indirect-tax/exemptions/exemptions-GET"
+            ]
+          },
+          {
+            "item": "Files",
+            "pages": [
+              "engine/indirect-tax/files/files",
+              "engine/indirect-tax/files/files-POST",
+              "engine/indirect-tax/files/files-GET",
+              "engine/indirect-tax/files/files-id-GET",
+              "engine/indirect-tax/files/files-id-DELETE"
+            ]
+          },
+          {
+            "item": "Filings",
+            "pages": [
+              "engine/indirect-tax/filings/filings-GET-ONE"
+            ]
+          },
+          {
+            "item": "Webhooks",
+            "pages": [
+              "engine/indirect-tax/webhooks/webhooks",
+              "engine/indirect-tax/webhooks/event",
+              "engine/indirect-tax/webhooks/webhooks-POST",
+              "engine/indirect-tax/webhooks/webhooks-GET",
+              "engine/indirect-tax/webhooks/webhooks-LIST",
+              "engine/indirect-tax/webhooks/webhooks-UPDATE",
+              "engine/indirect-tax/webhooks/webhooks-DELETE",
+              "engine/indirect-tax/webhooks/webhooks-TEST"
+            ]
+          },
+          {
+            "item": "CommendaOS",
+            "pages": [
+              "engine/commendaos/overview",
+              {
+                "group": "APIs",
+                "pages": [
+                  "engine/commendaos/business-entity",
+                  "engine/commendaos/bank-accounts",
+                  "engine/commendaos/government-identifiers",
+                  "engine/commendaos/registrations",
+                  "engine/commendaos/locations",
+                  "engine/commendaos/credentials",
+                  "engine/commendaos/documents",
+                  "engine/commenda-os/apis/settings"
+                ]
+              },
+              {
+                "group": "Public API",
+                "pages": [
+                  "engine/commendaos/public-api/commenda-os-introduction",
+                  {
+                    "group": "Business Entities",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-GET"
+                    ]
+                  },
+                  {
+                    "group": "Locations",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-locations-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-locations-location-id-GET"
+                    ]
+                  },
+                  {
+                    "group": "Persons",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-persons-GET",
+                      "engine/commendaos/public-api/commenda-os-persons-GET"
+                    ]
+                  },
+                  {
+                    "group": "Government Identifiers",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-government-identifiers-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-government-identifiers-government-identifier-id-GET"
+                    ]
+                  },
+                  {
+                    "group": "Documents",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-documents-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-documents-supported-GET"
+                    ]
+                  },
+                  {
+                    "group": "Registrations",
+                    "pages": [
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-registrations-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-registrations-registration-id-GET",
+                      "engine/commendaos/public-api/commenda-os-business-entities-id-registrations-supported-GET",
+                      "engine/commendaos/public-api/commenda-os-registrations-supported-GET"
+                    ]
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Incorporation",
+            "pages": [
+              "engine/incorporation/introduction",
+              {
+                "group": "Companies",
+                "pages": [
+                  "engine/incorporation/company-POST"
+                ]
+              },
+              {
+                "group": "Services",
+                "pages": [
+                  "engine/incorporation/services-POST"
+                ]
+              },
+              {
+                "group": "Payment Intents",
+                "pages": [
+                  "engine/incorporation/payment-intents-GET",
+                  "engine/incorporation/payment-intents-id-GET",
+                  "engine/incorporation/payment-intents-id-service-status-GET"
+                ]
+              },
+              {
+                "group": "Documents",
+                "pages": [
+                  "engine/incorporation/documents-GET",
+                  "engine/incorporation/file-id-GET"
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Customs Duty",
+            "pages": [
+              "engine/customs-duty/products/products",
+              "engine/customs-duty/products/products-customs-code-POST",
+              "engine/customs-duty/products/products-customs-code-DELETE"
+            ]
+          },
+          {
+            "item": "Workflow Builder",
+            "pages": [
+              "engine/workflow-builder/overview",
+              "engine/workflow-builder/quickstart",
+              {
+                "group": "Concepts",
+                "pages": [
+                  "engine/workflow-builder/concepts/core-concepts",
+                  "engine/workflow-builder/concepts/step-types",
+                  "engine/workflow-builder/concepts/json-schemas"
+                ]
+              },
+              {
+                "group": "Guides",
+                "pages": [
+                  "engine/workflow-builder/guides/creating-workflows",
+                  "engine/workflow-builder/guides/local-development"
+                ]
+              },
+              {
+                "group": "Reference",
+                "pages": [
+                  "engine/workflow-builder/reference/dsl-types",
+                  "engine/workflow-builder/reference/definition-types",
+                  "engine/workflow-builder/reference/runtime-types",
+                  "engine/workflow-builder/reference/data-models",
+                  "engine/workflow-builder/reference/validation-rules",
+                  "engine/workflow-builder/reference/service-request-integration"
+                ]
+              }
+            ]
+          },
+          {
+            "item": "Form Builder",
+            "pages": [
+              "engine/form-builder/overview"
+            ]
+          },
+          {
+            "item": "Address API",
+            "pages": [
+              "engine/address-api/introduction",
+              {
+                "group": "API reference",
+                "pages": [
+                  "engine/address-api/api-reference/authorization",
+                  "engine/address-api/api-reference/geoencode",
+                  "engine/address-api/api-reference/ingestion"
+                ]
+              },
+              {
+                "group": "Development",
+                "pages": [
+                  "engine/address-api/development/local-setup",
+                  "engine/address-api/development/environment-configuration",
+                  "engine/address-api/development/testing",
+                  "engine/address-api/development/contributing"
+                ]
+              },
+              {
+                "group": "Operations",
+                "pages": [
+                  "engine/address-api/operations/deployment",
+                  "engine/address-api/operations/database-connection",
+                  "engine/address-api/operations/debugging",
+                  "engine/address-api/operations/common-failures"
+                ]
+              },
+              {
+                "group": "Infrastructure",
+                "pages": [
+                  "engine/address-api/infrastructure/overview",
+                  "engine/address-api/infrastructure/base-infrastructure"
+                ]
+              },
+              "engine/address-api/future-features"
+            ]
+          }
+        ]
       }
-    ],
-    "global": {
-      "anchors": [
-        {
-          "anchor": "Commenda Public Docs",
-          "href": "https://sales-tax-docs.commenda.io/introduction",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Rootfi Public Docs",
-          "href": "https://rootfi-commenda.mintlify.app/documentation/general/introduction",
-          "icon": "book-open-cover"
-        },
-        {
-          "anchor": "Status",
-          "href": "https://commenda.betteruptime.com/",
-          "icon": "triangle-exclamation"
-        },
-        {
-          "anchor": "Baserow",
-          "href": "https://baserow.io/login",
-          "icon": "table"
-        }
-      ]
-    }
+    ]
   },
   "logo": {
     "light": "/logo/FullLogoLockupBlack.svg",
-    "dark": "/logo/FullLogoLockupWhite.svg"
+    "dark": "/logo/FullLogoLockupWhite.svg",
+    "href": "https://www.commenda.io/"
   },
   "navbar": {
     "primary": {
       "type": "button",
       "label": "Report a bug",
       "href": "https://linear.app/commenda/team/ONC/new?template=a04ed671-96f2-4df0-882c-62e7ccf8a27c"
-    }
+    },
+    "links": []
   },
   "contextual": {
     "options": [
@@ -286,7 +541,16 @@
   },
   "footer": {
     "socials": {
-      "github": "https://github.com/commenda-eng"
+      "github": "https://github.com/commenda-eng",
+      "x": "https://x.com/commendahq",
+      "linkedin": "https://www.linkedin.com/company/commenda/"
     }
+  },
+  "seo": {
+    "indexHiddenPages": false
+  },
+  "appearance": {
+    "strict": true,
+    "default": "light"
   }
 }

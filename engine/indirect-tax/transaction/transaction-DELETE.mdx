@@ -1,0 +1,8 @@
+---
+title: "Delete transaction"
+openapi: "DELETE /transactions/{id}"
+---
+
+This endpoint allows you to delete a transaction by its id.
+
+Once a filing for a state has taken place, the transaction's status will change to `LOCKED`. At that point, the transaction can no longer be deleted. Instead, you can create a refund transaction (coming soon) to notify our team that a refund has occurred, allowing us to adjust the sales tax paid in future filings.

@@ -1,0 +1,331 @@
+schemas:
+  CreateExemptionCertificateRequest:
+    type: object
+    required:
+      - customer_id
+      - effective_date
+      - type
+      - jurisdictions
+    properties:
+      customer_id:
+        type: string
+        description: The unique identifier of the customer.
+      file_id:
+        type: string
+        description: Identifier of the file to use as the exemption certificate.
+      effective_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the effective date.
+      type:
+        $ref: "#/schemas/ExemptionCertificateType"
+      exemption_certificate_number:
+        type: string
+        maxLength: 20
+        description: The exemption certificate number.
+      jurisdictions:
+        type: array
+        items:
+          $ref: "#/schemas/CreateExemptionRequest"
+
+  CreateExemptionRequest:
+    type: object
+    required:
+      - identification_type
+      - identification_number
+      - country
+      - state
+      - reason
+    properties:
+      identification_type:
+        $ref: "#/schemas/ExemptionIdentificationType"
+      identification_number:
+        type: string
+        description: Identification number for the exemption.
+      country:
+        type: string
+        description: ISO 3166-1 alpha-2 country code.
+      state:
+        type: string
+        description: ISO 3166-2 subdivision code.
+      reason:
+        $ref: "#/schemas/ExemptionReason"
+      end_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the expiration date of this particular exemption. For multistate exemption certificates, the expiration date can be different in different states..
+      is_active:
+        $ref: "#/schemas/IsExemptionActive"
+
+  UpdateExemptionCertificateStatusRequest:
+    type: object
+    required:
+      - verification_status
+      - reason
+    properties:
+      verification_status:
+        type: string
+        description: Verification status of the exemption certificate.
+      reason:
+        type: string
+        description: Reason for the status update.
+      type:
+        $ref: "#/schemas/ExemptionCertificateType"
+      title:
+        type: string
+        description: Title of the error.
+      detail:
+        type: string
+        description: Detailed description of the error.
+      resolution:
+        type: string
+        description: Resolution for the error.
+
+  UpdateExemptionCertificateRequest:
+    type: object
+    properties:
+      effective_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the effective date.
+      exemption_certificate_number:
+        type: string
+        maxLength: 20
+        description: The exemption certificate number.
+      file_id:
+        type: string
+        description: Identifier of the file to use as the exemption certificate.
+      type:
+        $ref: "#/schemas/ExemptionCertificateType"
+
+  UpdateExemptionRequest:
+    type: object
+    properties:
+      end_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the expiration date of this particular exemption. For multistate exemption certificates, the expiration date can be different in different states..
+      is_active:
+        $ref: "#/schemas/IsExemptionActive"
+      reason:
+        type: string
+        description: Reason for the exemption.
+      identification_number:
+        type: string
+        description: Identification number for the exemption.
+      identification_type:
+        $ref: "#/schemas/ExemptionIdentificationType"
+
+  BulkUpdateExemptionItemRequest:
+    type: object
+    required:
+      - identification_type
+      - country
+      - state
+    properties:
+      identification_type:
+        $ref: "#/schemas/ExemptionIdentificationType"
+      identification_number:
+        type: string
+        description: Identification number for the exemption.
+      end_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the expiration date of this particular exemption. For multistate exemption certificates, the expiration date can be different in different states..
+      is_active:
+        type: boolean
+        description: Indicates if the exemption is active.
+      reason:
+        type: string
+        description: Reason for the exemption.
+      country:
+        type: string
+        description: ISO 3166-1 alpha-2 country code.
+      state:
+        type: string
+        description: ISO 3166-2 subdivision code.
+
+  BulkUpdateExemptionsRequest:
+    type: object
+    required:
+      - jurisdictions
+    properties:
+      jurisdictions:
+        type: array
+        items:
+          $ref: "#/schemas/BulkUpdateExemptionItemRequest"
+
+  BulkDeleteExemptionsRequest:
+    type: object
+    required:
+      - jurisdictions
+    properties:
+      jurisdictions:
+        type: array
+        items:
+          type: string
+          description: List of jurisdictions to delete exemptions from.
+
+  ExemptionCertificateResponse:
+    type: object
+    properties:
+      customer_id:
+        type: string
+        format: uuid
+        description: The unique identifier of the customer.
+      file_id:
+        type: string
+        format: uuid
+        nullable: true
+        description: Identifier of the file to use as the exemption certificate.
+      type:
+        $ref: "#/schemas/ExemptionCertificateType"
+      verification_status:
+        type: string
+        description: Verification status of the exemption certificate.
+      exemption_certificate_number:
+        type: string
+        description: The exemption certificate number.
+      effective_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the effective date.
+      created_at:
+        type: integer
+        format: int64
+        description: Timestamp in UTC when this exemption certificate was created.
+      jurisdictions:
+        type: array
+        items:
+          $ref: "#/schemas/JurisdictionExemption"
+        description: List of jurisdictions where the exemption is applicable.
+
+  JurisdictionExemption:
+    type: object
+    properties:
+      country:
+        type: string
+        description: ISO 3166-1 alpha-2 country code.
+      state:
+        type: string
+        description: ISO 3166-2 subdivision code.
+      reason:
+        $ref: "#/schemas/ExemptionReason"
+      is_active:
+        $ref: "#/schemas/IsExemptionActive"
+      end_date:
+        type: string
+        format: date
+        nullable: true
+        description: ISO 8601 formatted date string indicating the expiration date of this particular exemption. For multistate exemption certificates, the expiration date can be different in different states..
+      identification_type:
+        $ref: "#/schemas/ExemptionIdentificationType"
+      identification_number:
+        type: string
+        description: Identification number for the exemption.
+      is_expired:
+        type: boolean
+        description: Indicates if the exemption is expired.
+      created_at:
+        type: integer
+        format: int64
+        description: Timestamp in UTC when this jurisdiction exemption was created.
+
+  JurisdictionExemptionListItem:
+    type: object
+    properties:
+      country:
+        type: string
+        description: ISO 3166-1 alpha-2 country code.
+      state:
+        type: string
+        description: ISO 3166-2 subdivision code.
+      reason:
+        $ref: "#/schemas/ExemptionReason"
+      is_active:
+        $ref: "#/schemas/IsExemptionActive"
+      end_date:
+        type: string
+        format: date
+        nullable: true
+        description: ISO 8601 formatted date string indicating the expiration date of this particular exemption. For multistate exemption certificates, the expiration date can be different in different states..
+      identification_type:
+        $ref: "#/schemas/ExemptionIdentificationType"
+      identification_number:
+        type: string
+        description: Identification number for the exemption.
+      is_expired:
+        type: boolean
+        description: Indicates if the exemption is expired.
+      created_at:
+        type: integer
+        format: int64
+        description: Timestamp in UTC when this jurisdiction exemption was created.
+      certificate:
+        $ref: "#/schemas/ExemptionCertificateListItem"
+
+  ExemptionCertificateListItem:
+    type: object
+    properties:
+      customer_id:
+        type: string
+        format: uuid
+        description: The unique identifier of the customer.
+      file_id:
+        type: string
+        format: uuid
+        nullable: true
+        description: Identifier of the file to use as the exemption certificate.
+      file_name:
+        type: string
+        nullable: true
+        description: Name of the file associated with the exemption certificate.
+      type:
+        $ref: "#/schemas/ExemptionCertificateType"
+      verification_status:
+        type: string
+        description: Verification status of the exemption certificate.
+      exemption_certificate_number:
+        type: string
+        description: The exemption certificate number.
+      effective_date:
+        type: string
+        format: date
+        description: ISO 8601 formatted date string indicating the date on which the exemption certificate took effect.
+      created_at:
+        type: integer
+        format: int64
+        description: Timestamp in UTC when this exemption certificate was created.
+  ExemptionReason:
+    type: string
+    enum:
+      - PURPOSE_RESALE
+      - ENTITY_TYPE_NONPROFIT
+      - GOVERNMENT
+      - MANUFACTURER
+      - AGRICULTURAL
+      - OTHER
+    description: Enum representing the reason for the exemption.
+
+  ExemptionCertificateType:
+    type: string
+    enum:
+      - SINGLE_STATE
+      - SST
+      - MTC
+    description: Enum representing the type of the exemption certificate (Streamlined Sales Tax, Multistate Tax Commission, or single state). More details [here](/api-reference/global-indirect-tax/exemptions/exemption-certificates/exemption-certificates#certificate-types).
+
+  ExemptionIdentificationType:
+    type: string
+    enum:
+      - FEIN
+      - TIN
+      - DL
+      - OTHER
+    description: Enum representing the type of identification number used for the exemption. Federal EIN, Taxpayer Id Number, or Drivers License are common values for this field. "Other" is also accepted.
+
+  IsExemptionActive:
+    type: boolean
+    description: >
+      Indicates whether the exemption should be taken into account when performing tax calculations. 
+      When `true`, applicable transactions will be exempted from tax (unless the certificate is expired).

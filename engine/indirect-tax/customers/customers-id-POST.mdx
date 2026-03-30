@@ -1,0 +1,81 @@
+---
+title: "Update customer"
+openapi: "POST /customers/{id}"
+---
+
+Updates an existing customer's information.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier for the customer
+</ParamField>
+
+## Request body
+
+<ParamField body="name" type="string">
+  Customer name (minimum 3 characters)
+</ParamField>
+
+<ParamField body="email" type="string">
+  Customer email address (must be valid email format)
+</ParamField>
+
+<ParamField body="shipping_address" type="object">
+  Customer's shipping address
+  
+  <Expandable title="shipping_address properties">
+    <ParamField body="line1" type="string">
+      Street address line 1
+    </ParamField>
+    
+    <ParamField body="line2" type="string">
+      Street address line 2
+    </ParamField>
+    
+    <ParamField body="city" type="string">
+      City name
+    </ParamField>
+    
+    <ParamField body="state" type="string">
+      State or province code
+    </ParamField>
+    
+    <ParamField body="postal_code" type="string">
+      Postal or ZIP code
+    </ParamField>
+    
+    <ParamField body="country" type="string">
+      ISO 3166 2-letter country code
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+Returns a success message upon successful update.
+
+<RequestExample>
+```json
+{
+  "name": "Acme Corporation Updated",
+  "email": "newemail@acme.com",
+  "shipping_address": {
+    "line1": "456 New St",
+    "line2": "Floor 2",
+    "city": "Los Angeles",
+    "state": "CA",
+    "postal_code": "90001",
+    "country": "US"
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json
+{
+  "message": "Customer updated successfully"
+}
+```
+</ResponseExample>

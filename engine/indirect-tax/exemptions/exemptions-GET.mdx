@@ -1,0 +1,214 @@
+---
+title: "List exemptions by customer"
+description: "Get all exemptions for a specific customer with filtering options"
+openapi: "GET /exemptions"
+---
+
+Retrieves a paginated list of all exemptions for a specific customer. Supports filtering by certificate type, jurisdiction, expiration status, and exemption status.
+
+<ParamField query="customer_id" type="string" required>
+  The unique identifier of the customer.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Cursor for pagination. Use the cursor returned in the previous response to fetch the next page.
+</ParamField>
+
+<ParamField query="limit" default="10" type="integer">
+  Number of items to return per page. Must be between 1 and 100.
+</ParamField>
+
+<ParamField query="certificate_types" type="string">
+  Comma-separated list of certificate types to filter by (e.g., "SINGLE_STATE,MULTI_STATE").
+</ParamField>
+
+<ParamField query="exemption_jurisdiction" type="string">
+  Comma-separated list of jurisdictions to filter by in the format `{country}_{state}` (e.g., "US_CA,US_NY").
+</ParamField>
+
+<ParamField query="expiration_status" type="string">
+  Filter by expiration status. Valid values:
+  - `ACTIVE` - Non-expired exemptions
+  - `EXPIRED` - Expired exemptions
+</ParamField>
+
+<ParamField query="exemption_status" type="string">
+  Filter by exemption status. Valid values:
+  - `ACTIVE` - Active exemptions
+  - `INACTIVE` - Inactive exemptions
+</ParamField>
+
+<ResponseField name="exemptions" type="array">
+  Array of exemption objects.
+
+  <Expandable title="Exemption object">
+    <ResponseField name="exemption" type="object" required>
+      The jurisdiction exemption details.
+
+      <Expandable title="Jurisdiction exemption">
+        <ResponseField name="country" type="string" required>
+          ISO 3166-1 alpha-2 country code.
+        </ResponseField>
+        <ResponseField name="state" type="string" required>
+          ISO 3166-2 subdivision code.
+        </ResponseField>
+        <ResponseField name="reason" type="string" required>
+          The reason for the exemption.
+        </ResponseField>
+        <ResponseField name="identification_type" type="string" required>
+          The type of identification.
+        </ResponseField>
+        <ResponseField name="identification_number" type="string" required>
+          The identification number.
+        </ResponseField>
+        <ResponseField name="is_active" type="boolean" required>
+          Whether the exemption is active.
+        </ResponseField>
+        <ResponseField name="is_expired" type="boolean" required>
+          Whether the exemption has expired.
+        </ResponseField>
+        <ResponseField name="end_date" type="string">
+          The end date of the exemption.
+        </ResponseField>
+        <ResponseField name="created_at" type="integer" required>
+          Unix timestamp of when the exemption was created.
+        </ResponseField>
+        <ResponseField name="certificate" type="object" required>
+          The associated exemption certificate details.
+
+          <Expandable title="Certificate object">
+            <ResponseField name="id" type="string" required>
+              Unique identifier for the exemption certificate.
+            </ResponseField>
+            <ResponseField name="customer_id" type="string" required>
+              The customer ID associated with the certificate.
+            </ResponseField>
+            <ResponseField name="type" type="string" required>
+              The type of exemption certificate.
+            </ResponseField>
+            <ResponseField name="verification_status" type="string" required>
+              The verification status of the certificate.
+            </ResponseField>
+            <ResponseField name="exemption_certificate_number" type="string">
+              The exemption certificate number.
+            </ResponseField>
+            <ResponseField name="effective_date" type="string" required>
+              The effective date of the certificate.
+            </ResponseField>
+            <ResponseField name="created_at" type="integer" required>
+              Unix timestamp of when the certificate was created.
+            </ResponseField>
+            <ResponseField name="file_id" type="string">
+              The ID of the associated file.
+            </ResponseField>
+            <ResponseField name="file_name" type="string">
+              The name of the associated file.
+            </ResponseField>
+          </Expandable>
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_exemptions" type="integer" required>
+  Total number of exemptions for the customer.
+</ResponseField>
+
+<ResponseField name="cursor" type="string">
+  Cursor to use for fetching the next page. Only present if there are more results.
+</ResponseField>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Successfully fetched exemptions.",
+  "data": {
+    "exemptions": [
+      {
+        "exemption": {
+          "country": "US",
+          "state": "CA",
+          "reason": "PURPOSE_RESALE",
+          "identification_type": "STATE_TAX_ID",
+          "identification_number": "12-3456789",
+          "is_active": true,
+          "is_expired": false,
+          "end_date": "2025-12-31",
+          "created_at": 1704067200,
+          "certificate": {
+            "id": "cert_123abc",
+            "customer_id": "cust_456def",
+            "type": "SINGLE_STATE",
+            "verification_status": "VERIFICATION_SUCCESS",
+            "exemption_certificate_number": "EX-12345",
+            "effective_date": "2024-01-01",
+            "created_at": 1704067200,
+            "file_id": "file_789ghi",
+            "file_name": "exemption_cert.pdf"
+          }
+        }
+      }
+    ],
+    "total_exemptions": 1
+  }
+}
+```
+
+```json 400
+{
+  "error": {
+    "code": "MISSING_REQUIRED_PARAMS",
+    "message": "Missing required parameter: customer_id"
+  }
+}
+```
+
+```json 404
+{
+  "error": {
+    "code": "CUSTOMER_NOT_FOUND",
+    "message": "Customer not found"
+  }
+}
+```
+
+</ResponseExample>
+
+<RequestExample>
+
+```bash cURL
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/exemptions?customer_id=cust_123&limit=20&exemption_jurisdiction=US_CA' \
+  --header 'Authorization: Bearer <token>'
+```
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/exemptions?customer_id=cust_123&limit=20&exemption_jurisdiction=US_CA', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer <token>'
+  }
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.get(
+  'https://transaction-tax.api.in.commenda.io/api/v1/exemptions',
+  params={
+    'customer_id': 'cust_123',
+    'limit': 20,
+    'exemption_jurisdiction': 'US_CA'
+  },
+  headers={'Authorization': 'Bearer <token>'}
+)
+
+data = response.json()
+```
+
+</RequestExample>

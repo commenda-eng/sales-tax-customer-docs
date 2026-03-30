@@ -1,0 +1,34 @@
+---
+title: "Get product"
+openapi: "GET /products"
+---
+
+<RequestExample>
+```bash cURL
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/products/123e4567-e89b-12d3-a456-426614174000' \
+  --header 'Authorization: Bearer YOUR_API_KEY'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200 Response
+{
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Premium Widget",
+    "tax_code": "P0000000",
+    "sku": "WIDGET-001",
+    "description": "A premium quality widget",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "source_platform_id": "shopify-123",
+    "source_platform": "SHOPIFY",
+    "customs_jurisdiction_details": {
+      "US": "8471.30.0100"
+    },
+    "created_at": 1704067200
+  },
+  "message": "Successfully fetched product."
+}
+```
+</ResponseExample>

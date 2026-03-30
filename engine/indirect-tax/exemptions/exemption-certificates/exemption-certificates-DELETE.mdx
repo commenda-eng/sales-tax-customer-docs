@@ -1,0 +1,23 @@
+---
+title: "Delete exemption certificate"
+openapi: "DELETE /exemption-certificates/{id}"
+description: "Delete an exemption certificate. This does not delete the associated file."
+---
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier of the exemption certificate to delete.
+</ParamField>
+
+## Response
+
+Returns a 204 No Content status code on successful deletion.
+
+<ResponseField name="message" type="string">
+  Success message confirming the deletion.
+</ResponseField>
+
+<Note>
+  Deleting an exemption certificate will remove it and all associated jurisdiction exemptions. However, any files that were attached to the certificate will remain in the system and must be deleted separately if needed.
+</Note>

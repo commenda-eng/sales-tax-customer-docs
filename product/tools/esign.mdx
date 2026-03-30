@@ -1,0 +1,195 @@
+---
+title: Electronic signatures
+description: Send documents for electronic signature directly from your service requests
+---
+
+The eSign feature allows you to send documents for electronic signature to customers and stakeholders directly from within a service request. Recipients receive email notifications and can sign documents using DocuSign's secure signing experience.
+
+## Accessing the feature
+
+The eSign feature is available within service requests. To request a signature:
+
+1. Navigate to a service request
+2. Click the kebab menu (three dots)
+3. Select "Request Signature"
+
+## Sending a document for signature
+
+### Step 1: Select a document
+
+You can either:
+- **Upload a new document** - Upload a PDF or other supported document type
+- **Select an existing document** - Choose from documents already uploaded to the service request
+
+### Step 2: Select recipients
+
+Add the people who need to sign the document:
+- Select from existing contacts associated with the service or workspace
+- Add new recipients by entering their name and email address directly
+
+You can add multiple recipients if the document requires signatures from multiple people.
+
+### Step 3: Place signature fields
+
+Using DocuSign's embedded interface, you can:
+- Visually place signature fields on the document
+- Add date fields, text fields, and other form elements
+- Assign fields to specific recipients
+- Review the document before sending
+
+### Step 4: Send the envelope
+
+Once you've placed all required fields, click "Send" to dispatch the signature request. DocuSign will send email notifications to all recipients.
+
+## Signature tasks
+
+When you send a document for signature, the system automatically creates signature tasks:
+
+- **One task per recipient** - Each person who needs to sign gets their own task
+- **Visible in Tasks table** - Tasks appear on the service page and Home screen
+- **Not in Timeline** - Signature tasks don't appear in the workflow timeline view
+
+### Task statuses
+
+Signature tasks display one of the following statuses:
+
+| Status | Description |
+|--------|-------------|
+| **Pending** | Recipient is waiting to be notified, or waiting for a previous signer to complete (when using signing order) |
+| **Sent** | Email has been sent to the recipient |
+| **Viewed** | Recipient has opened the document |
+| **Signed** | Recipient has completed signing |
+| **Canceled** | Signature request has been canceled |
+
+**Note on signing order:** If you configure an explicit signing order (e.g., Signer 1 must sign before Signer 2), subsequent signers will remain in "Pending" status until the previous signer completes their signature. Once the previous signer completes, the next signer's status will update to "Sent" and they will receive their email notification.
+
+## Managing signature requests
+
+### Sending reminders
+
+You can send reminders to recipients who haven't signed yet:
+
+1. Locate the signature task
+2. Click "Send Reminder"
+
+**Reminder limits:**
+- Maximum of 1 reminder per day per recipient
+- Both agents and clients can send reminders
+- If both send a reminder on the same day, the second attempt is suppressed
+
+### Viewing signed documents
+
+Once a recipient signs:
+- The task status updates to "Signed"
+- Agents can download the signed document from the task card
+- The signed document is stored with the service request
+
+### Canceling signature requests
+
+Agents can cancel signature requests that are in progress:
+
+1. Locate the signature task
+2. Click "Cancel"
+3. Confirm the cancellation
+
+When canceled:
+- All pending signatures are voided
+- Recipients can no longer sign the document
+- Tasks are marked as "Canceled"
+
+## Client experience
+
+### Email notification
+
+Recipients receive an email from DocuSign with:
+- A link to view and sign the document
+- Instructions for completing the signature
+- Information about who sent the request
+
+### Signing the document
+
+Recipients sign using DocuSign's hosted signing experience:
+1. Click the link in the email
+2. Review the document
+3. Complete required signature fields
+4. Submit the signed document
+
+### Task visibility
+
+Clients see signature tasks on their Commenda dashboard:
+- Task displays: "An email has been sent to {recipientName}"
+- Option to send a reminder is available
+- No direct signing button (signing happens via email link)
+
+## What happens after signing
+
+### When a recipient signs
+
+1. The task status updates to "Signed"
+2. The signed document becomes available for download
+3. If multiple signers are required, the next recipient is notified
+4. When all recipients sign, the envelope is marked as "Completed"
+
+### When a recipient declines to sign
+
+If a recipient actively declines to sign the document:
+
+1. **The entire envelope is automatically canceled** - DocuSign voids all signatures, not just the one that was declined
+2. **All tasks are marked as "Canceled"** - Every recipient's task status updates to "Canceled", including those who haven't been notified yet
+3. **The decline reason is recorded** - The task description shows which recipient declined (e.g., "This signature request has been canceled because John Smith declined to sign")
+4. **No further signatures are possible** - The envelope cannot be reopened; you must create a new signature request
+
+### When you manually cancel a signature request
+
+Agents can also manually cancel signature requests:
+
+1. All pending signatures are voided
+2. Recipients can no longer sign the document
+3. Tasks are marked as "Canceled"
+4. No further action can be taken on the envelope
+
+## Notifications
+
+All signature-related notifications are handled by DocuSign's native notification service:
+- Email reminders to sign
+- Confirmation emails when signed
+- Notifications when all signatures are complete
+
+These notifications are **not** sent through Commenda's notification system.
+
+## Best practices
+
+- **Clear document names** - Use descriptive names so recipients know what they're signing
+- **Multiple signers** - When multiple signatures are needed, consider the signing order
+- **Timely reminders** - Send reminders if recipients haven't signed within a reasonable timeframe
+- **Document preparation** - Ensure documents are final before sending for signature
+- **Recipient information** - Verify email addresses are correct before sending
+
+## Troubleshooting
+
+### Recipient didn't receive the email
+
+- Check that the email address is correct
+- Ask recipient to check spam/junk folders
+- Send a reminder to resend the notification
+
+### Need to make changes after sending
+
+If you need to modify a document after sending:
+1. Cancel the current signature request
+2. Make your changes to the document
+3. Upload the revised version
+4. Send a new signature request
+
+### Signature request stuck in "Sent" status
+
+- Send a reminder to the recipient
+- Verify the recipient received the email
+- Check if the recipient is having technical issues accessing DocuSign
+
+## Limitations
+
+- Documents must be in a supported format (PDF recommended)
+- Recipients need a valid email address
+- Signing happens through DocuSign's interface (not embedded in Commenda)
+- Maximum of 1 reminder per recipient per day

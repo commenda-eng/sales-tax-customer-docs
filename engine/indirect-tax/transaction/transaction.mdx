@@ -1,0 +1,75 @@
+---
+title: "Tax Transactions"
+description: "Record transactions after they occur to remit and file the correct amount."
+---
+
+## Overview
+
+Commenda uses tax transactions to calculate the seller's tax obligations for filings and nexus tracking. If you are registered to pay taxes in a jurisdiction, the tax transactions will be automatically filed at the end of each filing period.
+
+## Key Concepts
+
+### Filing Status
+
+Each tax transaction has a `filing_status`.
+
+Possible values:
+
+- **UNCOMMITTED**: A transaction is initially created with the status `UNCOMMITTED`. This indicates that the transaction has been created but has not yet been included in a filing. It remains open for updates or deletion.
+- **IGNORED**: An `UNCOMMITTED` transaction can be marked as `IGNORED` to exclude it from the filing process.
+- **LOCKED**: After the filing period concludes, all `UNCOMMITTED` transactions that have not been marked as `IGNORED` are eventually transitioned to `LOCKED` status. In this state, they cannot be updated or deleted. Transactions are filed after being moved to the `LOCKED` state.
+
+### Transaction id
+
+- The tax transaction id needs to be provided by the API user.
+- This allows for referential tracking and prevents deduplication in case the seller attempts to POST the same transaction twice.
+- The id does not need to be globally unique, but it must be unique for each seller.
+
+### Transaction Types
+
+The system supports two primary transaction types:
+
+| Type | Description | Use Case |
+|------|-------------|----------|
+| SALE | Standard sales transaction | New sales, corrections, re-invoicing |
+| REFUND | Refund transaction | Full or partial refunds of previous sales |
+
+#### Amount Sign Rules
+
+**For SALE Transactions**
+- Normally: Line item amounts (price_per_unit * quantity) should be positive
+- Special Cases: Negative amounts are allowed for:
+  - Price corrections within an invoice (mixed with positive lines)
+  - Re-invoicing scenarios with correction lines
+
+**For REFUND Transactions**
+- Line item amounts (price_per_unit * quantity) must be negative
+- Can be achieved through either:
+  - Negative quantity with positive price, OR
+  - Positive quantity with negative price
+- All line items in a REFUND transaction must have negative amounts
+
+### Bulk Transactions
+
+See [Bulk Transactions](/engine/indirect-tax/transaction/bulk-transactions).
+
+## Best Practices
+
+### Transaction Type Selection
+- Use SALE for new sales and correction scenarios with mixed positive/negative lines
+- Use REFUND for complete refunds of previous sales
+- Ensure all REFUND transaction line items have negative amounts
+
+### Amounts and Signs
+- For re-invoicing corrections, use a SALE with mixed line signs
+- For refunds, use a REFUND with negative total line amounts
+- Be consistent within each transaction type
+
+### Reference Original Transactions
+- Always link REFUND transactions to their original sales via parent_invoice_id
+- For line-level refunds, match line_number with the original invoice
+
+### Date Handling
+- Use transacted_at for the actual date of the return
+- Use reporting_date_override to control when the transaction appears in reports
+- Use calculation_date_override to apply historical tax rates from the original sale date

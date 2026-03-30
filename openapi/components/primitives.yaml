@@ -1,0 +1,102 @@
+schemas: 
+  Country:
+    type: string
+    example: US
+    description: 'ISO 3166 2-letter country code. Ex: US, IN, GB.'
+  State:
+    type: string
+    example: CA
+    description: '2-letter code for each state. Suffix of the ISO 3166-2 code. Ex:
+      CA, NY, TX.'
+  Address:
+    type: object
+    required:
+    - postal_code
+    - state
+    - country
+    properties:
+      address_line_1:
+        type: string
+        example: 1776 Main St
+      address_line_2:
+        type: string
+        example: 'Apt. #123'
+      address_line_3:
+        type: string
+      postal_code:
+        type: string
+        description: Either 5-digit ZIP code or 9-digit ZIP+4 code is accepted.
+        example: '90401'
+      city:
+        type: string
+        example: Santa Monica
+      state:
+        "$ref": "#/schemas/State"
+      country:
+        "$ref": "#/schemas/Country"
+  Currency:
+    type: string
+    example: USD
+    description: ISO 4217 alpha-3 currency code for the transaction.
+  ProductTaxCode: 
+    type: string
+    example: TPP
+    description: Code passed by the caller to determine taxability for this product.
+      Default value, TPP, will be taxable in every jurisdiction. Additional values are available [here](/api-reference/global-indirect-tax/taxcode).
+    default: TPP
+  JurisdictionType:
+    type: string
+    enum:
+    - STATE
+    - COUNTY
+    - CITY
+    - SPECIAL_DISTRICT
+    description: Type of taxing jurisdiction. This list is not exhaustive.
+  Total:
+    type: number
+    description: This is the total amount charged to the customer, which includes
+      the subtotal, shipping and handling fees, tax, and reflects any applied discounts.
+  SourcePlatform: 
+    type: string
+    description: Platform where this entity originated.
+    enum:
+    - RAZORPAY
+    - ZOHO_BOOKS
+    - QUICKBOOKS_SANDBOX
+    - QUICKBOOKS
+    - XERO
+    - TALLY
+    - SAGE_CLOUD_ACCOUNTING
+    - MS_DYNAMICS_365
+    - SAGE_ZA_CLOUD_ACCOUNTING
+    - MYOB_BUSINESS
+    - WAVE
+    - ODOO_ACCOUNTING
+    - NETSUITE
+    - WAFEQ
+    - MEKARI_JURNAL
+    - BUSY
+    - ROOTFI_SANDBOX
+    - QOYOD
+    - SHOPIFY
+    - STRIPE
+    - PAYPAL
+    - HUBSPOT
+    - ZOHO_CRM
+    - PIPEDRIVE
+    - WOOCOMMERCE
+    - OTHER
+  ExemptionType: 
+    type: string
+    description: Reason for a sales tax exemption.
+    enum: 
+      - PURPOSE_RESALE
+      - ENTITY_TYPE_NONPROFIT
+      - GOVERNMENT
+      - MANUFACTURER
+      - AGRICULTURAL
+      - OTHER
+  CorporationId:
+    type: string
+    description: The unique identifier for a corporation.
+    example: 2535af08-a139-4d0c-9827-1651e46dfbcf

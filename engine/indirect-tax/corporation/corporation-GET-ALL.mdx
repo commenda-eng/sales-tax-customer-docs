@@ -1,0 +1,118 @@
+---
+title: "List corporations"
+description: "Get all corporations in an organization"
+openapi: "GET /corporations"
+---
+
+Retrieves a paginated list of all corporations associated with your organization.
+
+<ParamField query="cursor" type="string">
+  Cursor for pagination. Use the cursor returned in the previous response to fetch the next page.
+</ParamField>
+
+<ParamField query="limit" default="10" type="integer">
+  Number of items to return per page. Must be between 1 and 100.
+</ParamField>
+
+<ResponseField name="corporations" type="array">
+  Array of corporation objects.
+
+  <Expandable title="Corporation object">
+    <ResponseField name="id" type="string" required>
+      Unique identifier for the corporation.
+    </ResponseField>
+    <ResponseField name="legal_name" type="string" required>
+      Legal name of the entity, including the type suffix.
+    </ResponseField>
+    <ResponseField name="created_at" type="integer" required>
+      Unix timestamp of when the corporation was created.
+    </ResponseField>
+    <ResponseField name="jurisdiction" type="string" required>
+      Jurisdiction of the corporation.
+    </ResponseField>
+    <ResponseField name="email_alias" type="string">
+      Email alias for the corporation.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_corporations" type="integer" required>
+  Total number of corporations in the organization.
+</ResponseField>
+
+<ResponseField name="cursor" type="string">
+  Cursor to use for fetching the next page. Only present if there are more results.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/corporations?limit=20' \
+  --header 'Authorization: Bearer <token>'
+```
+
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/corporations?limit=20', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer <token>'
+  }
+});
+
+const data = await response.json();
+```
+
+
+```python Python
+import requests
+
+response = requests.get(
+  'https://transaction-tax.api.in.commenda.io/api/v1/corporations',
+  params={'limit': 20},
+  headers={'Authorization': 'Bearer <token>'}
+)
+
+data = response.json()
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Successfully fetched corporations.",
+  "data": {
+    "corporations": [
+      {
+        "id": "corp_123abc",
+        "legal_name": "Acme Corporation Inc.",
+        "created_at": 1704067200,
+        "jurisdiction": "US",
+        "email_alias": "acme@filings.commenda.io"
+      },
+      {
+        "id": "corp_456def",
+        "legal_name": "Example LLC",
+        "created_at": 1704153600,
+        "jurisdiction": "US"
+      }
+    ],
+    "total_corporations": 2
+  }
+}
+```
+
+
+```json 400
+{
+  "error": {
+    "code": "PAGINATION_INVALID_LIMIT",
+    "message": "Limit must be between 1 and 100"
+  }
+}
+```
+
+</ResponseExample>

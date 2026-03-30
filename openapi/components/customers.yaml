@@ -1,0 +1,113 @@
+schemas:
+    CustomerCreate:
+      type: object
+      required:
+        - name
+        - corporation_id
+      properties:
+        name:
+          type: string
+          description: A display name for this customer.
+          example: John Doe
+          minLength: 3
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation this customer belongs to.
+          example: b6d009b0-d174-463f-b030-94643c28e209
+        email:
+          type: string
+          description: Email address of the customer.
+          format: email
+        shipping_address:
+          $ref: "./primitives.yaml#/schemas/Address"
+        external_id:
+          type: string
+          description: External identifier for the customer.
+    CustomerUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+          description: A display name for this customer.
+          minLength: 3
+        email:
+          type: string
+          description: Email address of the customer.
+          format: email
+        shipping_address:
+          $ref: "./primitives.yaml#/schemas/Address"
+    CustomerInfo:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for this customer.
+          example: b6d009b0-d174-463f-b030-94643c28e209
+        corporation_id:
+          type: string
+          description: The unique identifier for the corporation associated with this customer.
+          example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+        name:
+          type: string
+          description: A display name for this customer.
+          example: John Doe
+        email:
+          type: string
+          description: Email address of the customer.
+          format: email
+        shipping_address:
+          $ref: "./primitives.yaml#/schemas/Address"
+        external_id:
+          type: string
+          description: External identifier for the customer.
+    ExemptionMetadata:
+      type: object
+      properties:
+        total_certificates:
+          type: integer
+          description: Total number of exemption certificates for this customer
+        certificate_types:
+          type: array
+          items:
+            type: string
+          description: List of unique certificate types held by this customer
+        total_exempted_states:
+          type: integer
+          description: Total number of states where the customer has exemptions
+        expired_exemptions_count:
+          type: integer
+          description: Number of expired exemption certificates
+        inactive_exemptions_count:
+          type: integer
+          description: Number of inactive exemption certificates
+        exempted_states:
+          type: array
+          items:
+            type: string
+          description: List of states where the customer has exemptions
+        active_exemptions_count:
+          type: integer
+          description: Number of active exemption certificates
+        non_expired_exemptions_count:
+          type: integer
+          description: Number of non-expired exemption certificates
+    CustomerExtended:
+      allOf:
+        - $ref: "#/schemas/CustomerInfo"
+        - type: object
+          properties:
+            exemption_metadata:
+              $ref: "#/schemas/ExemptionMetadata"
+    GetAllCustomersByCorporation:
+      type: object
+      properties:
+        customers:
+          type: array
+          items:
+            $ref: "#/schemas/CustomerExtended"
+        total_customers:
+          type: integer
+          description: Total number of customers associated with the corporation.
+        cursor:
+          type: string
+          description: Pagination cursor for the next set of results.

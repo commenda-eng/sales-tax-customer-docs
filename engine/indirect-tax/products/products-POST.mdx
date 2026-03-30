@@ -1,0 +1,45 @@
+---
+title: "Create product"
+openapi: "POST /products"
+---
+
+<RequestExample>
+
+```json Request
+{
+  "name": "Premium Widget",
+  "tax_code": "P0000000",
+  "sku": "WIDGET-001",
+  "description": "A premium quality widget",
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "customs_jurisdiction_details": {
+    "US": "8471.30.0100"
+  }
+}
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200 Response
+{
+  "data": {
+    "id": "123e4567-e89b-12d3-a456-426614174000",
+    "name": "Premium Widget",
+    "tax_code": "P0000000",
+    "sku": "WIDGET-001",
+    "description": "A premium quality widget",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "source_platform_id": "",
+    "source_platform": "",
+    "customs_jurisdiction_details": {
+      "US": "8471.30.0100"
+    },
+    "created_at": 1704067200
+  },
+  "message": "Successfully created product."
+}
+```
+
+</ResponseExample>

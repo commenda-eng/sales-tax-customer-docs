@@ -1,0 +1,1032 @@
+---
+schemas:
+  CommendaOsPublicError:
+    type: object
+    required:
+      - statusCode
+      - message
+      - error
+    properties:
+      statusCode:
+        type: integer
+        example: 403
+      message:
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
+        example: Business entity is not accessible to the authenticated affiliate
+      error:
+        type: string
+        example: Forbidden
+  CommendaOsUniqueIdentifierFromJurisdiction:
+    type: object
+    required:
+      - name
+    properties:
+      name:
+        type: string
+        example: EIN
+      value:
+        type: string
+        nullable: true
+        example: 12-3456789
+  CommendaOsTaxId:
+    type: object
+    required:
+      - type
+      - name
+      - value
+    properties:
+      type:
+        type: string
+        example: US_EIN
+      name:
+        type: string
+        example: Employer Identification Number
+      value:
+        type: string
+        example: 12-3456789
+  CommendaOsLocationAddress:
+    type: object
+    required:
+      - addressLine1
+      - postalCode
+      - country
+    properties:
+      addressLine1:
+        type: string
+        example: 548 Market St
+      addressLine2:
+        type: string
+        nullable: true
+        example: Suite 21045
+      addressLine3:
+        type: string
+        nullable: true
+      city:
+        type: string
+        nullable: true
+        example: San Francisco
+      postalCode:
+        type: string
+        example: "94104"
+      state:
+        type: string
+        nullable: true
+        example: CA
+      country:
+        type: string
+        example: US
+  CommendaOsLocation:
+    type: object
+    required:
+      - id
+      - corporationId
+      - locationTypes
+      - address
+      - createdAt
+      - updatedAt
+    properties:
+      id:
+        type: string
+        example: loc_123
+      _internalAddressId:
+        type: integer
+        description: Internal Commenda address identifier.
+        example: 9876
+      name:
+        type: string
+        nullable: true
+        example: Delaware HQ
+      startDate:
+        type: string
+        nullable: true
+        example: "2025-01-01"
+      employeeCount:
+        type: integer
+        nullable: true
+        example: 12
+      corporationId:
+        type: integer
+        example: 44
+      locationTypes:
+        type: array
+        items:
+          type: string
+        example:
+          - OPERATIONS
+      address:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsLocationAddress"
+      createdAt:
+        type: integer
+        example: 1735689600000
+      updatedAt:
+        type: integer
+        example: 1735776000000
+  CommendaOsGovernmentIdentifierSupportingDocument:
+    type: object
+    required:
+      - id
+      - fileName
+      - fileUrl
+      - type
+      - category
+      - fileTypeSpecifiers
+    properties:
+      id:
+        type: integer
+        nullable: true
+        example: 900
+      fileName:
+        type: string
+        example: ein-letter.pdf
+      fileUrl:
+        type: string
+        nullable: true
+        format: uri
+        example: https://bucket.s3.amazonaws.com/ein-letter.pdf
+      type:
+        type: string
+        example: EINLetter
+      category:
+        type: string
+        example: TAX_AND_COMPLIANCE_DOCUMENT
+      fileTypeSpecifiers:
+        type: array
+        items:
+          type: string
+        example:
+          - .pdf
+  CommendaOsLinkedRegistrationOption:
+    type: object
+    required:
+      - internalIdentifier
+      - displayName
+      - purpose
+    properties:
+      internalIdentifier:
+        type: string
+        example: US_EIN
+      displayName:
+        type: string
+        example: Employer Identification Number
+      purpose:
+        type: string
+        example: TAXATION
+  CommendaOsGovernmentIdentifier:
+    type: object
+    required:
+      - country
+      - corporationId
+      - corporationType
+      - key
+      - displayName
+      - shortName
+      - description
+      - purposes
+      - supportingDocument
+      - isFunctionCritical
+      - isCustom
+      - linkedRegistrations
+    properties:
+      id:
+        type: string
+        nullable: true
+        example: gov_123
+      country:
+        type: string
+        example: US
+      jurisdiction:
+        type: string
+        nullable: true
+        example: DE
+      corporationId:
+        type: integer
+        example: 44
+      corporationType:
+        type: string
+        example: LLC
+      key:
+        type: string
+        example: US_EIN
+      value:
+        type: string
+        nullable: true
+        example: 12-3456789
+      displayName:
+        type: string
+        example: Employer Identification Number
+      shortName:
+        type: string
+        example: EIN
+      description:
+        type: string
+        example: US federal tax identifier issued by the IRS.
+      purposes:
+        type: array
+        items:
+          type: string
+        example:
+          - TAXATION
+      supportingDocument:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifierSupportingDocument"
+      isFunctionCritical:
+        type: boolean
+        example: true
+      createdAt:
+        type: integer
+        nullable: true
+        example: 1735689600000
+      lastUpdatedAt:
+        type: integer
+        nullable: true
+        example: 1735776000000
+      regexString:
+        type: string
+        nullable: true
+      isCustom:
+        type: boolean
+        example: false
+      linkedRegistrations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsLinkedRegistrationOption"
+  CommendaOsBusinessEntity:
+    type: object
+    required:
+      - id
+      - generalCorporationInfo
+      - accountingInfo
+      - featureSpecificInfo
+      - entityRelationship
+      - lastUpdateTime
+    properties:
+      id:
+        type: integer
+        example: 44
+      generalCorporationInfo:
+        type: object
+        required:
+          - legalName
+          - companyId
+          - businessEntityType
+          - incorporationCountry
+          - jurisdiction
+          - uniqueIdentifierFromJurisdiction
+          - primaryTaxIdType
+          - rootfiCompanies
+        properties:
+          legalName:
+            type: string
+            example: Acme Holdings LLC
+          dbaName:
+            type: string
+            nullable: true
+            example: Acme
+          companyId:
+            type: integer
+            example: 77
+          formationDate:
+            type: string
+            nullable: true
+            example: "2025-01-01"
+          registeredAddress:
+            type: object
+            additionalProperties: true
+          businessEntityType:
+            type: string
+            example: LLC
+          incorporationCountry:
+            type: string
+            example: US
+          jurisdiction:
+            type: string
+            example: DE
+          contactPhone:
+            type: string
+            nullable: true
+            example: "+14155550123"
+          entityEmail:
+            type: string
+            nullable: true
+            format: email
+            example: founders@acme.com
+          uniqueIdentifierFromJurisdiction:
+            $ref: "./commenda-os.yaml#/schemas/CommendaOsUniqueIdentifierFromJurisdiction"
+          taxIds:
+            type: array
+            items:
+              $ref: "./commenda-os.yaml#/schemas/CommendaOsTaxId"
+          primaryTaxIdType:
+            type: string
+            example: US_EIN
+          publicFacingWebsiteUrl:
+            type: string
+            nullable: true
+            format: uri
+            example: https://acme.com
+          industryCode:
+            type: object
+            nullable: true
+            additionalProperties: true
+          businessDescription:
+            type: string
+            nullable: true
+          businessPurpose:
+            type: string
+            nullable: true
+          registeredAgent:
+            type: object
+            nullable: true
+            additionalProperties: true
+          dateOfClosure:
+            type: string
+            nullable: true
+          rootfiCompanies:
+            type: array
+            items:
+              type: object
+              required:
+                - id
+                - connectionStatus
+                - syncStatus
+              properties:
+                id:
+                  type: integer
+                  example: 1001
+                connectionStatus:
+                  type: string
+                  example: CONNECTED
+                syncStatus:
+                  type: string
+                  example: COMPLETED
+      locationsInfo:
+        type: object
+        nullable: true
+        additionalProperties: true
+      accountingInfo:
+        type: object
+        properties:
+          fiscalYear:
+            type: object
+            nullable: true
+            additionalProperties: true
+          accountingBasis:
+            type: string
+            nullable: true
+          accountingFrequency:
+            type: string
+            nullable: true
+          countrySpecificFields:
+            type: object
+            additionalProperties: true
+          bankAccounts:
+            type: array
+            items:
+              type: object
+              properties:
+                id:
+                  type: string
+          accountingFirm:
+            type: object
+            nullable: true
+            additionalProperties: true
+      stakeholderId:
+        type: string
+        nullable: true
+      featureSpecificInfo:
+        type: object
+        additionalProperties: true
+      onboardingInfo:
+        type: object
+        nullable: true
+        additionalProperties: true
+      entityRelationship:
+        type: object
+        additionalProperties: true
+      structure:
+        type: object
+        nullable: true
+        properties:
+          initialSharesAuthorized:
+            type: number
+          initialSharePrice:
+            type: number
+          esopSharePercentage:
+            type: number
+      locations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsLocation"
+      governmentIdentifiers:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifier"
+      lastUpdateTime:
+        type: string
+        format: date-time
+        example: 2026-03-01T00:00:00.000Z
+  CommendaOsPersonLocation:
+    type: object
+    required:
+      - address
+      - isPrimary
+      - type
+    properties:
+      name:
+        type: string
+        nullable: true
+      address:
+        type: object
+        additionalProperties: true
+      isPrimary:
+        type: boolean
+        example: true
+      type:
+        type: array
+        items:
+          type: string
+        example:
+          - RESIDENTIAL
+  CommendaOsKycId:
+    type: object
+    required:
+      - type
+      - name
+    properties:
+      type:
+        type: string
+        example: US_SSN
+      name:
+        type: string
+        example: Social Security Number
+      value:
+        type: string
+        nullable: true
+      documentId:
+        type: string
+        nullable: true
+      doesNotHaveKYCId:
+        type: boolean
+        nullable: true
+      decryptedValue:
+        type: string
+        nullable: true
+  CommendaOsPerson:
+    type: object
+    required:
+      - id
+      - firstName
+      - lastName
+      - dateOfBirth
+      - email
+      - kycIds
+      - locations
+      - stakeholderId
+      - phoneNumber
+      - businessEntitiesInfo
+    properties:
+      id:
+        type: integer
+        example: 12
+      firstName:
+        type: string
+        example: Jane
+      lastName:
+        type: string
+        example: Founder
+      dateOfBirth:
+        type: string
+        example: "1990-04-18"
+      email:
+        type: string
+        format: email
+        example: jane@acme.com
+      gender:
+        type: string
+        nullable: true
+      nationalities:
+        type: array
+        items:
+          type: string
+      kycIds:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsKycId"
+      locations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsPersonLocation"
+      onboardingInfo:
+        type: object
+        nullable: true
+        additionalProperties: true
+      stakeholderId:
+        type: string
+        example: stk_123
+      phoneNumber:
+        type: string
+        example: "+14155550123"
+      employmentStartDate:
+        type: string
+        nullable: true
+        example: "2025-01-01"
+      businessEntitiesInfo:
+        type: array
+        items:
+          type: object
+          required:
+            - businessEntityId
+            - businessEntityName
+            - sharePercentage
+            - governanceRelationships
+          properties:
+            businessEntityId:
+              type: integer
+              example: 44
+            businessEntityName:
+              type: string
+              example: Acme Holdings LLC
+            sharePercentage:
+              type: number
+              example: 75
+            governanceRelationships:
+              type: object
+              additionalProperties: true
+            jobTitle:
+              type: array
+              items:
+                type: string
+            startDateOfEmployment:
+              type: string
+              nullable: true
+              example: "2025-01-01"
+  CommendaOsBusinessEntityPerson:
+    type: object
+    required:
+      - id
+      - firstName
+      - lastName
+      - dateOfBirth
+      - email
+      - kycIds
+      - locations
+      - stakeholderId
+      - phoneNumber
+      - sharePercentage
+      - governanceRelationships
+    properties:
+      id:
+        type: integer
+        example: 12
+      firstName:
+        type: string
+        example: Jane
+      lastName:
+        type: string
+        example: Founder
+      dateOfBirth:
+        type: string
+        example: "1990-04-18"
+      email:
+        type: string
+        format: email
+        example: jane@acme.com
+      gender:
+        type: string
+        nullable: true
+      nationalities:
+        type: array
+        items:
+          type: string
+      kycIds:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsKycId"
+      locations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsPersonLocation"
+      onboardingInfo:
+        type: object
+        nullable: true
+        additionalProperties: true
+      stakeholderId:
+        type: string
+        example: stk_123
+      phoneNumber:
+        type: string
+        example: "+14155550123"
+      employmentStartDate:
+        type: string
+        nullable: true
+      sharePercentage:
+        type: number
+        example: 75
+      governanceRelationships:
+        type: object
+        additionalProperties: true
+      jobTitle:
+        type: array
+        items:
+          type: string
+      startDateOfEmployment:
+        type: string
+        nullable: true
+        example: "2025-01-01"
+  CommendaOsDocument:
+    type: object
+    required:
+      - documentType
+      - documentSubType
+      - supportsDataStorage
+      - isTimeSensitive
+      - isUnique
+    properties:
+      id:
+        type: integer
+        nullable: true
+        example: 900
+      fileName:
+        type: string
+        nullable: true
+        example: operating-agreement.pdf
+      fileUrl:
+        type: string
+        nullable: true
+        format: uri
+        example: https://bucket.s3.amazonaws.com/operating-agreement.pdf
+      documentType:
+        type: string
+        example: FORMATION_DOCUMENT
+      documentSubType:
+        type: string
+        example: OperatingAgreement
+      complianceTag:
+        type: string
+        nullable: true
+      compliancePurpose:
+        type: string
+        nullable: true
+      dateOfIssuance:
+        type: string
+        nullable: true
+      dateOfExpiration:
+        type: string
+        nullable: true
+      effectiveStartDate:
+        type: string
+        nullable: true
+      effectiveEndDate:
+        type: string
+        nullable: true
+      supportsDataStorage:
+        type: boolean
+        example: false
+      data:
+        type: object
+        nullable: true
+        additionalProperties: true
+      createdAt:
+        type: integer
+        nullable: true
+        example: 1735689600000
+      updatedAt:
+        type: integer
+        nullable: true
+        example: 1735776000000
+      deprecatedFieldsForFrontend:
+        type: object
+        nullable: true
+        additionalProperties: true
+      explicitDocumentType:
+        type: string
+        nullable: true
+      isTimeSensitive:
+        type: boolean
+        example: false
+      isUnique:
+        type: boolean
+        example: true
+  CommendaOsSupportedDocumentType:
+    type: object
+    required:
+      - documentName
+      - documentType
+      - documentSubType
+      - supportsDataStorage
+      - country
+      - isTimeSensitive
+      - isUnique
+    properties:
+      documentName:
+        type: string
+        example: Operating Agreement
+      documentType:
+        type: string
+        example: FORMATION_DOCUMENT
+      documentSubType:
+        type: string
+        example: OperatingAgreement
+      supportsDataStorage:
+        type: boolean
+        example: false
+      data:
+        type: object
+        additionalProperties: true
+      country:
+        type: string
+        example: US
+      jurisdiction:
+        type: string
+        nullable: true
+        example: DE
+      corporationType:
+        type: string
+        nullable: true
+        example: LLC
+      isTimeSensitive:
+        type: boolean
+        example: false
+      isUnique:
+        type: boolean
+        example: true
+      canBeAddedByAddDocument:
+        type: boolean
+        nullable: true
+  CommendaOsRegistration:
+    type: object
+    required:
+      - country
+      - businessEntityId
+      - corporationType
+      - effectiveStartDate
+      - registeredBy
+      - displayName
+      - description
+      - purpose
+      - isFunctionCritical
+      - status
+      - registrationStatus
+      - internalIdentifier
+      - isCustom
+    properties:
+      id:
+        type: string
+        nullable: true
+        example: reg_123
+      country:
+        type: string
+        example: US
+      jurisdiction:
+        type: string
+        nullable: true
+        example: DE
+      businessEntityId:
+        type: integer
+        example: 44
+      corporationType:
+        type: string
+        example: LLC
+      effectiveStartDate:
+        type: string
+        example: "2025-01-01"
+      effectiveEndDate:
+        type: string
+        nullable: true
+      registeredBy:
+        type: string
+        example: COMMENDA
+      displayName:
+        type: string
+        example: Delaware LLC Registration
+      description:
+        type: string
+        example: Corporate registry registration for a Delaware LLC.
+      purpose:
+        type: string
+        example: CORPORATE_REGISTRY
+      acknowledgements:
+        type: array
+        nullable: true
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsDocument"
+      isFunctionCritical:
+        type: boolean
+        example: true
+      status:
+        type: string
+        example: VALID
+      registrationStatus:
+        type: string
+        example: ACTIVE
+      createdAt:
+        type: integer
+        nullable: true
+        example: 1735689600000
+      lastUpdatedAt:
+        type: integer
+        nullable: true
+        example: 1735776000000
+      internalIdentifier:
+        type: string
+        example: US_DE_CORP_REGISTRY
+      isCustom:
+        type: boolean
+        example: false
+      governmentIdentifiers:
+        type: array
+        nullable: true
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifier"
+  CommendaOsSupportedRegistration:
+    type: object
+    required:
+      - displayName
+      - description
+      - purpose
+      - isExpirable
+      - isFunctionCritical
+      - internalIdentifier
+      - corporationType
+      - governmentIdentifierInternalIdentifier
+      - country
+    properties:
+      displayName:
+        type: string
+        example: Delaware LLC Registration
+      description:
+        type: string
+        example: Corporate registry registration for a Delaware LLC.
+      purpose:
+        type: string
+        example: CORPORATE_REGISTRY
+      jurisdiction:
+        type: string
+        nullable: true
+        example: DE
+      isExpirable:
+        type: boolean
+        example: false
+      isFunctionCritical:
+        type: boolean
+        example: true
+      internalIdentifier:
+        type: string
+        example: US_DE_CORP_REGISTRY
+      corporationType:
+        type: string
+        example: LLC
+      governmentIdentifierInternalIdentifier:
+        type: string
+        example: US_EIN
+      country:
+        type: string
+        example: US
+  CommendaOsBusinessEntityResponse:
+    type: object
+    required:
+      - businessEntity
+    properties:
+      businessEntity:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntity"
+  CommendaOsBusinessEntityListResponse:
+    type: object
+    required:
+      - businessEntities
+      - count
+    properties:
+      businessEntities:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntity"
+      count:
+        type: integer
+        example: 2
+  CommendaOsLocationResponse:
+    type: object
+    required:
+      - location
+    properties:
+      location:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsLocation"
+  CommendaOsLocationsResponse:
+    type: object
+    required:
+      - locations
+      - count
+    properties:
+      locations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsLocation"
+      count:
+        type: integer
+        example: 1
+  CommendaOsBusinessEntityPersonsResponse:
+    type: object
+    required:
+      - persons
+      - count
+    properties:
+      persons:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsBusinessEntityPerson"
+      count:
+        type: integer
+        example: 2
+  CommendaOsPersonsResponse:
+    type: object
+    required:
+      - persons
+      - count
+    properties:
+      persons:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsPerson"
+      count:
+        type: integer
+        example: 2
+  CommendaOsGovernmentIdentifierResponse:
+    type: object
+    required:
+      - governmentIdentifier
+    properties:
+      governmentIdentifier:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifier"
+  CommendaOsGovernmentIdentifiersResponse:
+    type: object
+    required:
+      - governmentIdentifiers
+      - count
+    properties:
+      governmentIdentifiers:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsGovernmentIdentifier"
+      count:
+        type: integer
+        example: 2
+  CommendaOsDocumentsResponse:
+    type: object
+    required:
+      - documents
+      - count
+    properties:
+      documents:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsDocument"
+      count:
+        type: integer
+        example: 3
+  CommendaOsSupportedDocumentsResponse:
+    type: object
+    required:
+      - supportedDocumentTypes
+      - count
+    properties:
+      supportedDocumentTypes:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsSupportedDocumentType"
+      count:
+        type: integer
+        example: 5
+  CommendaOsRegistrationResponse:
+    type: object
+    required:
+      - registration
+    properties:
+      registration:
+        $ref: "./commenda-os.yaml#/schemas/CommendaOsRegistration"
+  CommendaOsRegistrationsResponse:
+    type: object
+    required:
+      - registrations
+      - count
+    properties:
+      registrations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsRegistration"
+      count:
+        type: integer
+        example: 2
+  CommendaOsSupportedRegistrationsResponse:
+    type: object
+    required:
+      - supportedRegistrations
+      - count
+    properties:
+      supportedRegistrations:
+        type: array
+        items:
+          $ref: "./commenda-os.yaml#/schemas/CommendaOsSupportedRegistration"
+      count:
+        type: integer
+        example: 12

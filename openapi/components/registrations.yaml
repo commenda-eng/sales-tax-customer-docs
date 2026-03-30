@@ -1,0 +1,487 @@
+schemas:
+    # Enums
+    registration_validation_status:
+      type: string
+      enum:
+        - PENDING
+        - VALIDATION_IN_PROGRESS
+        - INVALID
+        - VALID
+      description: Reflects whether Commenda has validated the seller's registration details.
+
+    registration_status:
+      type: string
+      enum:
+        - REGISTRATION_IN_PROGRESS
+        - REGISTERED
+      description: Reflects the current stage of the registration process.
+
+    registration_type:
+      type: string
+      enum:
+        - EXISTING
+        - NEW
+      description: Whether this is an existing registration or a new one created through Commenda.
+
+    registered_by:
+      type: string
+      enum:
+        - API
+        - USER
+        - COMMENDA
+      description: Who created the registration.
+
+    jurisdiction_type:
+      type: string
+      enum:
+        - STATE_OR_PROVINCE
+        - CITY
+        - COUNTY
+        - DISTRICT
+        - LOCAL
+        - COUNTRY
+        - TERRITORY
+      description: Type of tax jurisdiction.
+
+    TaxType:
+      type: string
+      enum:
+        - RST
+        - RUT
+        - DTT
+        - SST
+        - SSUT
+        - GRT
+        - VUT
+        - TPT
+        - GET
+        - SUT
+      description: Tax type codes.
+
+    Frequency:
+      type: string
+      enum:
+        - MONTHLY
+        - QUARTERLY
+        - SEMI_ANNUALLY
+        - ANNUAL_CALENDAR_YEAR
+        - FISCAL_YEAR
+        - QUARTERLY_PREPAY_MONTHLY
+        - MONTHLY_ACCELERATED_PREPAY_EARLY
+      description: Filing frequency for the registration.
+
+    # Request/Response Schemas
+    CreateRegistrationRequest:
+      type: object
+      required:
+        - corporation_id
+        - registration_content_id
+        - tax_types
+      properties:
+        corporation_id:
+          type: string
+          format: uuid
+          description: The unique identifier for the corporation.
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        registration_content_id:
+          type: string
+          description: Content ID identifying the jurisdiction and tax type. Get this from the registration-input-options endpoint.
+          example: "CCT_US_STATE_CEN_06_RST"
+        tax_types:
+          type: array
+          items:
+            $ref: '#/schemas/TaxType'
+          description: Array of tax types to register for.
+          example: ["RST", "DTT"]
+        frequency:
+          $ref: '#/schemas/Frequency'
+        effective_start_date:
+          type: string
+          format: date
+          description: ISO date (YYYY-MM-DD) when the registration became effective.
+          example: "2024-01-15"
+        tax_registration_id:
+          type: string
+          description: State-issued tax registration ID or permit number.
+          example: "123-456789"
+        credential_id:
+          type: string
+          description: Reference to stored portal credentials.
+        portal_id:
+          type: string
+          description: Portal ID for the state's tax filing portal.
+          example: "PORTAL_CA_CDTFA"
+
+    UpdateRegistrationRequest:
+      type: object
+      properties:
+        tax_types:
+          type: array
+          items:
+            $ref: '#/schemas/TaxType'
+          description: Array of tax types.
+        frequency:
+          $ref: '#/schemas/Frequency'
+        effective_start_date:
+          type: string
+          format: date
+          description: ISO date (YYYY-MM-DD) when the registration became effective.
+        tax_registration_id:
+          type: string
+          description: State-issued tax registration ID or permit number.
+        credential_id:
+          type: string
+          description: Reference to stored portal credentials.
+        portal_id:
+          type: string
+          description: Portal ID for the state's tax filing portal.
+
+    CloseRegistrationRequest:
+      type: object
+      required:
+        - effective_end_date
+      properties:
+        effective_end_date:
+          type: string
+          format: date
+          description: ISO date (YYYY-MM-DD) when the registration ends.
+          example: "2024-12-31"
+
+    RegistrationResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique identifier for the registration.
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        corporation_id:
+          type: string
+          format: uuid
+          description: The corporation this registration belongs to.
+        registration_content_id:
+          type: string
+          description: Content ID identifying the jurisdiction and tax type.
+          example: "CCT_US_STATE_CEN_06_RST"
+        jurisdiction_id:
+          type: string
+          description: Unique identifier for the jurisdiction.
+          example: "JUR_US_STATE_CA"
+        jurisdiction_type:
+          $ref: '#/schemas/jurisdiction_type'
+        jurisdiction_name:
+          type: string
+          description: Human-readable name of the jurisdiction.
+          example: "California"
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          example: "US"
+        state_or_province:
+          type: string
+          description: State or province code.
+          example: "CA"
+        tax_types:
+          type: array
+          items:
+            $ref: '#/schemas/TaxType'
+          example: ["RST", "DTT"]
+        frequency:
+          $ref: '#/schemas/Frequency'
+        effective_start_date:
+          type: string
+          format: date
+          example: "2024-01-15"
+        effective_end_date:
+          type: string
+          format: date
+          description: Set when registration is closed.
+        tax_registration_id:
+          type: string
+          description: State-issued tax ID or permit number.
+        portal_id:
+          type: string
+          description: Tax portal identifier.
+        credential_id:
+          type: string
+          description: Reference to stored portal credentials.
+        registration_status:
+          $ref: '#/schemas/registration_status'
+        validation_status:
+          $ref: '#/schemas/registration_validation_status'
+        registration_type:
+          $ref: '#/schemas/registration_type'
+        registered_by:
+          $ref: '#/schemas/registered_by'
+        email_alias:
+          type: string
+          description: Email alias for tax correspondence.
+          example: "tax-ca@acme.commenda.io"
+        archived_at:
+          type: string
+          format: date-time
+          description: Timestamp if archived, otherwise null.
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    ListRegistrationsRequest:
+      type: object
+      required:
+        - corporation_id
+      properties:
+        corporation_id:
+          type: string
+          format: uuid
+          description: The corporation ID to list registrations for.
+        countries:
+          type: array
+          items:
+            type: string
+          description: Filter by ISO country codes.
+          example: ["US"]
+        states_or_provinces:
+          type: array
+          items:
+            type: string
+          description: Filter by state/province codes.
+          example: ["CA", "NY", "TX"]
+        jurisdiction_types:
+          type: array
+          items:
+            $ref: '#/schemas/jurisdiction_type'
+          description: Filter by jurisdiction type.
+        jurisdiction_name:
+          type: string
+          description: Search by jurisdiction name.
+        registration_type:
+          $ref: '#/schemas/registration_type'
+        validation_status:
+          $ref: '#/schemas/registration_validation_status'
+        include_archived:
+          type: boolean
+          default: false
+          description: Include archived registrations.
+
+    # Content API Schemas
+    JurisdictionsRequest:
+      type: object
+      properties:
+        filters:
+          type: object
+          properties:
+            countries:
+              type: array
+              items:
+                type: string
+              example: ["US"]
+            states:
+              type: array
+              items:
+                type: string
+              example: ["CA", "TX"]
+            types:
+              type: array
+              items:
+                $ref: '#/schemas/jurisdiction_type'
+            tax_types:
+              type: array
+              items:
+                $ref: '#/schemas/TaxType'
+            registerable:
+              type: boolean
+            covering_registration_id:
+              type: string
+        search:
+          type: string
+          description: Free-text search across jurisdiction names.
+        cursor:
+          type: string
+          description: Pagination cursor.
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 10
+
+    JurisdictionsResponse:
+      type: object
+      properties:
+        jurisdictions:
+          type: array
+          items:
+            type: object
+            properties:
+              jurisdiction_id:
+                type: string
+                example: "JUR_US_STATE_CA"
+              jurisdiction_name:
+                type: string
+                example: "California"
+              jurisdiction_type:
+                $ref: '#/schemas/jurisdiction_type'
+              state_or_province:
+                type: string
+                example: "CA"
+              country:
+                type: string
+                example: "US"
+        total:
+          type: integer
+        cursor:
+          type: string
+
+    OptionsRequest:
+      type: object
+      required:
+        - filters
+      properties:
+        filters:
+          type: object
+          required:
+            - jurisdiction_ids
+          properties:
+            jurisdiction_ids:
+              type: array
+              items:
+                type: string
+              example: ["JUR_US_STATE_CA", "JUR_US_STATE_TX"]
+
+    OptionsResponse:
+      type: object
+      properties:
+        options:
+          type: array
+          items:
+            type: object
+            properties:
+              jurisdiction_id:
+                type: string
+              jurisdiction_name:
+                type: string
+              registrations:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    registration_content_id:
+                      type: string
+                      example: "CCT_US_STATE_CEN_06_RST"
+                    tax_type:
+                      type: string
+                      example: "RST"
+                    frequencies:
+                      type: array
+                      items:
+                        $ref: '#/schemas/Frequency'
+                    related_tax_types:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          tax_type:
+                            type: string
+                          optional:
+                            type: boolean
+
+    PortalFieldsRequest:
+      type: object
+      required:
+        - filters
+      properties:
+        filters:
+          type: object
+          required:
+            - registration_content_ids
+          properties:
+            registration_content_ids:
+              type: array
+              items:
+                type: string
+              example: ["CCT_US_STATE_CEN_06_RST"]
+
+    PortalFieldsResponse:
+      type: object
+      properties:
+        forms:
+          type: array
+          items:
+            type: object
+            properties:
+              registration_content_id:
+                type: string
+              jurisdiction_id:
+                type: string
+              jurisdiction_name:
+                type: string
+              tax_type:
+                type: string
+              portals:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    portal_id:
+                      type: string
+                      example: "PORTAL_CA_CDTFA"
+                    portal_name:
+                      type: string
+                      example: "California Department of Tax and Fee Administration"
+                    portal_url:
+                      type: string
+                    credential_fields:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          credential_key:
+                            type: string
+                          credential_name:
+                            type: string
+                          credential_type:
+                            type: string
+                          required:
+                            type: boolean
+                          is_unique_per_registration:
+                            type: boolean
+                          regex:
+                            type: string
+                          display_order:
+                            type: integer
+
+    # Legacy schemas for backwards compatibility
+    RegistrationGet:
+      $ref: '#/schemas/RegistrationResponse'
+    RegistrationPost:
+      $ref: '#/schemas/CreateRegistrationRequest'
+    RegistrationIdPost:
+      $ref: '#/schemas/UpdateRegistrationRequest'
+
+    # Used by filings
+    CountrySpecificDetails:
+      type: object
+      properties:
+        legal_name:
+          type: string
+          description: The legal name of the entity being registered.
+          example: Example Inc.
+        state:
+          type: string
+          description: State or province code.
+          example: CA
+        state_specific_details:
+          type: object
+          properties:
+            payment_interval:
+              type: string
+              description: Payment interval for sales tax.
+            sales_tax_id:
+              type: string
+              description: Sales tax ID.
+            tax_types:
+              type: array
+              items:
+                type: string

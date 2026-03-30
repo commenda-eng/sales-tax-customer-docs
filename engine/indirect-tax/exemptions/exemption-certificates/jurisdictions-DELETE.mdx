@@ -1,0 +1,66 @@
+---
+title: "Delete jurisdiction exemption"
+description: "Delete a jurisdiction exemption from an exemption certificate"
+openapi: "DELETE /exemption-certificates/{exemption_certificate_id}/jurisdictions/{jurisdiction}"
+---
+
+Deletes a specific jurisdiction exemption from an exemption certificate.
+
+<ParamField path="exemption_certificate_id" type="string" required>
+  The unique identifier of the exemption certificate.
+</ParamField>
+
+<ParamField path="jurisdiction" type="string" required>
+  The jurisdiction identifier in the format `{country}_{state}` (e.g., "US_CA" for California).
+</ParamField>
+
+<ResponseExample>
+
+```json 204
+{
+  "message": "Successfully deleted exemption."
+}
+```
+
+```json 404
+{
+  "error": {
+    "code": "EXEMPTION_CERTIFICATE_NOT_FOUND",
+    "message": "Exemption certificate not found"
+  }
+}
+```
+
+</ResponseExample>
+
+<RequestExample>
+
+```bash cURL
+curl --request DELETE \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/US_CA' \
+  --header 'Authorization: Bearer <token>'
+```
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/US_CA', {
+  method: 'DELETE',
+  headers: {
+    'Authorization': 'Bearer <token>'
+  }
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.delete(
+  'https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/US_CA',
+  headers={'Authorization': 'Bearer <token>'}
+)
+
+data = response.json()
+```
+
+</RequestExample>

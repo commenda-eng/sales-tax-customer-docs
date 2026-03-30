@@ -1,0 +1,34 @@
+---
+title: "Exemption Certificates"
+description: "Manage exemption certificates for a customer."
+---
+
+## Overview
+
+Exemption certificates are legal documents that allow specific buyers to purchase goods or services without paying sales tax. Merchants can use Commenda to create and manage exemption certificates for their customers.
+
+## How to create an exemption certificate
+
+To create an exemption certificate, follow these steps:
+
+1. **Create a Customer Record:** Use the customer endpoint to create a customer record, which will be linked to the exemption certificate. Save the `customer ID` from the response. Learn more about customer creation [here](/engine/indirect-tax/customers/customer).
+
+2. **Upload the Certificate File:** Use the file endpoint to upload the exemption certificate document and save the returned file ID. Details on how to use the file endpoint can be found [here](/engine/indirect-tax/files/files).
+
+3. **Link Customer and File:** Use the `POST /exemption-certificates` endpoint to link the customer and the uploaded file, thereby creating the exemption certificate.
+
+## Certificate types 
+
+1. **Single state**: This type of exemption certificate is valid only within a single state. Each state has specific rules regarding which entities can claim exemptions and the process for doing so.
+
+2. **SST**: This is a [Streamlined Sales Tax exemption certificate](https://www.streamlinedsalestax.org/Shared-Pages/exemptions-). It may be recognized in multiple states, including any states that are members of the Streamlined Sales Tax Governing Board.
+
+3. **MTC**: This is a [Multistate Tax Commission exemption certificate](https://www.mtc.gov/resources/uniform-sales-use-tax-exemption-certificate). It may be recognized in multiple states, including any of the 36 states which are are part of the Multistate Tax Commission.
+
+## Certificate verification
+
+Exemption certificates provided by customers may sometimes be invalid. Reasons can include incorrect certificate types, mismatched names, expired documents, and more. To protect merchants, Commenda automatically verifies these exemption certificates.
+
+Initially, exemption certificates are marked as `INVALID`. While in this state, they cannot be used to exempt transactions from sales tax. After the certificate is created, Commenda validates it. The validation process will update the certificate status to either `VALID` or `INVALID` based on the verification outcome.
+
+This verification process is asynchronous, and updates are sent to merchants via webhooks. For more details about exemption certificate webhooks, visit [here](/engine/indirect-tax/webhooks/webhooks).

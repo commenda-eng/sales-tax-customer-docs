@@ -1,0 +1,311 @@
+---
+title: "Tax Registrations"
+description: "Manage sales tax registrations to enable accurate tax calculations and automated filing."
+---
+
+## Overview
+
+A **registration** represents a seller's tax registration with a tax authority in a specific jurisdiction (state, city, county, or district). Commenda tracks these registrations at the corporation level to ensure accurate tax calculations and enable automated filing.
+
+Before you can collect and remit sales tax in a jurisdiction, you must be registered with the relevant tax authority. Commenda's registration system:
+
+- **Enables accurate tax calculations** — The `/calculate` endpoint uses your active registrations to determine applicable taxes
+- **Supports automated filing** — Once validated, Commenda automatically files returns on your behalf
+- **Handles complex jurisdiction hierarchies** — State-level registrations can cover local jurisdictions, or you can register separately for cities/counties with home-rule authority
+
+<Info>
+  **Getting Started?** See the [Registration Content API](/engine/indirect-tax/registrations/content/content) to discover available jurisdictions and understand what information is needed for each state.
+</Info>
+
+## Key Concepts
+
+### Registration Content
+
+Commenda maintains a content database of all available tax jurisdictions and their requirements. Each jurisdiction has a unique `registration_content_id` that you use when creating registrations. Use the [Registration Content API](/engine/indirect-tax/registrations/content/content) to discover jurisdictions and get the required content IDs.
+
+This content-based approach ensures:
+
+- Correct jurisdiction metadata is automatically applied
+- Tax type and frequency options are validated against what the jurisdiction actually supports
+- Portal credentials are collected according to each state's requirements
+
+### Jurisdiction Hierarchy
+
+Registrations follow a hierarchy:
+
+1. **State/Province registrations** — Required first. Cover most tax collection for the state.
+2. **Local registrations** (City, County, District) — Optional. Required only for jurisdictions with separate filing requirements (home-rule jurisdictions).
+
+**Local registrations inherit from their parent state:**
+- When creating a local registration, you must have an active state-level registration first
+- If you don't provide `tax_types` or `frequency`, they are **automatically inherited** from the parent state
+- If you do provide them, they must **exactly match** the parent state's values
+
+**State updates cascade to local registrations:**
+- Updating `tax_types` or `frequency` on a state registration **automatically updates all local registrations** under that state
+- Archiving or closing a state registration **automatically archives/closes all local registrations** under that state
+
+### Tax Types
+
+Each registration specifies which tax types you're collecting:
+
+- **RST** — Retail Sales Tax
+- **RUT** — Retailer's Use Tax  
+- **DTT** — District Transaction Tax
+- **SST** — Simplified Sellers Use Tax
+
+Some jurisdictions require multiple tax types to be registered together (e.g., RST + DTT in California).
+
+## Registration Workflow
+
+### Step 1: Discover Available Jurisdictions
+
+Use the [Available Jurisdictions](/engine/indirect-tax/registrations/content/available-jurisdictions-POST) endpoint to find jurisdictions where you can register:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "countries": ["US"],
+      "states": ["CA", "TX", "NY"],
+      "types": ["STATE_OR_PROVINCE"]
+    },
+    "limit": 50
+  }'
+```
+
+This returns jurisdictions with their `jurisdiction_id` for the next step.
+
+### Step 2: Get Registration Options
+
+Use the [Registration Input Options](/engine/indirect-tax/registrations/content/registration-input-options-POST) endpoint to retrieve the available tax types, frequencies, and registration content IDs:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/registration-input-options' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "jurisdiction_ids": ["JUR_US_STATE_CA", "JUR_US_STATE_TX"]
+    }
+  }'
+```
+
+Response includes `registration_content_id`, available `tax_types`, `frequencies`, and any related tax types that must be registered together.
+
+### Step 3: Get Portal Credential Requirements
+
+Use the [Portal Fields](/engine/indirect-tax/registrations/content/portal-fields-POST) endpoint to understand what credentials are needed for filing:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/content/portal-fields' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "registration_content_ids": ["CCT_US_STATE_CEN_06_RST"]
+    }
+  }'
+```
+
+This returns the portal information and required credential fields (username, password, PIN, etc.) for each state's tax portal.
+
+### Step 4: Create the Registration
+
+Use the [Create Registration](/engine/indirect-tax/registrations/registrations-POST) endpoint with the content ID from Step 2:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequency": "QUARTERLY",
+    "effective_start_date": "2024-01-01",
+    "tax_registration_id": "123-456789"
+  }'
+```
+
+At this point, Commenda will begin returning non-zero tax rates for this jurisdiction from the `/calculate` endpoint.
+
+### Step 5: Add Portal Credentials
+
+Use the [Update Registration](/engine/indirect-tax/registrations/registrations-id-POST) endpoint to add portal credentials required for automated filing:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "portal_id": "PORTAL_CA_CDTFA",
+    "credential_id": "cred_abc123"
+  }'
+```
+
+<Note>
+  Credentials are stored securely and managed separately from registrations. The `credential_id` references a stored credential set for the specified portal.
+</Note>
+
+### Step 6: Request Validation
+
+Use the [Request Validation](/engine/indirect-tax/registrations/registrations-id-request-validation-POST) endpoint to begin automated filing:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/request-validation' \
+  --header 'Authorization: Bearer <your_token>'
+```
+
+Commenda will:
+1. Verify your tax registration ID with the state
+2. Test your portal credentials
+3. Configure the account for automated filing
+
+Monitor the `validation_status` field to track progress.
+
+### Step 7: Automated Filing Begins
+
+Once `validation_status` is `VALID`, Commenda will automatically:
+- Calculate your tax liability at the end of each filing period
+- File returns with the tax authority
+- Remit payments on your behalf
+
+You should be:
+- Collecting sales tax using values from the `/calculate` endpoint
+- Recording completed transactions using the `/transactions` endpoint
+
+## Registration Lifecycle
+
+### Status Fields
+
+| Field | Description | Values |
+|-------|-------------|--------|
+| `validation_status` | Whether Commenda has verified your registration | `PENDING`, `VALIDATION_IN_PROGRESS`, `VALID`, `INVALID` |
+| `registration_status` | Current stage of the registration | `REGISTRATION_IN_PROGRESS`, `REGISTERED` |
+
+### Validation Status Flow
+
+- **PENDING** — Default status. Commenda has your registration info but validation hasn't been requested.
+- **VALIDATION_IN_PROGRESS** — You've called `/request-validation`. Commenda is verifying credentials.
+- **VALID** — All information verified. Automated filing is ready.
+- **INVALID** — Issues found. Check the registration for error details and update accordingly.
+
+### Closing a Registration
+
+When you stop selling in a jurisdiction, use the [Close Registration](/engine/indirect-tax/registrations/registrations-id-close-POST) endpoint to set an end date:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/close' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "effective_end_date": "2024-12-31"
+  }'
+```
+
+Closed registrations:
+- **Still calculate tax** for transactions within the `effective_start_date` to `effective_end_date` range
+- **Stop calculating tax** for transactions after the `effective_end_date`
+- Are preserved for historical records and filing obligations
+
+### Archiving a Registration
+
+Use the [Archive Registration](/engine/indirect-tax/registrations/registrations-id-archive-POST) endpoint to completely disable a registration:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive' \
+  --header 'Authorization: Bearer <your_token>'
+```
+
+Archived registrations:
+- Are excluded from list results unless `include_archived: true` is specified
+- **Do not calculate tax** — archived registrations are completely excluded from tax calculations
+
+### Deleting a Registration
+
+Use the [Delete Registration](/engine/indirect-tax/registrations/registrations-id-DELETE) endpoint to permanently remove a registration. Only registrations in `PENDING`, `VALIDATION_IN_PROGRESS`, or `INVALID` status can be deleted:
+
+```bash
+curl --request DELETE \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>'
+```
+
+<Warning>
+  Registrations with `validation_status: VALID` cannot be deleted via API. Contact Commenda support for assistance.
+</Warning>
+
+## Impact on Tax Calculations
+
+The `/calculate` endpoint uses your active registrations to determine applicable taxes:
+
+- **No registration** → Tax amount is zero for that jurisdiction
+- **Archived registration** → Tax amount is zero (not used in calculations)
+- **Closed registration** → Tax calculated only for transactions within the effective date range
+- **Active registration** → Correct tax rates applied
+
+## Sample Registration Object
+
+```json
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_content_id": "CCT_US_STATE_CEN_06_RST",
+  "jurisdiction_id": "JUR_US_STATE_CA",
+  "jurisdiction_type": "STATE_OR_PROVINCE",
+  "jurisdiction_name": "California",
+  "country": "US",
+  "state_or_province": "CA",
+  "tax_types": ["RST", "DTT"],
+  "frequency": "QUARTERLY",
+  "effective_start_date": "2024-01-01",
+  "tax_registration_id": "123-456789",
+  "portal_id": "PORTAL_CA_CDTFA",
+  "credential_id": "cred_abc123",
+  "registration_status": "REGISTERED",
+  "validation_status": "VALID",
+  "registration_type": "EXISTING",
+  "registered_by": "API",
+  "email_alias": "tax-ca@acme.commenda.io",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+## API Endpoints
+
+### Registration Content (Discovery)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations/content/available-jurisdictions`](/engine/indirect-tax/registrations/content/available-jurisdictions-POST) | POST | Discover jurisdictions where you can register |
+| [`/registrations/content/registration-input-options`](/engine/indirect-tax/registrations/content/registration-input-options-POST) | POST | Get tax types, frequencies for jurisdictions |
+| [`/registrations/content/portal-fields`](/engine/indirect-tax/registrations/content/portal-fields-POST) | POST | Get portal credential requirements |
+
+### Registration Management
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations`](/engine/indirect-tax/registrations/registrations-POST) | POST | Create a new registration |
+| [`/registrations/list`](/engine/indirect-tax/registrations/registrations-GET) | POST | List registrations with filters |
+| [`/registrations/{id}`](/engine/indirect-tax/registrations/registrations-id-GET) | GET | Get a single registration |
+| [`/registrations/{id}`](/engine/indirect-tax/registrations/registrations-id-POST) | POST | Update a registration |
+| [`/registrations/{id}`](/engine/indirect-tax/registrations/registrations-id-DELETE) | DELETE | Delete a registration |
+
+### Registration Lifecycle
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations/{id}/request-validation`](/engine/indirect-tax/registrations/registrations-id-request-validation-POST) | POST | Request Commenda validation |
+| [`/registrations/{id}/archive`](/engine/indirect-tax/registrations/registrations-id-archive-POST) | POST | Archive a registration (stops calculations) |
+| [`/registrations/{id}/close`](/engine/indirect-tax/registrations/registrations-id-close-POST) | POST | Close a registration (sets end date) |

@@ -1,0 +1,115 @@
+---
+title: "Create customer"
+openapi: "POST /customers"
+---
+
+Creates a new customer for a corporation.
+
+## Request body
+
+<ParamField body="corporation_id" type="string" required>
+  The unique identifier for the corporation
+</ParamField>
+
+<ParamField body="name" type="string" required>
+  Customer name (minimum 3 characters)
+</ParamField>
+
+<ParamField body="email" type="string">
+  Customer email address (must be valid email format)
+</ParamField>
+
+<ParamField body="external_id" type="string">
+  External identifier for the customer from your system
+</ParamField>
+
+<ParamField body="shipping_address" type="object">
+  Customer's shipping address
+  
+  <Expandable title="shipping_address properties">
+    <ParamField body="line1" type="string">
+      Street address line 1
+    </ParamField>
+    
+    <ParamField body="line2" type="string">
+      Street address line 2
+    </ParamField>
+    
+    <ParamField body="city" type="string">
+      City name
+    </ParamField>
+    
+    <ParamField body="state" type="string">
+      State or province code
+    </ParamField>
+    
+    <ParamField body="postal_code" type="string">
+      Postal or ZIP code
+    </ParamField>
+    
+    <ParamField body="country" type="string">
+      ISO 3166 2-letter country code
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+## Response
+
+<ResponseField name="id" type="string">
+  Unique identifier for the customer
+</ResponseField>
+
+<ResponseField name="name" type="string">
+  Customer name
+</ResponseField>
+
+<ResponseField name="email" type="string">
+  Customer email address
+</ResponseField>
+
+<ResponseField name="corporation_id" type="string">
+  The corporation ID this customer belongs to
+</ResponseField>
+
+<ResponseField name="created_at" type="int64">
+  Unix timestamp of when the customer was created
+</ResponseField>
+
+<ResponseField name="source_platform_id" type="string">
+  Source platform identifier (if applicable)
+</ResponseField>
+
+<ResponseField name="source_platform" type="string">
+  Source platform name (if applicable)
+</ResponseField>
+
+<RequestExample>
+```json
+{
+  "corporation_id": "corp_123",
+  "name": "Acme Corporation",
+  "email": "contact@acme.com",
+  "external_id": "ext_456",
+  "shipping_address": {
+    "line1": "123 Main St",
+    "line2": "Suite 100",
+    "city": "San Francisco",
+    "state": "CA",
+    "postal_code": "94105",
+    "country": "US"
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json
+{
+  "id": "cust_789",
+  "name": "Acme Corporation",
+  "email": "contact@acme.com",
+  "corporation_id": "corp_123",
+  "created_at": 1706000000
+}
+```
+</ResponseExample>

@@ -1,0 +1,28 @@
+---
+title: "Delete customer"
+openapi: "DELETE /customers/{id}"
+---
+
+Deletes a customer from the system.
+
+## Path parameters
+
+<ParamField path="id" type="string" required>
+  The unique identifier for the customer to delete
+</ParamField>
+
+## Response
+
+Returns HTTP 204 No Content on successful deletion.
+
+<RequestExample>
+```bash
+DELETE /customers/cust_789
+```
+</RequestExample>
+
+<ResponseExample>
+```text
+204 No Content
+```
+</ResponseExample>

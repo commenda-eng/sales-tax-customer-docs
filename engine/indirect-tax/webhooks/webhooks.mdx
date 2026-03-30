@@ -1,0 +1,40 @@
+---
+title: "Webhooks"
+description: "Receive real-time notifications about system events."
+---
+
+## Overview
+
+Some actions initated over Commenda's API can trigger long-running asynchronous processes. Users of Commenda's API can receive updates when those processes complete by registering webhooks with the `/webhooks` collection of endpoints.
+
+## Concepts
+
+- **Topic**: A topic represents a category of notifications that your webhook can subscribe to. It groups related events under a single, descriptive label. Topics allow you to organize and filter the types of updates you want to receive.
+- **Event**: An event is a notification that a specific action or change has occurred within Commenda's system. Each event belongs to a topic and carries detailed information about the triggering action or change.
+
+### How To Use Webhooks
+
+- **Topic Subscriptions:** Each webhook can listen to one or more topics, and multiple webhooks can subscribe to the same topic.
+- **Security Validation:** Webhook users must validate that their received messages were actually sent by Commenda. Commenda uses the **HMAC SHA256** scheme to validate webhook payloads. A `Commenda-X-Secret` header will be attached to every event payload. Learn more about HMAC SHA256 [here](https://webhooks.fyi/security/hmac). If you need any help with this, please contact the Commenda team.
+- **Event Objects:** Every time Commenda sends a request to your webhook URL, it includes an event object. You can read more about event objects [here](/engine/indirect-tax/webhooks/event).
+
+---
+
+## Getting Started
+
+1. **Register Your Webhook**
+
+   - Create a new webhook for a specific topic by making a `POST` request to the `/webhooks` endpoint.
+
+2. **Test Your Webhook**
+
+   - You can manually trigger a webhook call using the `POST /webhooks/test/trigger/:id` endpoint. More details are available [here](/engine/indirect-tax/webhooks/webhooks-TEST).
+
+3. **You're All Set**
+
+   - Once your webhook is registered, you'll start receiving updates for the topics you've subscribed to.
+
+4. **Manage Your Webhook**
+
+   - To update your webhook details, use the `POST /webhooks/:id` endpoint.
+   - To delete a webhook, use the `DELETE /webhooks/:id` endpoint.

@@ -1,0 +1,14 @@
+---
+title: "Customers"
+description: "Manage customers and their exemption certificates."
+---
+
+## Overview
+
+Customers represent the purchasers of goods sold by the merchant. You can manage exemption certificates on their behalf.
+
+### Exemption certificates
+
+Customers may claim sales tax exemptions based on the purpose of the purchase (e.g., wholesale) or their entity type (e.g., nonprofit). When a customer claims an exemption, the merchant is required to collect proof that the customer is eligible for the exemption in the form of exemption certificates. Learn more about exemption certificates [here](/engine/indirect-tax/core-concepts/exemptions#exemption-certificates).
+
+Once an exemption certificate is uploaded, Commenda will validate the exemption certificate before applying the tax exemption. The validation status will be reflected in the `verification_status` field. If the exemption certificate is not valid, the exemption will not be applied.

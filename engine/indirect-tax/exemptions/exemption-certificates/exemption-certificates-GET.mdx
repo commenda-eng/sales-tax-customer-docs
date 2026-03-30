@@ -1,0 +1,79 @@
+---
+title: "List exemption certificates"
+openapi: "GET /exemption-certificates"
+description: "Get a paginated list of all exemption certificates for a specific customer"
+---
+
+## Query parameters
+
+<ParamField query="customer_id" type="string" required>
+  The unique identifier of the customer whose exemption certificates you want to retrieve.
+</ParamField>
+
+<ParamField query="limit" type="integer" default="10">
+  Number of exemption certificates to return per page. Must be between 1 and 100.
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor for fetching the next page of results. Obtained from the previous response.
+</ParamField>
+
+## Response
+
+<ResponseField name="data" type="object">
+  <Expandable title="Response object">
+    <ResponseField name="exemption_certificates" type="array">
+      Array of exemption certificate objects.
+      
+      <Expandable title="ExemptionCertificate object">
+        <ResponseField name="id" type="string">
+          Unique identifier for the exemption certificate.
+        </ResponseField>
+        
+        <ResponseField name="customer_id" type="string">
+          The customer ID this certificate belongs to.
+        </ResponseField>
+        
+        <ResponseField name="file_id" type="string">
+          The file ID associated with this certificate, if any.
+        </ResponseField>
+        
+        <ResponseField name="type" type="string">
+          The type of exemption certificate (SINGLE_STATE, MULTI_STATE, or BLANKET).
+        </ResponseField>
+        
+        <ResponseField name="verification_status" type="string">
+          Current verification status of the certificate.
+        </ResponseField>
+        
+        <ResponseField name="exemption_certificate_number" type="string">
+          The certificate number, if provided.
+        </ResponseField>
+        
+        <ResponseField name="effective_date" type="string">
+          The effective date of the certificate (ISO 8601 date).
+        </ResponseField>
+        
+        <ResponseField name="created_at" type="integer">
+          Unix timestamp when the certificate was created.
+        </ResponseField>
+        
+        <ResponseField name="jurisdictions" type="array">
+          Array of jurisdiction exemptions associated with this certificate.
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="total_exemption_certificates" type="integer">
+      Total count of exemption certificates for this customer.
+    </ResponseField>
+    
+    <ResponseField name="cursor" type="string">
+      Cursor for fetching the next page of results. Empty if no more results.
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="message" type="string">
+  Success message.
+</ResponseField>

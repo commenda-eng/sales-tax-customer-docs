@@ -1,0 +1,88 @@
+schemas: 
+  # Customs info. Not used yet.
+  CustomsCode:
+    type: string
+    description: 8 to 10 digit extension of the HS code specific to the destination
+      country.
+    example: 4905.90.20.00
+  CustomsInfo:
+    type: object
+    description: Information about how this product should be handled for customs
+      duty calculations. These fields are only required for customers who are using
+      Commenda's API for customs duties, and will not be set by most Commenda users.
+    properties:
+      country_info:
+        type: array
+        description: Detailed customs information for each country where the product
+          may be shipped.
+        items:
+          type: object
+          properties:
+            CustomsCode:
+              "$ref": "#/schemas/CustomsCode"
+  ProductSKU:
+    type: string
+    description: A unique stock keeping unit (SKU) identifier for the product. Must be unique within your corporation and contain at least one character.
+    example: PT-1035
+    minLength: 1
+  Product:
+    type: object
+    description: A product or service provided by the seller.
+    required:
+    - id
+    - corporation_id
+    properties:
+      id:
+        type: string
+        description: Unique identifier assigned by Commenda for this product.
+        example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+      name:
+        type: string
+        description: Display name of the product.
+        example: SunShield Pro UV-Blocking Sunglasses
+      tax_code:
+        $ref: "./primitives.yaml#/schemas/ProductTaxCode"
+      sku:
+        $ref: "#/schemas/ProductSKU"
+      description:
+        type: string
+        description: Brief description of the product.
+      corporation_id:
+        type: string
+        description: Unique identifier assigned by Commenda for the corporation associated with this product.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+      # customs_info:
+      #   "$ref": "#/schemas/CustomsInfo"
+  CreateProduct:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Display name for the new product.
+        example: SunShield Pro UV-Blocking Sunglasses
+      tax_code:
+        $ref: "./primitives.yaml#/schemas/ProductTaxCode"
+      sku:
+        $ref: "#/schemas/ProductSKU"
+      description:
+        type: string
+        description: A brief description of the product.
+      corporation_id:
+        type: string
+        description: Unique identifier assigned by Commenda for the corporation associated with this product.
+        example: b6d009b0-d174-463f-b030-94643c28e209
+  UpdateProduct:
+    type: object
+    properties:
+      name:
+        type: string
+        description: Display name of the product.
+        example: SunShield Pro UV-Blocking Sunglasses
+        minLength: 3
+      tax_code:
+        $ref: "./primitives.yaml#/schemas/ProductTaxCode"
+      description:
+        type: string
+        description: Brief description of the product.
+        minLength: 3
+    

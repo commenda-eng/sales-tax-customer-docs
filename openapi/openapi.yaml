@@ -1,0 +1,21 @@
+---
+openapi: 3.0.1
+info:
+  title: Commenda - Global Indirect Tax API
+  description:
+    API for managing indirect tax calculations, filings, and registrations
+    in the United States.
+  license:
+    name: NONE
+    url: NONE
+  version: 1.0.0
+servers:
+  - url: https://transaction-tax.api.in.commenda.io/api/v1
+security:
+  - bearerAuth: []
+
+components:
+  $ref: "./components/components.yaml#/components"
+
+paths:
+  $ref: "./paths/paths.yaml"

@@ -1,0 +1,154 @@
+schemas: 
+    EvaluationPeriod:
+      type: string
+      description: The time frame over which a state evaluates economic nexus. Transactions
+        within this period are counted towards the nexus threshold.
+      enum:
+        - PREV_CALENDAR_YEAR
+        - PREVIOUS_CALENDAR_YEAR
+        - PREV_OR_CURRENT_CALENDAR_YEAR
+        - PRECEDING_12_MONTHS
+        - PRECEDING_FISCAL_YEAR
+        - PRECEDING_12_MONTHS_ENDING_SEPT_30TH
+    ThresholdType:
+      description: Specifies how a state calculates its economic nexus threshold. This
+        determines which criteria a state uses to establish whether a business has reached
+        nexus and is required to collect and remit sales tax. Some states consider only
+        sales revenue, some only the number of transactions, and others consider both
+        factors.
+      type: string
+      example: SALES_OR_TRANSACTIONS
+      enum:
+      - SALES_ONLY
+      - SALES_OR_TRANSACTIONS
+      - SALES_AND_TRANSACTIONS
+    IncludableSalesType:
+      type: string
+      description: Specifies the type of sales that are included when calculating the nexus threshold. This determines which sales are considered for nexus evaluation.
+      enum:
+        - ALL_SALES
+        - TAXABLE_SALES
+        - RETAIL_SALES
+        - GROSS
+    StateRegistrationStatus:
+      description: Status of the state registration triggered by this upcoming or exceeded
+        nexus threshold.
+      type: string
+      enum:
+      - NOT_STARTED
+      - INFORMATION_REQUESTED
+      - REGISTRATION_IN_PROGRESS
+      - REGISTRATION_COMPLETED
+      - REGISTRATION_CANCELED
+    NexusRule:
+      type: object
+      required:
+        - threshold_type
+        - evaluation_period_type
+        - includable_sales_type
+      properties:
+        sales_threshold:
+          type: number
+          description: The maximum gross sales revenue a business can generate within a state before it must collect and remit sales tax. This threshold is a key determinant in establishing economic nexus.
+          example: 100000
+        transactions_threshold:
+          type: number
+          description: The maximum number of sales transactions a business can conduct within a state before it must collect and remit sales tax. This threshold helps determine economic nexus.
+          example: 200
+        threshold_type:
+          "$ref": "#/schemas/ThresholdType"
+          description: Specifies the criteria used by a state to calculate its economic nexus threshold, such as sales revenue or transaction count.
+        evaluation_period_type:
+          "$ref": "#/schemas/EvaluationPeriod"
+          description: Defines the time frame over which a state evaluates economic nexus, impacting which transactions count towards the threshold.
+        includable_sales_type:
+          "$ref": "#/schemas/IncludableSalesType"
+          description: Indicates the type of sales included in the nexus calculation, such as all sales, taxable sales, or retail sales.
+    EconomicExposure:
+      type: object
+      required:
+        - state
+        - rule
+        - calculation
+      properties:
+        state:
+          "$ref": "./primitives.yaml#/schemas/State"
+        rule:
+          "$ref": "#/schemas/NexusRule"
+        calculation:
+          "$ref": "#/schemas/CalculationObject"
+        is_nexus_breached:
+          type: boolean
+          description: Indicates whether the nexus threshold has been breached.
+        date_of_breach:
+          type: string
+          format: date
+          description: The date when the nexus threshold was breached, if applicable.
+    CalculationObject:
+      type: object
+      required:
+        - sales_exposure_percentage
+        - transactions_exposure_percentage
+        - total_sales
+        - total_transactions
+      properties:
+        total_sales:
+          type: number
+          description: Total sales made by the customer in a state during the current evaluation period.
+          example: 0
+        total_transactions:
+          type: integer
+          description: Total number of transactions reported by the entity in a state during the current evaluation period.
+          example: 0
+        gross_sales:
+          type: number
+          description: Total gross sales made by the customer in a state during the current evaluation period.
+          example: 0
+        gross_transactions:
+          type: integer
+          description: Total number of gross transactions reported by the entity in a state during the current evaluation period.
+          example: 0
+        taxable_sales:
+          type: number
+          description: Total taxable sales made by the customer in a state during the current evaluation period.
+          example: 0
+        taxable_transactions:
+          type: integer
+          description: Total number of taxable transactions reported by the entity in a state during the current evaluation period.
+          example: 0
+        retail_sales:
+          type: number
+          description: Total retail sales made by the customer in a state during the current evaluation period.
+          example: 0
+        retail_transactions:
+          type: integer
+          description: Total number of retail transactions reported by the entity in a state during the current evaluation period.
+          example: 0
+        sales_exposure_percentage:
+          type: number
+          description: The percentage of the state's sales threshold that the business has reached during the current evaluation period for this state. This metric indicates how close a business is to reaching or exceeding the sales threshold for economic nexus in a given state.
+          example: 0
+          minimum: 0
+          maximum: 1
+        transactions_exposure_percentage:
+          type: number
+          description: The percentage of the state's transaction threshold that the business has reached during the current evaluation period for this state. This metric shows how close a business is to reaching or exceeding the transaction threshold for economic nexus in a given state.
+          example: 0
+          minimum: 0
+          maximum: 1
+        includable_sales_type:
+          type: string
+          description: The type of sales included in the nexus calculation.
+          example: "GROSS"
+    NexusResponse:
+      type: object
+      properties:
+        corporation_id:
+          type: string
+          description: The unique identifier for a corporation associated with this
+            nexus details.
+          example: b6d009b0-d174-463f-b030-94643c28e209
+        states:
+          type: array
+          items:
+            "$ref": "#/schemas/EconomicExposure"

@@ -1,0 +1,240 @@
+---
+schemas:
+  AffiliatePublicError:
+    type: object
+    required:
+      - statusCode
+      - message
+      - error
+    properties:
+      statusCode:
+        type: integer
+        example: 403
+      message:
+        oneOf:
+          - type: string
+          - type: array
+            items:
+              type: string
+        example: Company does not belong to this affiliate firm
+      error:
+        type: string
+        example: Forbidden
+  AffiliateCreateCompanyRequest:
+    type: object
+    required:
+      - email
+    properties:
+      email:
+        type: string
+        format: email
+        description: Email address for the new company owner.
+        example: founder@example.com
+      name:
+        type: string
+        description: Optional display name used when creating a new company.
+        example: Acme Holdings
+  AffiliateCreateCompanyResponse:
+    type: object
+    required:
+      - companyId
+    properties:
+      companyId:
+        type: integer
+        description: Internal Commenda company identifier.
+        example: 77
+  AffiliateServiceCatalog:
+    type: string
+    description: Incorporation service types currently supported by the affiliate public API.
+    enum:
+      - US_CCORP_INCORPORATION
+      - US_LLC_INCORPORATION
+      - CA_CORP_INCORPORATION
+      - INDIA_PVT_LTD_INCORPORATION
+      - INDIA_LLP_INCORPORATION
+      - UAE_INCORPORATION
+      - UK_INCORPORATION
+      - IE_INCORPORATION
+      - SG_INCORPORATION
+  AffiliateCreateServiceRequest:
+    type: object
+    required:
+      - companyId
+      - serviceType
+    properties:
+      companyId:
+        type: integer
+        description: Company that the new incorporation service should be attached to.
+        example: 77
+      serviceType:
+        $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceCatalog"
+  AffiliateCreateServiceResponse:
+    type: object
+    required:
+      - paymentIntentId
+    properties:
+      paymentIntentId:
+        type: string
+        description: Identifier for the newly created payment intent that anchors the current public flow.
+        example: pi_123
+  AffiliatePaymentIntentStatus:
+    type: string
+    enum:
+      - PENDING
+      - COLLECTED
+  AffiliatePaymentIntent:
+    type: object
+    required:
+      - paymentIntentId
+      - serviceRequestURL
+    properties:
+      paymentIntentId:
+        type: string
+        example: pi_123
+      serviceRequestURL:
+        type: string
+        nullable: true
+        description: App URL for the linked service request, if one exists.
+        example: https://app.commenda.io/service-request/sr_123
+  AffiliateListPaymentIntentsResponse:
+    type: object
+    required:
+      - paymentIntents
+    properties:
+      paymentIntents:
+        type: array
+        items:
+          $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePaymentIntent"
+  AffiliateServiceRequestStep:
+    type: object
+    required:
+      - name
+      - status
+      - createdAt
+      - lastUpdatedAt
+    properties:
+      name:
+        type: string
+        example: Formation documents
+      status:
+        type: string
+        enum:
+          - NOT_STARTED
+          - IN_PROGRESS
+          - COMPLETED
+          - ISSUE_REPORTED
+      createdAt:
+        type: string
+        format: date-time
+        example: 2026-03-01T00:00:00.000Z
+      lastUpdatedAt:
+        type: string
+        format: date-time
+        example: 2026-03-02T00:00:00.000Z
+  AffiliateServiceRequest:
+    type: object
+    required:
+      - id
+      - corporationId
+      - companyLegalName
+      - steps
+    properties:
+      id:
+        type: string
+        example: sr_123
+      corporationId:
+        type: integer
+        nullable: true
+        example: 44
+      companyLegalName:
+        type: string
+        nullable: true
+        example: Acme LLC
+      steps:
+        type: array
+        items:
+          $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceRequestStep"
+  AffiliatePaymentIntentServiceStatusResponse:
+    type: object
+    required:
+      - paymentIntentId
+      - service
+    properties:
+      paymentIntentId:
+        type: string
+        example: pi_123
+      service:
+        $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateServiceRequest"
+  AffiliateDocumentCategory:
+    type: string
+    enum:
+      - FORMATION_DOCUMENT
+      - SHAREHOLDER_DOCUMENT
+      - TAX_AND_COMPLIANCE_DOCUMENT
+      - FINANCIAL_RECORDS
+      - OFFICE_AND_ADMINISTRATION_DOCUMENT
+      - CONTRACTS_AND_AGREEMENTS
+      - MISCELLANEOUS
+  AffiliateDocument:
+    type: object
+    required:
+      - fileId
+      - documentName
+      - documentType
+      - documentSubType
+      - country
+      - jurisdiction
+      - corporationType
+      - corporationId
+    properties:
+      fileId:
+        type: integer
+        nullable: true
+        description: Latest uploaded file id for this document slot, if available.
+        example: 900
+      documentName:
+        type: string
+        example: Operating Agreement
+      documentType:
+        $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateDocumentCategory"
+      documentSubType:
+        type: string
+        description: Legacy Commenda document subtype used internally for document rules and files.
+        example: OperatingAgreement
+      country:
+        type: string
+        example: US
+      jurisdiction:
+        type: string
+        nullable: true
+        example: DE
+      corporationType:
+        type: string
+        nullable: true
+        example: LLC
+      corporationId:
+        type: integer
+        example: 44
+  AffiliateListDocumentsResponse:
+    type: object
+    required:
+      - documents
+      - count
+    properties:
+      documents:
+        type: array
+        items:
+          $ref: "./affiliate-incorporation.yaml#/schemas/AffiliateDocument"
+      count:
+        type: integer
+        example: 2
+  AffiliateFileSignedUrlResponse:
+    type: object
+    required:
+      - signedUrl
+    properties:
+      signedUrl:
+        type: string
+        format: uri
+        description: Temporary signed download URL for the file.
+        example: https://bucket.s3.amazonaws.com/file.pdf?X-Amz-Signature=example

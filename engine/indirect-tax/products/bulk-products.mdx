@@ -1,0 +1,95 @@
+---
+title: "Bulk Products"
+description: "Upload product metadata in bulk via CSV."
+---
+
+## Overview
+
+The Bulk Product Upload endpoint allows sellers to import product data into Commenda using a CSV file. This is especially useful for onboarding existing catalogs or synchronizing product data across platforms.
+
+## Endpoint
+
+```
+POST /api/v1/products/bulk_upload/csv
+```
+
+### Request Body
+
+```json
+{
+  "file_id": "string",                      // Required: ID of the uploaded file
+  "corporation_id": "string",               // Optional: Corporation to associate products with
+  "update_protected_columns": boolean       // Optional: Whether to update protected columns (source_platform, source_platform_id)
+}
+```
+
+- The `file_id` should point to a previously uploaded CSV file via the `/files` endpoint.
+- If `corporation_id` is included, additional authorization checks are performed and all products in the CSV must belong to this corporation.
+- `update_protected_columns` allows updating source platform fields if set to `true`.
+
+### Response Body
+
+```json
+{
+  "data": {
+    "job": {
+      "id": "string",
+      "organization_id": "string",
+      "entity": "PRODUCT",
+      "operation": "IMPORT",
+      "status": "PENDING",
+      "file_name": "string",
+      "source_file_url": "string",
+      "created_at": "timestamp"
+    }
+  },
+  "message": "Successfully created job for bulk products upload."
+}
+```
+
+The endpoint returns a job object that can be used to track the progress of the bulk upload via the Jobs API.
+
+---
+
+## CSV File Requirements
+
+- Must be **CSV format** with headers.
+- Max file size: **15 MB**
+- Content-Type must be one of the supported file types (e.g., `text/csv`)
+- Header row is required.
+
+### CSV Headers
+
+| Column Header             | Required | Type     | Description |
+|--------------------------|----------|----------|-------------|
+| `name`                   | No*      | string   | Name of the product. *Either `name` or `sku` must be provided. |
+| `description`            | No       | string   | Short description of the product |
+| `sku`                    | No*      | string   | Unique identifier used by seller. *Either `name` or `sku` must be provided. |
+| `product_taxability_code`| No       | string   | Tax code indicating how the product is taxed. Defaults to `TPP`. |
+| `source_platform`        | No       | enum     | Integration source (`SHOPIFY`, `STRIPE`, `WOOCOMMERCE`, `BIGCOMMERCE`) |
+| `source_platform_id`     | No       | string   | Unique product ID from the source platform |
+| `corporation_id`         | Yes      | string   | UUID of the corporation owning the product |
+
+**Important Notes:**
+- At least one of `name` or `sku` must be provided for each product.
+- If `name` is provided, it must be at least 3 characters long.
+- If `source_platform` is provided, `source_platform_id` must also be provided, and vice versa.
+- If a `corporation_id` is specified in the request body, all products in the CSV must have matching `corporation_id` values.
+
+## Sample CSV
+
+```csv
+name,description,sku,product_taxability_code,source_platform,source_platform_id,corporation_id
+Sunglasses,UV-protected sunglasses,PT-1035,TPP,SHOPIFY,prod_abc123,acme-corp-uuid
+Baseball Cap,,CAP-001,TPP,,,acme-corp-uuid
+```
+
+
+---
+
+## Notes
+
+- Commenda creates an async **import job** to process the CSV.
+- You can monitor job status via the Jobs API.
+- Only the **first few rows** are validated synchronously. Deeper row-level validation is handled asynchronously in the import job.
+- The import is **non-blocking**—you’ll receive a job ID to track progress.

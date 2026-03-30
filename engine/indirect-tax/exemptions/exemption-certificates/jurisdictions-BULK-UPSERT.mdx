@@ -1,0 +1,176 @@
+---
+title: "Bulk upsert jurisdiction exemptions"
+description: "Create or update multiple jurisdiction exemptions at once"
+openapi: "POST /exemption-certificates/{exemption_certificate_id}/jurisdictions/bulk_upsert"
+---
+
+Creates or updates multiple jurisdiction exemptions for an exemption certificate in a single request. If a jurisdiction already exists, it will be updated; otherwise, it will be created.
+
+<ParamField path="exemption_certificate_id" type="string" required>
+  The unique identifier of the exemption certificate.
+</ParamField>
+
+<ParamField body="jurisdictions" type="array" required>
+  Array of jurisdiction exemptions to upsert. Each jurisdiction must be unique.
+
+  <Expandable title="Jurisdiction item">
+    <ParamField body="country" type="string" required>
+      ISO 3166-1 alpha-2 country code. Currently only "US" is supported.
+    </ParamField>
+
+    <ParamField body="state" type="string" required>
+      ISO 3166-2 subdivision code (e.g., "CA" for California).
+    </ParamField>
+
+    <ParamField body="reason" type="string">
+      The reason for the exemption. Valid values:
+      - `PURPOSE_RESALE`
+      - `ENTITY_TYPE_NON_PROFIT`
+      - `GOVERNMENT`
+      - `MANUFACTURER`
+      - `AGRICULTURAL`
+      - `OTHER`
+    </ParamField>
+
+    <ParamField body="identification_type" type="string" required>
+      The type of identification for the exemption.
+    </ParamField>
+
+    <ParamField body="identification_number" type="string">
+      The identification number for the exemption.
+    </ParamField>
+
+    <ParamField body="end_date" type="string">
+      The end date of the exemption in ISO 8601 format (YYYY-MM-DD).
+    </ParamField>
+
+    <ParamField body="is_active" type="boolean">
+      Whether the exemption is active.
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Successfully updated exemptions."
+}
+```
+
+```json 400
+{
+  "error": {
+    "code": "INVALID_REQUEST_BODY",
+    "message": "Duplicate jurisdictions found in request"
+  }
+}
+```
+
+```json 404
+{
+  "error": {
+    "code": "EXEMPTION_CERTIFICATE_NOT_FOUND",
+    "message": "Exemption certificate not found"
+  }
+}
+```
+
+</ResponseExample>
+
+<RequestExample>
+
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/bulk_upsert' \
+  --header 'Authorization: Bearer <token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "jurisdictions": [
+      {
+        "country": "US",
+        "state": "CA",
+        "reason": "PURPOSE_RESALE",
+        "identification_type": "STATE_TAX_ID",
+        "identification_number": "12-3456789",
+        "is_active": true
+      },
+      {
+        "country": "US",
+        "state": "NY",
+        "reason": "ENTITY_TYPE_NON_PROFIT",
+        "identification_type": "FEDERAL_TAX_ID",
+        "identification_number": "98-7654321",
+        "end_date": "2025-12-31",
+        "is_active": true
+      }
+    ]
+  }'
+```
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/bulk_upsert', {
+  method: 'POST',
+  headers: {
+    'Authorization': 'Bearer <token>',
+    'Content-Type': 'application/json'
+  },
+  body: JSON.stringify({
+    jurisdictions: [
+      {
+        country: 'US',
+        state: 'CA',
+        reason: 'PURPOSE_RESALE',
+        identification_type: 'STATE_TAX_ID',
+        identification_number: '12-3456789',
+        is_active: true
+      },
+      {
+        country: 'US',
+        state: 'NY',
+        reason: 'ENTITY_TYPE_NON_PROFIT',
+        identification_type: 'FEDERAL_TAX_ID',
+        identification_number: '98-7654321',
+        end_date: '2025-12-31',
+        is_active: true
+      }
+    ]
+  })
+});
+
+const data = await response.json();
+```
+
+```python Python
+import requests
+
+response = requests.post(
+  'https://transaction-tax.api.in.commenda.io/api/v1/exemption-certificates/{exemption_certificate_id}/jurisdictions/bulk_upsert',
+  headers={'Authorization': 'Bearer <token>'},
+  json={
+    'jurisdictions': [
+      {
+        'country': 'US',
+        'state': 'CA',
+        'reason': 'PURPOSE_RESALE',
+        'identification_type': 'STATE_TAX_ID',
+        'identification_number': '12-3456789',
+        'is_active': True
+      },
+      {
+        'country': 'US',
+        'state': 'NY',
+        'reason': 'ENTITY_TYPE_NON_PROFIT',
+        'identification_type': 'FEDERAL_TAX_ID',
+        'identification_number': '98-7654321',
+        'end_date': '2025-12-31',
+        'is_active': True
+      }
+    ]
+  }
+)
+
+data = response.json()
+```
+
+</RequestExample>

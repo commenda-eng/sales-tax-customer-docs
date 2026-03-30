@@ -1,0 +1,45 @@
+---
+title: "Incorporation API"
+description: "Create affiliate-scoped companies and incorporation services, then track the resulting payment-intent and document flow."
+---
+
+## Overview
+
+This API surface is authenticated with an affiliate `x-api-key` and scoped to the companies your affiliate firm can access.
+
+Base URL:
+
+```text
+https://api.prod.commenda.io/api/v1/public
+```
+
+## Authentication
+
+Pass your affiliate API key in the `x-api-key` header on every request.
+
+```bash
+curl --request GET \
+  --url 'https://api.prod.commenda.io/api/v1/public/payment-intents' \
+  --header 'x-api-key: <affiliate_api_key>'
+```
+
+## Current Flow
+
+1. Create a company with `POST /public/company`.
+2. Start an incorporation service with `POST /public/services`.
+3. Poll payment intent and service status with the payment-intent endpoints.
+4. Use the Commenda OS documents endpoints for document retrieval.
+5. Download a concrete file with `GET /public/file/{fileId}`.
+
+## Contract Notes
+
+- Access is resolved through affiliate-firm ownership, not end-user login.
+- `POST /public/services` returns a `paymentIntentId`, which is the current public anchor for the flow.
+- `GET /public/documents` is deprecated. Callers should use the Commenda OS documents endpoints instead.
+
+## Commenda OS Read API
+
+A separate Commenda OS API is also available under the same `/public` base URL.
+
+- See [Commenda OS API](/engine/commendaos/public-api/commenda-os-introduction) for business-entity, persons, documents, and registrations endpoints.
+- Use [List documents](/engine/commendaos/public-api/commenda-os-business-entities-id-documents-GET) and [List supported document types](/engine/commendaos/public-api/commenda-os-business-entities-id-documents-supported-GET) instead of the deprecated `GET /public/documents` route.

@@ -1,0 +1,171 @@
+---
+title: "List customers"
+openapi: "GET /customers"
+---
+
+Retrieves a paginated list of customers for a corporation with optional filtering and search capabilities.
+
+## Query parameters
+
+<ParamField query="corporation_id" type="string" required>
+  The unique identifier for the corporation
+</ParamField>
+
+<ParamField query="cursor" type="string">
+  Pagination cursor for fetching the next page of results
+</ParamField>
+
+<ParamField query="limit" type="int32" default="10">
+  Maximum number of customers to return (max: 100)
+</ParamField>
+
+<ParamField query="name" type="string">
+  Filter customers by exact name match
+</ParamField>
+
+<ParamField query="search_term" type="string">
+  Search customers by name (partial match)
+</ParamField>
+
+<ParamField query="source_platforms" type="string">
+  Comma-separated list of source platforms to filter by
+</ParamField>
+
+<ParamField query="source_platform_ids" type="string">
+  Comma-separated list of source platform IDs to filter by
+</ParamField>
+
+<ParamField query="extend" type="string">
+  Comma-separated list of fields to include in response. Options: `shipping_address`, `exemption_metadata`
+</ParamField>
+
+### Exemption filters
+
+<ParamField query="certificate_types" type="string">
+  Comma-separated list of certificate types to filter by
+</ParamField>
+
+<ParamField query="exemption_jurisdiction" type="string">
+  Filter by exemption jurisdiction
+</ParamField>
+
+<ParamField query="expiration_status" type="string">
+  Filter by certificate expiration status
+</ParamField>
+
+<ParamField query="exemption_status" type="string">
+  Filter by exemption status
+</ParamField>
+
+<ParamField query="has_exemption" type="boolean">
+  Filter customers by whether they have exemptions
+</ParamField>
+
+## Response
+
+<ResponseField name="customers" type="array">
+  Array of customer objects
+  
+  <Expandable title="customer properties">
+    <ResponseField name="id" type="string">
+      Unique identifier for the customer
+    </ResponseField>
+    
+    <ResponseField name="name" type="string">
+      Customer name
+    </ResponseField>
+    
+    <ResponseField name="email" type="string">
+      Customer email address
+    </ResponseField>
+    
+    <ResponseField name="corporation_id" type="string">
+      The corporation ID this customer belongs to
+    </ResponseField>
+    
+    <ResponseField name="created_at" type="int64">
+      Unix timestamp of when the customer was created
+    </ResponseField>
+    
+    <ResponseField name="source_platform_id" type="string">
+      Source platform identifier (if applicable)
+    </ResponseField>
+    
+    <ResponseField name="source_platform" type="string">
+      Source platform name (if applicable)
+    </ResponseField>
+    
+    <ResponseField name="shipping_address" type="object">
+      Customer's shipping address (included when `extend=shipping_address`)
+      
+      <Expandable title="shipping_address properties">
+        <ResponseField name="line1" type="string">
+          Street address line 1
+        </ResponseField>
+        
+        <ResponseField name="line2" type="string">
+          Street address line 2
+        </ResponseField>
+        
+        <ResponseField name="city" type="string">
+          City name
+        </ResponseField>
+        
+        <ResponseField name="state" type="string">
+          State or province code
+        </ResponseField>
+        
+        <ResponseField name="postal_code" type="string">
+          Postal or ZIP code
+        </ResponseField>
+        
+        <ResponseField name="country" type="string">
+          ISO 3166 2-letter country code
+        </ResponseField>
+      </Expandable>
+    </ResponseField>
+    
+    <ResponseField name="exemption_metadata" type="object">
+      Exemption information (included when `extend=exemption_metadata`)
+    </ResponseField>
+  </Expandable>
+</ResponseField>
+
+<ResponseField name="total_customers" type="int64">
+  Total number of customers matching the query
+</ResponseField>
+
+<ResponseField name="cursor" type="string">
+  Pagination cursor for the next page (if more results exist)
+</ResponseField>
+
+<RequestExample>
+```bash
+GET /customers?corporation_id=corp_123&limit=20&extend=shipping_address&search_term=acme
+```
+</RequestExample>
+
+<ResponseExample>
+```json
+{
+  "customers": [
+    {
+      "id": "cust_789",
+      "name": "Acme Corporation",
+      "email": "contact@acme.com",
+      "corporation_id": "corp_123",
+      "created_at": 1706000000,
+      "shipping_address": {
+        "line1": "123 Main St",
+        "city": "San Francisco",
+        "state": "CA",
+        "postal_code": "94105",
+        "country": "US"
+      }
+    }
+  ],
+  "total_customers": 1,
+  "cursor": null
+}
+```
+</ResponseExample>

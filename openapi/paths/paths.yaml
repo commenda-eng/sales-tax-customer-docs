@@ -1,0 +1,2638 @@
+---
+"/webhooks":
+  post:
+    summary: Create a new webhook.
+    description: Register your webhook with Commenda.
+    operationId: registerWebhook
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CreateWebhookRequest"
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/CreateWebhookResponse"
+                message:
+                  type: string
+                  example: Successfully registered webhook.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: List all webhook.
+    description: Get a list of all webhooks registered with Commenda.
+    operationId: listAllWebhooks
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    webhooks:
+                      "$ref": "../components/components.yaml#/components/schemas/GetWebhookResponse"
+                message:
+                  type: string
+                  example: Successfully fetched webhooks.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/webhooks/:id":
+  post:
+    summary: Update a webhook
+    description: Update an existing webhook.
+    operationId: updateWebhook
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/UpdateWebhookRequest"
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully updated webhook.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: Get a webhook.
+    description: Get a webhook registered with Commenda.
+    operationId: getWebhook
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/GetWebhookResponse"
+                message:
+                  type: string
+                  example: Successfully fetched webhook.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a webhook
+    description: Delete an existing webhook.
+    operationId: deleteWebhook
+    responses:
+      '204':
+        description: Sales tax registration response
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/webhooks/test/trigger/:id":
+  post:
+    summary: Test your webhook
+    description: Trigger a test against your webhook.
+    operationId: testWebhook
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              event_data:
+                type: object
+                description: Data to inject into event.data. When the webhook will
+                  be triggered the event will have this data.
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully triggered webhook.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/products":
+  post:
+    summary: Add a new product.
+    description: Create a new product for a corporation.
+    operationId: createProduct
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CreateProduct"
+    responses:
+      '200':
+        description: Create product response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/Product"
+                message:
+                  type: string
+                  example: Successfully created product.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: Get a product by id.
+    operationId: getProduct
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier for a corporation to filter the products
+        by.
+      required: true
+      schema:
+        type: string
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: Fetch a product response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    products:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/Product"
+                    cursor:
+                      type: string
+                message:
+                  type: string
+                  example: Successfully fetched products.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/products/bulk_upload/csv":
+  post:
+    summary: Bulk upload products
+    description: Submit a CSV file of products for processing
+    operationId: submitBulkProducts
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - file_id
+            properties:
+              file_id:
+                type: string
+                description: The ID of a previously uploaded CSV file via the `/files` endpoint.
+              corporation_id:
+                type: string
+                description: The unique identifier for a corporation to associate with these products.
+    responses:
+      '200':
+        description: Successful product import job creation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    job:
+                      "$ref": "../components/job.yaml#/schemas/Job"
+                message:
+                  type: string
+                  example: Successfully started product import job.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/products/:id":
+  post:
+    summary: Update a product.
+    description: Update an existing product by id.
+    operationId: updateProduct
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/UpdateProduct"
+    responses:
+      '200':
+        description: Create product response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully updated product.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: Get a product by id.
+    operationId: getProductById
+    responses:
+      '200':
+        description: Fetch a product response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/Product"
+                message:
+                  type: string
+                  example: Successfully fetched product.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a product by id.
+    operationId: deleteProduct
+    responses:
+      '204':
+        description: Delete a product response.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/products/{id}/customs-code":
+  post:
+    summary: Add or update a customs code for a product.
+    description: Manage customs code for each product by jurisdiction.
+    operationId: updateProductCustomsCode
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the product to update.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - country
+            - customs_code
+            properties:
+              country:
+                "$ref": "../components/components.yaml#/components/schemas/Country"
+              # customs_code:
+              #   "$ref": "../components/components.yaml#/components/schemas/customs_code"
+    responses:
+      '200':
+        description: Set product customs code response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully set product customs code.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a customs code for a product.
+    operationId: deleteProductCustomsCode
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the product to update.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+            - country
+            properties:
+              country:
+                description: ISO 3166 2-letter country code representing the country
+                  to remove the country code for.
+                "$ref": "../components/components.yaml#/components/schemas/Country"
+    responses:
+      '204':
+        description: Deleted customs code for product.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/corporations":
+  post:
+    summary: Add a new corporation.
+    description: Create a new corporation for a sales tax partner.
+    operationId: createCorporation
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/corporations.yaml#/schemas/CreateCorporation"
+    responses:
+      '200':
+        description: Sales tax registration response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/corporations.yaml#/schemas/Corporation"
+                message:
+                  type: string
+                  example: Successfully created corporation.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: Get all corporations.
+    description: Get all corporations associated with a sales tax partner.
+    operationId: getCorporations
+    parameters:
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: Get all corporations response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  required:
+                  - corporations
+                  properties:
+                    corporations:
+                      type: array
+                      items:
+                        "$ref": "../components/corporations.yaml#/schemas/Corporation"
+                    cursor:
+                      type: string
+                message:
+                  type: string
+                  example: Successfully fetched corporations.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/corporations/{id}":
+  get:
+    summary: Get corporation.
+    description: Get a corporation by id.
+    operationId: getCorporation
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the corporation to fetch.
+    responses:
+      '200':
+        description: Get one corporation response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/corporations.yaml#/schemas/Corporation"
+                message:
+                  type: string
+                  example: Successfully fetched corporation.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  post:
+    summary: Update a corporation.
+    description: Update details for a corporation.
+    operationId: updateCorporation
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the corporation to update.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/corporations.yaml#/schemas/UpdateCorporation"
+    responses:
+      '200':
+        description: Update one corporation response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully updated corporation.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete corporation.
+    description: Delete a corporation by id.
+    operationId: deleteCorporation
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the corporation to delete.
+    responses:
+      '204':
+        description: Delete one corporation response.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations":
+  post:
+    summary: Create a registration
+    description: Create a new sales tax registration using a registration_content_id obtained from the content/registration-input-options endpoint.
+    operationId: createRegistration
+    tags:
+      - Registrations
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/RegistrationPost"
+    responses:
+      '201':
+        description: Registration created successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully created registration.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/list":
+  post:
+    summary: List registrations
+    description: List all registrations for a corporation with optional filters.
+    operationId: listRegistrations
+    tags:
+      - Registrations
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/registrations.yaml#/schemas/ListRegistrationsRequest"
+    responses:
+      '200':
+        description: Registrations retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    registrations:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully fetched registrations.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/{registration_id}":
+  get: 
+    summary: Get a registration
+    description: Retrieve a single registration by its ID.
+    operationId: getRegistration
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration.
+    responses: 
+      '200':
+        description: Registration retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully fetched registration.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"      
+  post:
+    summary: Update a registration
+    description: Update an existing registration with new details such as tax types, frequency, or credentials.
+    operationId: updateRegistration
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration to update.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/RegistrationIdPost"
+    responses:
+      '200':
+        description: Registration updated successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully updated registration.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a registration
+    description: Delete a registration. Only registrations with validation_status of PENDING, INVALID, or VALIDATION_IN_PROGRESS can be deleted. VALID registrations cannot be deleted - use close or archive instead.
+    operationId: deleteRegistration
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration to delete.
+    responses:
+      '204':
+        description: Registration deleted successfully
+      '400':
+        description: Bad request - cannot delete VALID registrations
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Registration not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/{registration_id}/request-validation":
+  post:
+    summary: Request validation
+    description: Submit a registration for validation by the Commenda team. Ensure all required fields (tax_registration_id, frequency, credentials) are set before calling this endpoint.
+    operationId: requestRegistrationValidation
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration to validate.
+    responses:
+      '200':
+        description: Validation request submitted
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully started validation process.
+      '400':
+        description: Bad request - missing required fields
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/{registration_id}/archive":
+  post:
+    summary: Archive a registration
+    description: Archive a registration to stop tax calculations and hide from default list views. Archived registrations are completely excluded from tax processing. Use include_archived=true when listing to see archived registrations.
+    operationId: archiveRegistration
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration to archive.
+    responses:
+      '200':
+        description: Registration archived successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully archived registration.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/{registration_id}/close":
+  post:
+    summary: Close a registration
+    description: Close a registration when you stop selling in a jurisdiction. The registration remains active for tax calculations within its date range (effective_start_date to effective_end_date). Use this when you have historical obligations to preserve.
+    operationId: closeRegistration
+    tags:
+      - Registrations
+    parameters:
+    - in: path
+      required: true
+      name: registration_id
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the registration to close.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/registrations.yaml#/schemas/CloseRegistrationRequest"
+    responses:
+      '200':
+        description: Registration closed successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/RegistrationGet"
+                message:
+                  type: string
+                  example: Successfully closed registration.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/content/available-jurisdictions":
+  post:
+    summary: List available jurisdictions
+    description: Discover jurisdictions where you can create registrations. Use filters to narrow down by country, state, or tax type. Results are paginated using cursor-based pagination.
+    operationId: listAvailableJurisdictions
+    tags:
+      - Registration Content
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/registrations.yaml#/schemas/JurisdictionsRequest"
+    responses:
+      '200':
+        description: Jurisdictions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/registrations.yaml#/schemas/JurisdictionsResponse"
+                message:
+                  type: string
+                  example: Successfully fetched jurisdictions.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/content/registration-input-options":
+  post:
+    summary: Get registration options
+    description: Get available tax types, frequencies, and registration_content_ids for specific jurisdictions. The registration_content_id is required when creating a registration.
+    operationId: getRegistrationInputOptions
+    tags:
+      - Registration Content
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/registrations.yaml#/schemas/OptionsRequest"
+    responses:
+      '200':
+        description: Options retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/registrations.yaml#/schemas/OptionsResponse"
+                message:
+                  type: string
+                  example: Successfully fetched registration options.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/registrations/content/portal-fields":
+  post:
+    summary: Get portal credential fields
+    description: Get the credential fields required for a specific registration content. These fields define what information you need to collect for automated tax filing.
+    operationId: getPortalFields
+    tags:
+      - Registration Content
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/registrations.yaml#/schemas/PortalFieldsRequest"
+    responses:
+      '200':
+        description: Portal fields retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/registrations.yaml#/schemas/PortalFieldsResponse"
+                message:
+                  type: string
+                  example: Successfully fetched portal fields.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/calculate":
+  post:
+    summary: Calculate sales tax for a transaction
+    operationId: calculateSalesTax
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/TaxCalculationRequest"
+    responses:
+      '200':
+        description: Successful tax calculation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/TaxCalculationResponse"
+                message:
+                  type: string
+                  example: Successfully calculated tax.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/calculate-customs-duty":
+  post:
+    summary: Calculate customs duty for a transaction
+    operationId: calculateCustomsDuty
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CustomsDutyCalculationRequest"
+    responses:
+      '200':
+        description: Successful customs duty calculation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    customs_rate:
+                      type: number
+                      description: Numeric value representing the customs duty rate
+                        as a percentage (e.g., 6.25 for 6.25%).
+                      example: 10.25
+                    customs_duty_amount:
+                      type: number
+                      example: 1.03
+                      description: Numeric value representing the total amount of
+                        sales tax to be remitted for this particular line item.
+                    customs_duty_currency:
+                      "$ref": "../components/components.yaml#/components/schemas/Currency"
+                      description: ISO 4217 alpha-3 currency code for the customs
+                        duty amount.
+                message:
+                  type: string
+                  example: Successfully calculated tax.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/transactions":
+  post:
+    summary: Create a transaction
+    description: Submit a completed transaction for processing and filing
+    operationId: submitTransaction
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CreateTaxTransactionRequest"
+    responses:
+      '200':
+        description: Transaction creation response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/TaxTransactionResponse"
+                message:
+                  type: string
+                  example: Successfully created transaction.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: List transactions
+    description: List all transactions that match this query
+    operationId: listTransactions
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier of the corporation for which to retrieve
+        data.
+      required: true
+      schema:
+        type: string
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: List of transactions
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    transactions:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/TaxTransactionResponse"
+                    cursor:
+                      type: string
+                      description: Pagination cursor for the next set of results
+                message:
+                  type: string
+                  example: Successfully fetched transactions.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/transactions/{id}":
+  get:
+    summary: Get one transaction
+    description: Retrieve one transaction by its identifier
+    operationId: getTransaction
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the transaction to fetch.
+    responses:
+      '200':
+        description: Transaction fetch response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/TaxTransactionResponse"
+                message:
+                  type: string
+                  example: Successfully fetched transaction.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Transaction not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a transaction
+    description: Deletes a transaction by its identifier
+    operationId: deleteTransaction
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the transaction to delete.
+    responses:
+      '204':
+        description: Transaction successfully deleted
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Transaction not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/transactions/refund-transactions/{parent-transaction-id}":
+  post:
+    summary: Create a return transaction
+    description: |-
+      Create a RETURN transaction linked to an existing invoice to receive credit against a future tax liability.
+      The resulting RETURN transaction will have negative line amounts and will be properly linked to the original sale.
+    operationId: refundTransaction
+    parameters:
+    - in: path
+      name: parent-transaction-id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the transaction to generate a return for.
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CreateRefundRequest"
+    responses:
+      '200':
+        description: Transaction creation response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    id:
+                      type: string
+                      description: The unique identifier for the refund transaction.
+                      example: 2535af08-a139-4d0c-9827-1651e46dfbcf
+                message:
+                  type: string
+                  example: Successfully created refund transaction.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/transactions/bulk":
+  post:
+    summary: Bulk submit transactions
+    description: |-
+      Submit a file of completed transactions for processing.
+      The CSV file must include required fields for both SALE and RETURN transactions.
+      For RETURN transactions, all line items must have negative total amounts and should include parent_invoice_id when available.
+    operationId: submitBulkTransactions
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: The CSV file to upload.
+              corporation_id:
+                type: string
+                description: The unique identifier for a corporation associated with
+                  this file.
+    responses:
+      '200':
+        description: Transaction creation response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/BulkTransactionMetadata"
+                message:
+                  type: string
+                  example: Successfully uploaded transactions.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/nexus":
+  get:
+    summary: Get nexus information
+    description: Get nexus status for one seller for all US states
+    operationId: getNexusDetails
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier for a corporation. All transactions associated
+        with the specified corporation will be returned.
+      required: true
+      schema:
+        type: string
+    responses:
+      '200':
+        description: Nexus data for all states
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/NexusResponse"
+                message:
+                  type: string
+                  example: Successfully fetched nexus.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/filings":
+  get:
+    summary: List filings
+    description: List state and local sales tax filings for a corporation, filtered
+      by query.
+    operationId: listFilings
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier of the corporation for which to retrieve
+        data.
+      required: true
+      schema:
+        type: string
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: Filing info for all states
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    filings:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/FilingsForGetAll"
+                    cursor:
+                      type: string
+                      description: Pagination cursor for the next set of results
+                message:
+                  type: string
+                  example: Successfully fetched filings.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/filings/{id}":
+  get:
+    summary: Get one filing
+    description: Retrieve one filing by its id
+    operationId: getFiling
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the transaction to fetch.
+    responses:
+      '200':
+        description: Transaction fetch response
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/FilingsGet"
+                message:
+                  type: string
+                  example: Successfully fetched filing.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Filing not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/customers":
+  post:
+    summary: Create a customer
+    description: Create a customer to track their exemption certificates and default
+      values for their addresses.
+    operationId: createCustomer
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/customers.yaml#/schemas/CustomerCreate"
+    responses:
+      '200':
+        description: Information about the created customer
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/customers.yaml#/schemas/CustomerInfo"
+                message:
+                  type: string
+                  example: Successfully created customer.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  get:
+    summary: List customers
+    description: List customers associated with a corporation.
+    operationId: listCustomers
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier for a corporation used to filter the relevant
+        customer base.
+      required: true
+      schema:
+        type: string
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: List of customers associated with the requesting corporation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data: 
+                  $ref: "../components/customers.yaml#/schemas/GetAllCustomersByCorporation"
+                message: 
+                  type: string
+                  example: "Successfully fetched customers."
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/customers/{id}":
+  get:
+    summary: Get customer
+    description: Get detailed information about a specific customer, including exemption
+      certificates.
+    operationId: getCustomer
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the customer to fetch.
+    responses:
+      '200':
+        description: Detailed information about a specific customer
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  $ref: "../components/customers.yaml#/schemas/CustomerExtended"
+                message:
+                  type: string
+                  example: Successfully fetched customer.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  post:
+    summary: Update a customer
+    description: Update a customer, including their addresses and exemption certificates.
+    operationId: updateCustomer
+    requestBody:
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/customers.yaml#/schemas/CustomerUpdate"
+    responses:
+      '200':
+        description: Information about the customer after the update
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                message:
+                  type: string
+                  example: Successfully updated customer.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the transaction to update
+  delete:
+    summary: Delete a customer
+    description: Deletes a customer by its id
+    operationId: deleteCustomer
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the customer to delete.
+    responses:
+      '204':
+        description: Customer successfully deleted
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Transaction not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/exemption-certificates":
+  get:
+    summary: List all exemption certificates.
+    description: Get a list of all exemption certificates.
+    operationId: listAllExemptionCertificates
+    parameters:
+    - in: query
+      name: customer_id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the customer whose exemption certificate
+        you want to fetch.
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: Sales tax exemption certificate response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    exemption_certificates:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/ExemptionCertificateResponse"
+                    cursor:
+                      type: string
+                      description: Pagination cursor for the next set of results.
+                    total_exemptions:
+                      type: number
+                      description: Total number of exemption certificates.
+                message:
+                  type: string
+                  example: Successfully fetched exemption certificates.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  post:
+    summary: Create an exemption certificate
+    description: Create an exemption certificate for a customer
+    operationId: createExemptionCertificate
+    requestBody:
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/CreateExemptionCertificateRequest"
+    responses:
+      '200':
+        description: Successful exemption certificate creation
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/ExemptionCertificateResponse"
+                message:
+                  type: string
+                  example: Successfully created exemption certificate.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/exemption-certificates/{id}":
+  get:
+    summary: Get exemption certificate.
+    description: Get a specific exemption certificate by id.
+    operationId: getExemptionCertificate
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the exemption certificate to fetch.
+    responses:
+      '200':
+        description: Get one exemption certificate response.
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/ExemptionCertificateResponse"
+                message:
+                  type: string
+                  example: Successfully fetched exemption certificate.
+      '404':
+        description: Not Found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    operationId: deleteExemptionCertificate
+    summary: Delete exemption certificate
+    description: Delete an exemption certificate. This does not delete the associated
+      file.
+    parameters:
+    - in: path
+      required: true
+      name: id
+      schema:
+        type: string
+      description: The unique identifier of the exemption certificate to delete.
+    responses:
+      '204':
+        description: Exemption certificate successfully deleted
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Exemption certificate not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/files":
+  get:
+    summary: List files
+    description: List files for one seller
+    operationId: listFiles
+    parameters:
+    - name: corporation_id
+      in: query
+      description: The unique identifier of the corporation for which to retrieve
+        data.
+      required: true
+      schema:
+        type: string
+    - name: cursor
+      in: query
+      description: Cursor for pagination
+      required: false
+      schema:
+        type: string
+    - name: limit
+      in: query
+      description: Number of items to return per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+    responses:
+      '200':
+        description: List of files
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  type: object
+                  properties:
+                    files:
+                      type: array
+                      items:
+                        "$ref": "../components/components.yaml#/components/schemas/FileInfo"
+                    cursor:
+                      type: string
+                      description: Pagination cursor for the next set of results
+                message:
+                  type: string
+                  example: Successfully fetched files.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  post:
+    summary: Create file
+    description: Upload a new file to Commenda's server
+    operationId: createFile
+    requestBody:
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+                description: The file to upload
+              corporation_id:
+                type: string
+                description: The unique identifier for a corporation associated with
+                  this file.
+    responses:
+      '200':
+        description: Information about the created file
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/FileInfo"
+                message:
+                  type: string
+                  example: Successfully created file.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/files/{id}":
+  get:
+    summary: Get one file
+    description: Retrieve one file by its id, along with a signed URL to download
+      it
+    operationId: getFile
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the file to fetch.
+    responses:
+      '200':
+        description: File along with a download URL
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  allOf:
+                  - "$ref": "../components/components.yaml#/components/schemas/FileInfo"
+                  - type: object
+                    properties:
+                      signed_url:
+                        type: string
+                        description: Signed URL to download the file. Expires after
+                          20 minutes.
+                        example: https://bucket-name.s3.amazonaws.com/example.pdf?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAIOSFODNN7EXAMPLE%2F20240912%2Fap-south-1%2Fs3%2Faws4_request&X-Amz-Date=20240912T120000Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=a1b2c3d4e5f6g7h8i9j0k1l2m3n4o5p6q7r8s9t0u1v2w3x4y5z6
+                message:
+                  type: string
+                  example: Successfully fetched file.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+  delete:
+    summary: Delete a file
+    description: Deletes a file by its id
+    operationId: deleteFile
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+      description: The unique identifier of the file to delete.
+    responses:
+      '204':
+        description: File successfully deleted
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Transaction not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+"/public/company":
+  post:
+    summary: Create a company for an affiliate
+    description: Create a new company for an affiliate integration.
+    operationId: createAffiliateCompany
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/AffiliateCreateCompanyRequest"
+    responses:
+      '201':
+        description: Company created successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliateCreateCompanyResponse"
+      '400':
+        description: Invalid request body
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/services":
+  post:
+    summary: Create an incorporation service for a company
+    description: Start a supported incorporation service for an affiliate-owned company and return the linked payment intent id.
+    operationId: createAffiliateService
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    requestBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            "$ref": "../components/components.yaml#/components/schemas/AffiliateCreateServiceRequest"
+    responses:
+      '201':
+        description: Service and payment intent created successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliateCreateServiceResponse"
+      '400':
+        description: Unsupported service type or company not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '403':
+        description: Company is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/payment-intents":
+  get:
+    summary: List payment intents for an affiliate
+    description: List payment intents visible to the authenticated affiliate, optionally filtered by status or company.
+    operationId: listAffiliatePaymentIntents
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: status
+        in: query
+        required: false
+        schema:
+          "$ref": "../components/components.yaml#/components/schemas/AffiliatePaymentIntentStatus"
+      - name: companyId
+        in: query
+        required: false
+        schema:
+          type: integer
+        description: Filter payment intents to a single company.
+    responses:
+      '200':
+        description: Payment intents retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliateListPaymentIntentsResponse"
+      '400':
+        description: Invalid query parameters
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/payment-intents/{paymentIntentId}":
+  get:
+    summary: Get one payment intent
+    description: Retrieve a single payment intent and its linked service request handoff URL.
+    operationId: getAffiliatePaymentIntent
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: paymentIntentId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Payment intent identifier returned by `POST /public/services`.
+    responses:
+      '200':
+        description: Payment intent retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePaymentIntent"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '403':
+        description: Payment intent is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '404':
+        description: Payment intent not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/payment-intents/{paymentIntentId}/service/status":
+  get:
+    summary: Get service status for a payment intent
+    description: Retrieve the linked service request summary and task-group level status for a payment intent.
+    operationId: getAffiliatePaymentIntentServiceStatus
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: paymentIntentId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Payment intent identifier returned by `POST /public/services`.
+    responses:
+      '200':
+        description: Service status retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePaymentIntentServiceStatusResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '403':
+        description: Service request is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '404':
+        description: Payment intent or linked service request not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/documents":
+  get:
+    summary: List legacy document slots for a company
+    description: Deprecated. Use the Commenda OS documents endpoints instead.
+    operationId: listAffiliateDocuments
+    deprecated: true
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: companyId
+        in: query
+        required: true
+        schema:
+          type: integer
+        description: Company whose corporation documents should be listed.
+      - name: documentType
+        in: query
+        required: false
+        schema:
+          "$ref": "../components/components.yaml#/components/schemas/AffiliateDocumentCategory"
+      - name: documentSubType
+        in: query
+        required: false
+        schema:
+          type: string
+        description: Filter by Commenda legacy document subtype.
+    responses:
+      '200':
+        description: Document slots retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliateListDocumentsResponse"
+      '400':
+        description: Invalid query parameters
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '403':
+        description: Company is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/file/{fileId}":
+  get:
+    summary: Get a file download URL
+    description: Return a temporary download URL for a file the authenticated affiliate can access.
+    operationId: getAffiliateFileSignedUrl
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: fileId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: File identifier returned by Commenda document APIs.
+    responses:
+      '200':
+        description: Signed URL created successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliateFileSignedUrlResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '403':
+        description: File is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+      '404':
+        description: File not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/AffiliatePublicError"
+"/public/business-entities":
+  get:
+    summary: List business entities
+    description: List the business entities visible to the authenticated affiliate.
+    operationId: listPublicCommendaOsBusinessEntities
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    responses:
+      '200':
+        description: Business entities retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsBusinessEntityListResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}":
+  get:
+    summary: Get a business entity
+    description: Retrieve a single business entity.
+    operationId: getPublicCommendaOsBusinessEntity
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Business entity retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsBusinessEntityResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '404':
+        description: Business entity not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/locations":
+  get:
+    summary: List locations for a business entity
+    description: List locations attached to a business entity.
+    operationId: listPublicCommendaOsLocations
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Locations retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsLocationsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/locations/{locationId}":
+  get:
+    summary: Get a location
+    description: Retrieve a single location for a business entity.
+    operationId: getPublicCommendaOsLocation
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+      - name: locationId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Commenda location identifier.
+    responses:
+      '200':
+        description: Location retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsLocationResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '404':
+        description: Location not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/persons":
+  get:
+    summary: List persons for a business entity
+    description: List people associated with a business entity.
+    operationId: listPublicCommendaOsBusinessEntityPersons
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Persons retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsBusinessEntityPersonsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/persons":
+  get:
+    summary: List persons
+    description: List people visible to the authenticated affiliate across accessible companies and business entities.
+    operationId: listPublicCommendaOsPersons
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    responses:
+      '200':
+        description: Persons retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPersonsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/government-identifiers":
+  get:
+    summary: List government identifiers
+    description: List government identifiers attached to a business entity.
+    operationId: listPublicCommendaOsGovernmentIdentifiers
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Government identifiers retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsGovernmentIdentifiersResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/government-identifiers/{governmentIdentifierId}":
+  get:
+    summary: Get a government identifier
+    description: Retrieve a single government identifier for a business entity.
+    operationId: getPublicCommendaOsGovernmentIdentifier
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+      - name: governmentIdentifierId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Commenda government-identifier identifier.
+    responses:
+      '200':
+        description: Government identifier retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsGovernmentIdentifierResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '404':
+        description: Government identifier not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/documents":
+  get:
+    summary: List documents for a business entity
+    description: List documents for a business entity.
+    operationId: listPublicCommendaOsDocuments
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Documents retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsDocumentsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/documents/supported":
+  get:
+    summary: List supported document types
+    description: List the document types Commenda OS supports for a business entity.
+    operationId: listPublicCommendaOsSupportedDocuments
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Supported document types retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsSupportedDocumentsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/registrations":
+  get:
+    summary: List registrations for a business entity
+    description: List registrations for a business entity.
+    operationId: listPublicCommendaOsRegistrations
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Registrations retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsRegistrationsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/registrations/{registrationId}":
+  get:
+    summary: Get a registration
+    description: Retrieve a single registration for a business entity.
+    operationId: getPublicCommendaOsRegistration
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+      - name: registrationId
+        in: path
+        required: true
+        schema:
+          type: string
+        description: Commenda registration identifier.
+    responses:
+      '200':
+        description: Registration retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsRegistrationResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '404':
+        description: Registration not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/business-entities/{businessEntityId}/registrations/supported":
+  get:
+    summary: List supported registrations for a business entity
+    description: List the registrations Commenda OS supports for a business entity.
+    operationId: listPublicCommendaOsBusinessEntitySupportedRegistrations
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    parameters:
+      - name: businessEntityId
+        in: path
+        required: true
+        schema:
+          type: integer
+        description: Commenda business-entity identifier.
+    responses:
+      '200':
+        description: Supported registrations retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsSupportedRegistrationsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+      '403':
+        description: Business entity is not accessible to the affiliate
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"
+"/public/registrations/supported":
+  get:
+    summary: List supported registrations
+    description: List the registrations Commenda OS supports globally.
+    operationId: listPublicCommendaOsSupportedRegistrations
+    servers:
+      - url: https://api.prod.commenda.io/api/v1
+    security:
+      - xApiKeyAuth: []
+    responses:
+      '200':
+        description: Supported registrations retrieved successfully
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsSupportedRegistrationsResponse"
+      '401':
+        description: Missing or invalid affiliate API key
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/CommendaOsPublicError"

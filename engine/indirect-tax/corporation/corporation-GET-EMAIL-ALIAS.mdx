@@ -1,0 +1,85 @@
+---
+title: "Get email alias"
+description: "Retrieve email addresses configured for a corporation's email alias"
+openapi: "GET /corporations/{id}/email-alias"
+---
+
+Retrieves the list of email addresses that receive emails sent to the corporation's email alias.
+
+<ParamField path="corporation_id" type="string" required>
+  The unique identifier of the corporation.
+</ParamField>
+
+<ResponseField name="emails" type="array" required>
+  Array of email addresses that receive forwarded emails.
+</ResponseField>
+
+<RequestExample>
+
+```bash cURL
+curl --request GET \
+  --url https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias \
+  --header 'Authorization: Bearer <token>'
+```
+
+
+```javascript JavaScript
+const response = await fetch('https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias', {
+  method: 'GET',
+  headers: {
+    'Authorization': 'Bearer <token>'
+  }
+});
+
+const data = await response.json();
+```
+
+
+```python Python
+import requests
+
+response = requests.get(
+  'https://transaction-tax.api.in.commenda.io/api/v1/corporations/{corporation_id}/email-alias',
+  headers={'Authorization': 'Bearer <token>'}
+)
+
+data = response.json()
+```
+
+</RequestExample>
+
+<ResponseExample>
+
+```json 200
+{
+  "message": "Successfully fetched emails for email alias.",
+  "data": {
+    "emails": [
+      "accounting@example.com",
+      "tax@example.com"
+    ]
+  }
+}
+```
+
+
+```json 404
+{
+  "error": {
+    "code": "CORPORATION_EMAIL_ALIAS_NOT_FOUND",
+    "message": "Email alias not found for corporation"
+  }
+}
+```
+
+
+```json 404
+{
+  "error": {
+    "code": "CORPORATION_NOT_FOUND",
+    "message": "Corporation not found"
+  }
+}
+```
+
+</ResponseExample>
