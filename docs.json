@@ -21,7 +21,11 @@
     },
     "tabs": [
       {
-        "tab": "Introduction",
+        "tab": "Introduction"
+      },
+      {
+        "tab": "Product Guides",
+        "icon": "computer-classic",
         "groups": [
           {
             "group": "Getting started",
@@ -33,12 +37,7 @@
               "introduction/quickstart",
               "introduction/navigation-guide"
             ]
-          }
-        ]
-      },
-      {
-        "tab": "Engine",
-        "groups": [
+          },
           {
             "group": "Entities",
             "pages": [
@@ -149,10 +148,10 @@
       {
         "tab": "API Documentation",
         "icon": "code",
-        "menu": [
+        "groups": [
           {
-            "item": "Global Indirect Tax",
-            "groups": [
+            "group": "Global Indirect Tax",
+            "pages": [
               {
                 "group": "Get Started",
                 "pages": [
@@ -173,11 +172,34 @@
                     ]
                   }
                 ]
+              },
+              {
+                "group": "Registrations",
+                "pages": [
+                  "engine/indirect-tax/registrations/registrations",
+                  "engine/indirect-tax/registrations/registrations-POST",
+                  "engine/indirect-tax/registrations/registrations-GET",
+                  "engine/indirect-tax/registrations/registrations-id-GET",
+                  "engine/indirect-tax/registrations/registrations-id-POST",
+                  "engine/indirect-tax/registrations/registrations-id-DELETE",
+                  "engine/indirect-tax/registrations/registrations-id-request-validation-POST",
+                  "engine/indirect-tax/registrations/registrations-id-archive-POST",
+                  "engine/indirect-tax/registrations/registrations-id-close-POST",
+                  {
+                    "group": "Registration Content",
+                    "pages": [
+                      "engine/indirect-tax/registrations/content/content",
+                      "engine/indirect-tax/registrations/content/available-jurisdictions-POST",
+                      "engine/indirect-tax/registrations/content/registration-input-options-POST",
+                      "engine/indirect-tax/registrations/content/portal-fields-POST"
+                    ]
+                  }
+                ]
               }
             ]
           },
           {
-            "item": "Corporations",
+            "group": "Corporations",
             "pages": [
               "engine/indirect-tax/corporation/corporation",
               "engine/indirect-tax/corporation/corporation-POST",
@@ -190,37 +212,14 @@
             ]
           },
           {
-            "item": "Registrations",
-            "pages": [
-              "engine/indirect-tax/registrations/registrations",
-              "engine/indirect-tax/registrations/registrations-POST",
-              "engine/indirect-tax/registrations/registrations-GET",
-              "engine/indirect-tax/registrations/registrations-id-GET",
-              "engine/indirect-tax/registrations/registrations-id-POST",
-              "engine/indirect-tax/registrations/registrations-id-DELETE",
-              "engine/indirect-tax/registrations/registrations-id-request-validation-POST",
-              "engine/indirect-tax/registrations/registrations-id-archive-POST",
-              "engine/indirect-tax/registrations/registrations-id-close-POST",
-              {
-                "group": "Registration Content",
-                "pages": [
-                  "engine/indirect-tax/registrations/content/content",
-                  "engine/indirect-tax/registrations/content/available-jurisdictions-POST",
-                  "engine/indirect-tax/registrations/content/registration-input-options-POST",
-                  "engine/indirect-tax/registrations/content/portal-fields-POST"
-                ]
-              }
-            ]
-          },
-          {
-            "item": "Tax Calculations",
+            "group": "Tax Calculations",
             "pages": [
               "engine/indirect-tax/calculate/calculate",
               "engine/indirect-tax/calculate/calculate-POST"
             ]
           },
           {
-            "item": "Transactions",
+            "group": "Transactions",
             "pages": [
               "engine/indirect-tax/transaction/transaction",
               "engine/indirect-tax/transaction/transaction-POST",
@@ -237,13 +236,13 @@
             ]
           },
           {
-            "item": "Global Nexus",
+            "group": "Global Nexus",
             "pages": [
               "engine/indirect-tax/nexus/nexus-GET"
             ]
           },
           {
-            "item": "Products",
+            "group": "Products",
             "pages": [
               "engine/indirect-tax/products/products",
               "engine/indirect-tax/products/products-POST",
@@ -260,7 +259,7 @@
             ]
           },
           {
-            "item": "Customers",
+            "group": "Customers",
             "pages": [
               "engine/indirect-tax/customers/customer",
               "engine/indirect-tax/customers/customers-POST",
@@ -271,7 +270,7 @@
             ]
           },
           {
-            "item": "Exemption Certificates",
+            "group": "Exemption Certificates",
             "pages": [
               "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates",
               "engine/indirect-tax/exemptions/exemption-certificates/exemption-certificates-POST",
@@ -287,13 +286,13 @@
             ]
           },
           {
-            "item": "Exemptions",
+            "group": "Exemptions",
             "pages": [
               "engine/indirect-tax/exemptions/exemptions-GET"
             ]
           },
           {
-            "item": "Files",
+            "group": "Files",
             "pages": [
               "engine/indirect-tax/files/files",
               "engine/indirect-tax/files/files-POST",
@@ -303,13 +302,13 @@
             ]
           },
           {
-            "item": "Filings",
+            "group": "Filings",
             "pages": [
               "engine/indirect-tax/filings/filings-GET-ONE"
             ]
           },
           {
-            "item": "Webhooks",
+            "group": "Webhooks",
             "pages": [
               "engine/indirect-tax/webhooks/webhooks",
               "engine/indirect-tax/webhooks/event",
@@ -322,7 +321,7 @@
             ]
           },
           {
-            "item": "CommendaOS",
+            "group": "CommendaOS",
             "pages": [
               "engine/commendaos/overview",
               {
@@ -391,7 +390,7 @@
             ]
           },
           {
-            "item": "Incorporation",
+            "group": "Incorporation",
             "pages": [
               "engine/incorporation/introduction",
               {
@@ -424,15 +423,7 @@
             ]
           },
           {
-            "item": "Customs Duty",
-            "pages": [
-              "engine/customs-duty/products/products",
-              "engine/customs-duty/products/products-customs-code-POST",
-              "engine/customs-duty/products/products-customs-code-DELETE"
-            ]
-          },
-          {
-            "item": "Workflow Builder",
+            "group": "Workflow Builder",
             "pages": [
               "engine/workflow-builder/overview",
               "engine/workflow-builder/quickstart",
@@ -465,13 +456,13 @@
             ]
           },
           {
-            "item": "Form Builder",
+            "group": "Form Builder",
             "pages": [
               "engine/form-builder/overview"
             ]
           },
           {
-            "item": "Address API",
+            "group": "Address API",
             "pages": [
               "engine/address-api/introduction",
               {
