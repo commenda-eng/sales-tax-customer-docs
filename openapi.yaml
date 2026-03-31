@@ -2626,6 +2626,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
+  /address-requirements:
+    get:
+      summary: Get address requirements for a country
+      description: Retrieve the minimum address field requirements for a given country. Use this to determine which address fields are required, optional, or ignored when submitting addresses for tax calculations.
+      operationId: getAddressRequirements
+      parameters:
+        - name: country
+          in: query
+          required: true
+          description: A valid 2-letter ISO 3166-1 alpha-2 country code.
+          schema:
+            type: string
+            example: US
+      responses:
+        '200':
+          description: Address requirements retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/AddressRequirementsResponse'
+                  message:
+                    type: string
+                    example: Successfully retrieved address requirements.
+        '400':
+          description: Invalid or missing country parameter
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: No address requirements found for the specified country
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 components:
   schemas:
     GetWebhookResponse:
@@ -5881,6 +5919,80 @@ components:
         count:
           type: integer
           example: 12
+    AddressRequirementsResponse:
+      type: object
+      required:
+        - country_code
+        - address_line_1
+        - address_line_2
+        - address_line_3
+        - city
+        - state
+        - postal_code
+      properties:
+        country_code:
+          type: string
+          description: The ISO 3166-1 alpha-2 country code.
+          example: US
+        address_line_1:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the first address line.
+          example: REQUIRED
+        address_line_2:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the second address line.
+          example: OPTIONAL
+        address_line_3:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the third address line.
+          example: IGNORED
+        city:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the city field.
+          example: REQUIRED
+        state:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the state or province field.
+          example: REQUIRED
+        postal_code:
+          type: string
+          enum:
+            - REQUIRED
+            - OPTIONAL
+            - IGNORED
+          description: Requirement level for the postal code field.
+          example: REQUIRED
+        postal_code_regex:
+          type: string
+          nullable: true
+          description: A regular expression pattern for validating the postal code format. Only present when the country has a defined postal code format.
+          example: "^\\d{5}(-\\d{4})?$"
+        valid_state_codes:
+          type: array
+          items:
+            type: string
+          description: List of valid state or province codes for the country. Only present when the country has a defined set of valid state codes.
+          example: ["AL", "AK", "AZ", "AR", "CA"]
   securitySchemes:
     bearerAuth:
       type: http

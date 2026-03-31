@@ -306,6 +306,12 @@
             ]
           },
           {
+            "group": "Address Requirements",
+            "pages": [
+              "engine/indirect-tax/address-requirements/address-requirements-GET"
+            ]
+          },
+          {
             "group": "Webhooks",
             "pages": [
               "engine/indirect-tax/webhooks/webhooks",
