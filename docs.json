@@ -234,6 +234,13 @@
             ]
           },
           {
+            "group": "Address Requirements",
+            "pages": [
+              "engine/indirect-tax/address-requirements/address-requirements",
+              "engine/indirect-tax/address-requirements/address-requirements-GET"
+            ]
+          },
+          {
             "group": "Global Nexus",
             "pages": [
               "engine/indirect-tax/nexus/nexus-GET"
