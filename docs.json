@@ -460,6 +460,13 @@
             ]
           },
           {
+            "group": "MCP Server",
+            "pages": [
+              "engine/mcp-server/overview",
+              "engine/mcp-server/setup"
+            ]
+          },
+          {
             "group": "Form Builder",
             "pages": [
               "engine/form-builder/overview"
