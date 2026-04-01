@@ -1,0 +1,192 @@
+---
+title: Stripe incremental sync
+description: How Stripe incremental sync works in Rootfi
+---
+
+## Overview
+
+Rootfi implements an event-based incremental sync mechanism for Stripe that efficiently tracks and syncs only changed data. Instead of performing full syncs on every run, the system leverages Stripe's Events API to identify what has changed and selectively fetches updated records.
+
+## How it works
+
+### Full sync vs incremental sync
+
+When you initiate a sync in Rootfi, the system determines whether to perform a full sync or incremental sync based on the `full_sync` flag:
+
+- **Full sync (`full_sync: true`)**: Fetches all records for each data model using standard list endpoints
+- **Incremental sync (`full_sync: false`)**: Uses Stripe's Events API to identify changes and fetches only updated records
+
+### Event-based incremental sync
+
+For incremental syncs, Rootfi replaces standard data model jobs with event-based jobs:
+
+1. **Event polling**: Instead of fetching all customers, invoices, etc., Rootfi fetches events from Stripe's `/events` endpoint
+2. **Event filtering**: Events are filtered by type to match the data models being synced (e.g., `customer.created`, `invoice.updated`)
+3. **Selective fetching**: For each relevant event, Rootfi creates a child job to fetch the specific record by ID
+4. **Change detection**: Records are compared against existing data using data hashes to determine if updates are needed
+
+## Supported data models
+
+Incremental sync is supported for the following Stripe data models:
+
+| Data model | Supported events |
+|------------|------------------|
+| `PAYMENT_CUSTOMERS` | `customer.created`, `customer.updated`, `customer.deleted`, `customer.tax_id.*` |
+| `PAYMENT_SUBSCRIPTIONS` | `customer.subscription.*` (created, updated, deleted, paused, resumed, etc.) |
+| `PAYMENT_INVOICES` | `invoice.*` (created, updated, paid, voided, etc.) |
+| `PAYMENT_REFUNDS` | `refund.created`, `refund.updated`, `refund.failed` |
+| `PAYMENT_ITEMS` | `product.created`, `product.updated`, `product.deleted` |
+| `PAYMENT_ORDERS` | `payment_intent.*`, `charge.*` |
+| `PAYMENT_TAX_RATES` | `tax_rate.created`, `tax_rate.updated` |
+| `PAYMENT_DISPUTES` | `charge.dispute.*` |
+| `PAYMENT_PAYMENTS` | `payment_intent.*`, `charge.*` |
+| `PAYMENT_PAYMENT_LINKS` | `payment_link.created`, `payment_link.updated` |
+| `PAYMENT_PAYOUTS` | `payout.*` |
+| `PAYMENT_PRODUCTS` | `product.created`, `product.updated`, `product.deleted` |
+| `PAYMENT_CREDIT_NOTES` | `credit_note.created`, `credit_note.updated`, `credit_note.voided` |
+
+## Technical implementation
+
+### Job transformation
+
+When `full_sync: false`, the `STRIPE_MODIFY_INITIAL_SYNC_JOBS` function transforms standard read jobs:
+
+```typescript
+// Original job
+{
+  data_model: "PAYMENT_CUSTOMERS",
+  config_id: "READ_CUSTOMER",
+  config_mode: "READ"
+}
+
+// Transformed to
+{
+  data_model: "EVENTS",
+  config_id: "READ_EVENTS",
+  config_mode: "READ",
+  variables: {
+    event_types: ["customer.created", "customer.updated", "customer.deleted", ...]
+  }
+}
+```
+
+### Event processing flow
+
+1. **Fetch events**: Query `/events` endpoint with event type filters and `created[gte]` timestamp from last sync
+2. **Parse events**: Extract event type and object ID from each event
+3. **Create child jobs**: For each event, create a job to fetch the specific record by ID
+4. **Fetch records**: Execute child jobs to retrieve updated records from Stripe
+5. **Parse and save**: Parse records to Rootfi schema and save to database
+
+### Timestamp-based filtering
+
+For immutable data models like `PAYMENT_TRANSACTIONS` (balance transactions) and `EVENTS`, Rootfi uses timestamp-based filtering:
+
+```typescript
+// Query parameters
+{
+  "created[gte]": last_synced_timestamp,
+  "limit": 100,
+  "starting_after": cursor_for_pagination
+}
+```
+
+This ensures only new records created since the last sync are fetched.
+
+### Child job creation
+
+The `makeChildJobsFromEventResponse` function processes events and creates child jobs:
+
+```typescript
+// For each event
+{
+  type: "customer.updated",
+  data: {
+    object: {
+      id: "cus_123",
+      // ... customer data
+    }
+  }
+}
+
+// Creates child job
+{
+  config_id: "READ_CUSTOMER_BY_ID",
+  data_model: "PAYMENT_CUSTOMERS",
+  variables: {
+    platform_id: "cus_123",
+    ignore_error_codes: ["resource_missing"]
+  }
+}
+```
+
+### Error handling
+
+Child jobs created from events include `ignore_error_codes: ["resource_missing"]` to handle cases where objects are deleted after the event is created but before the job executes.
+
+## Data change detection
+
+Rootfi uses data hashing to detect actual changes:
+
+1. **Hash calculation**: Each record's raw data is hashed using a consistent algorithm
+2. **Database comparison**: New hash is compared against stored hash in database
+3. **Classification**:
+   - **Created**: Record doesn't exist in database
+   - **Updated**: Record exists but hash differs
+   - **Existing**: Record exists with matching hash (no webhook sent)
+
+## Webhooks
+
+For incremental syncs, Rootfi sends webhooks for:
+
+- **CREATE**: New records detected
+- **UPDATE**: Existing records with changed data
+- **UPDATE** (full sync only): Existing records with unchanged data
+
+This allows downstream systems to stay in sync with only meaningful changes.
+
+## Configuration
+
+### Read configuration
+
+Each data model has two read configurations:
+
+1. **List endpoint**: For full syncs and initial data fetching
+2. **By ID endpoint**: For incremental syncs and event-based fetching
+
+Example for customers:
+
+```typescript
+PAYMENT_CUSTOMERS: [
+  {
+    url: "/customers",
+    params: { "expand[0]": "data.tax_ids" },
+    auto_sync: true
+  },
+  {
+    id: "READ_CUSTOMER_BY_ID",
+    url: "/customers/${platform_id}",
+    getParams: () => ({ "expand[0]": "tax_ids" }),
+    auto_sync: false
+  }
+]
+```
+
+### Event type mapping
+
+The `STRIPE_EVENT_TYPE_TO_DATA_MODELS` function maps Stripe event types to Rootfi data models, supporting many-to-many relationships (e.g., `payment_intent` events map to both `PAYMENT_ORDERS` and `PAYMENT_PAYMENTS`).
+
+## Performance benefits
+
+Incremental sync provides significant performance improvements:
+
+- **Reduced API calls**: Only fetch changed records instead of all records
+- **Lower latency**: Faster sync completion times
+- **Rate limit efficiency**: Conserve API rate limits for high-volume accounts
+- **Bandwidth optimization**: Transfer only necessary data
+
+## Limitations
+
+- **Event retention**: Stripe retains events for 30 days. If last sync is older than 30 days, a full sync is recommended
+- **Event types**: Only data models with event support can use incremental sync
+- **Deleted records**: Deletion events are processed but may fail if record is already deleted (handled gracefully)
