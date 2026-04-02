@@ -23,6 +23,10 @@ Creates a new customer for a corporation.
   External identifier for the customer from your system
 </ParamField>
 
+<ParamField body="business_identification_number" type="string">
+  Business identification number for the customer (e.g., tax ID, VAT number, or EIN)
+</ParamField>
+
 <ParamField body="shipping_address" type="object">
   Customer's shipping address
   
@@ -83,6 +87,10 @@ Creates a new customer for a corporation.
   Source platform name (if applicable)
 </ResponseField>
 
+<ResponseField name="business_identification_number" type="string">
+  Business identification number for the customer
+</ResponseField>
+
 <RequestExample>
 ```json
 {
@@ -90,6 +98,7 @@ Creates a new customer for a corporation.
   "name": "Acme Corporation",
   "email": "contact@acme.com",
   "external_id": "ext_456",
+  "business_identification_number": "12-3456789",
   "shipping_address": {
     "line1": "123 Main St",
     "line2": "Suite 100",
@@ -109,7 +118,8 @@ Creates a new customer for a corporation.
   "name": "Acme Corporation",
   "email": "contact@acme.com",
   "corporation_id": "corp_123",
-  "created_at": 1706000000
+  "created_at": 1706000000,
+  "business_identification_number": "12-3456789"
 }
 ```
 </ResponseExample>

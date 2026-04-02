@@ -41,6 +41,10 @@ Retrieves detailed information about a specific customer.
   Source platform name (if applicable)
 </ResponseField>
 
+<ResponseField name="business_identification_number" type="string">
+  Business identification number for the customer
+</ResponseField>
+
 <ResponseField name="shipping_address" type="object">
   Customer's shipping address
   
@@ -89,6 +93,7 @@ GET /customers/cust_789
   "email": "contact@acme.com",
   "corporation_id": "corp_123",
   "created_at": 1706000000,
+  "business_identification_number": "12-3456789",
   "shipping_address": {
     "line1": "123 Main St",
     "line2": "Suite 100",
