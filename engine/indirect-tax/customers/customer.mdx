@@ -7,6 +7,10 @@ description: "Manage customers and their exemption certificates."
 
 Customers represent the purchasers of goods sold by the merchant. You can manage exemption certificates on their behalf.
 
+### Business identification number
+
+You can store a tax or business registration number on each customer using the `business_identification_number` field. This is useful for recording identifiers such as VAT IDs, EINs, or GST numbers that may be required for tax compliance in certain jurisdictions. The field is optional and can be set when [creating](/engine/indirect-tax/customers/customers-POST) or [updating](/engine/indirect-tax/customers/customers-id-POST) a customer.
+
 ### Exemption certificates
 
 Customers may claim sales tax exemptions based on the purpose of the purchase (e.g., wholesale) or their entity type (e.g., nonprofit). When a customer claims an exemption, the merchant is required to collect proof that the customer is eligible for the exemption in the form of exemption certificates. Learn more about exemption certificates [here](/engine/indirect-tax/core-concepts/exemptions#exemption-certificates).
