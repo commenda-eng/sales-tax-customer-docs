@@ -1,9 +1,64 @@
 ---
-title: 'Shopify'
-description: 'Shopify integration'
+title: "Shopify"
+description: "Connect Shopify to sync e-commerce transaction data"
 ---
 
 ## Overview
 
-Shopify integration documentation coming soon.
+The Shopify integration connects your Shopify store to Commenda for automatic e-commerce data syncing. Commenda pulls your transactions, products, and customers to provide a unified view of your sales data for tax compliance.
 
+## Supported features
+
+| Feature | Status |
+|---|---|
+| Transaction syncing | Supported |
+| Tax calculation | Supported |
+| Real-time webhooks | Supported |
+
+## Data models
+
+Commenda syncs the following data from Shopify:
+
+- **Transactions** — order and transaction data including line items, amounts, and fulfillment details
+- **Products** — your product catalog
+- **Customers** — customer profiles with addresses
+
+## How tax calculation works
+
+When a transaction is created or updated in Shopify, Commenda receives the event through its unified webhook pipeline. Commenda fetches the full order details associated with the transaction to extract address information and calculates the applicable sales tax.
+
+## Address resolution
+
+Shopify transaction data does not include complete address information directly. Commenda resolves addresses by fetching the associated **order data**, which contains:
+
+1. **Shipping address** — the order's shipping address
+2. **Billing address** — the order's billing address (used as fallback)
+
+The shipping address takes priority for tax jurisdiction determination.
+
+## Connecting Shopify
+
+<Steps>
+  <Step title="Start the connection">
+    From your Commenda dashboard, navigate to integrations and select **Shopify**. Commenda generates a secure connection link.
+  </Step>
+  <Step title="Authorize access">
+    Click the connection link to authorize Commenda to access your Shopify store data.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose which data models to sync, set the sync frequency, and specify how far back to pull historical data.
+  </Step>
+  <Step title="Verify the connection">
+    After authorization, Commenda begins the initial data sync. Check the sync status on your dashboard to confirm data is flowing.
+  </Step>
+</Steps>
+
+## Known behaviors
+
+- Transactions with a `null` status are still processed (some Shopify transactions may not have an explicit status)
+- Address information is fetched from the associated order, not from the transaction itself
+
+## Next steps
+
+- [Accounting data integrations overview](/integrations/accounting/overview)
+- [Supported integrations](/integrations/supported-integrations)
