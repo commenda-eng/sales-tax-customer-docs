@@ -1,9 +1,80 @@
 ---
-title: 'Xero'
-description: 'Xero integration'
+title: "Xero"
+description: "Connect Xero to sync accounting data and automate sales tax calculations"
 ---
 
 ## Overview
 
-Xero integration documentation coming soon.
+The Xero integration connects your Xero account to Commenda for automatic transaction syncing and real-time sales tax calculation. Commenda pulls your invoices, credit notes, contacts, and items, then calculates and applies the correct sales tax on your Xero documents.
 
+## Supported features
+
+| Feature | Status |
+|---|---|
+| Transaction syncing | Supported |
+| Tax calculation | Supported |
+| Real-time webhooks | Supported |
+
+## Data models
+
+Commenda syncs the following data from Xero:
+
+- **Invoices** — accounts receivable invoices with line items
+- **Invoice credit notes** — credits issued against invoices
+- **Cash refunds** — refund transactions
+- **Contacts** — customer and vendor profiles with addresses
+- **Items** — your product and service catalog
+
+## How tax calculation works
+
+When you create or update an invoice in Xero, Commenda automatically:
+
+1. Receives a webhook notification from Xero
+2. Fetches the full invoice and associated contact details
+3. Determines the shipping address from the contact's address records
+4. Calculates the applicable sales tax
+5. Creates or updates Commenda-specific tax codes in your Xero account and applies them to the invoice
+
+Commenda dynamically creates tax codes in Xero for each effective tax rate, so your tax reporting stays accurate.
+
+<Info>
+Only accounts receivable invoices (`ACCREC`) and accounts receivable credit notes (`ACCRECCREDIT`) are processed for tax calculation.
+</Info>
+
+## Address resolution
+
+Xero does not store addresses at the invoice level. Instead, Commenda resolves the tax jurisdiction by looking at the **contact's addresses**:
+
+1. **STREET address** — treated as the shipping address
+2. **POBOX address** — treated as the billing address
+
+Commenda uses the shipping (STREET) address when available. If no shipping address exists, it falls back to the billing (POBOX) address.
+
+## Connecting Xero
+
+<Steps>
+  <Step title="Start the connection">
+    From your Commenda dashboard, navigate to integrations and select **Xero**. Commenda generates a secure connection link.
+  </Step>
+  <Step title="Authorize access">
+    Click the connection link to open Xero's authorization page. Sign in and grant Commenda access to your accounting data.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose which data models to sync, set the sync frequency, and specify how far back to pull historical data.
+  </Step>
+  <Step title="Verify the connection">
+    After authorization, Commenda begins the initial data sync. Check the sync status on your dashboard to confirm data is flowing.
+  </Step>
+</Steps>
+
+## Known behaviors
+
+- **Lock dates are respected** — Commenda skips invoices dated before your Xero organisation's period lock date or end-of-year lock date
+- Invoices with **paid**, **voided**, or **deleted** status are skipped for tax calculation
+- Xero does not support shipping lines or shipping amounts on documents, so shipping tax is not calculated separately
+- Tax codes are created dynamically in Xero as new tax rates are encountered
+
+## Next steps
+
+- [Accounting data integrations overview](/integrations/accounting/overview)
+- [Supported integrations](/integrations/supported-integrations)

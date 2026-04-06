@@ -66,6 +66,7 @@
                 "group": "Integrations",
                 "pages": [
                   "integrations/supported-integrations",
+                  "integrations/accounting/overview",
                   {
                     "group": "Integration Guidelines",
                     "pages": [
@@ -231,6 +232,13 @@
                   "engine/indirect-tax/transaction/bulk-transactions-POST"
                 ]
               }
+            ]
+          },
+          {
+            "group": "Address Requirements",
+            "pages": [
+              "engine/indirect-tax/address-requirements/address-requirements",
+              "engine/indirect-tax/address-requirements/address-requirements-GET"
             ]
           },
           {

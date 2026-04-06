@@ -42,7 +42,7 @@ Retrieves detailed information about a specific customer.
 </ResponseField>
 
 <ResponseField name="business_identification_number" type="string">
-  Business identification number for the customer
+  The customer's tax or business registration number, if provided
 </ResponseField>
 
 <ResponseField name="shipping_address" type="object">
@@ -91,6 +91,7 @@ GET /customers/cust_789
   "id": "cust_789",
   "name": "Acme Corporation",
   "email": "contact@acme.com",
+  "business_identification_number": "US-EIN-123456789",
   "corporation_id": "corp_123",
   "created_at": 1706000000,
   "business_identification_number": "12-3456789",

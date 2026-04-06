@@ -22,12 +22,18 @@ curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requireme
     "state": "REQUIRED",
     "postal_code": "REQUIRED",
     "postal_code_regex": "^\\d{5}(-\\d{4})?$",
-    "valid_state_codes": ["AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD", "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ", "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC", "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY", "DC"]
+    "valid_state_codes": [
+      "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "FL", "GA",
+      "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA", "ME", "MD",
+      "MA", "MI", "MN", "MS", "MO", "MT", "NE", "NV", "NH", "NJ",
+      "NM", "NY", "NC", "ND", "OH", "OK", "OR", "PA", "RI", "SC",
+      "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
+      "DC"
+    ]
   },
   "message": "Successfully retrieved address requirements."
 }
 ```
-
 ```json 400
 {
   "type": "INVALID_REQUEST_BODY",
@@ -38,14 +44,13 @@ curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requireme
   "status": 400
 }
 ```
-
 ```json 404
 {
-  "type": "CLIENT_RESOURCE_NOT_FOUND",
+  "type": "RESOURCE_NOT_FOUND",
   "sub_type": "ADDRESS_REQUIREMENTS_NOT_FOUND",
   "title": "Address requirements not found.",
   "detail": {
-    "description": "No address requirements found for country: XX"
+    "description": "No address requirements found for country: HM"
   },
   "status": 404
 }

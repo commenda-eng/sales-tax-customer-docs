@@ -1,9 +1,95 @@
 ---
-title: 'Stripe'
-description: 'Stripe integration'
+title: "Stripe"
+description: "Connect Stripe to sync payment data and automate sales tax calculations"
 ---
 
 ## Overview
 
-Stripe integration documentation coming soon.
+The Stripe integration connects your Stripe account to Commenda for automatic payment data syncing and real-time sales tax calculation on invoices. Commenda pulls your invoices, customers, products, and credit notes, then calculates and applies the correct tax rates directly on your Stripe invoices.
 
+## Supported features
+
+| Feature | Status |
+|---|---|
+| Transaction syncing | Supported |
+| Tax calculation | Supported |
+| Real-time webhooks | Supported |
+
+## Data models
+
+Commenda syncs the following data from Stripe:
+
+- **Invoices** — Stripe invoices with line items and customer details
+- **Credit notes** — credits issued against invoices
+- **Customers** — customer profiles with billing and shipping addresses
+- **Products** — your product catalog
+- **Items** — price and subscription items
+
+## How tax calculation works
+
+When a draft invoice is created or updated in Stripe, Commenda automatically:
+
+1. Receives a webhook notification from Stripe
+2. Fetches the full invoice details and customer information
+3. Resolves the applicable tax jurisdiction from the available addresses
+4. Calculates the correct sales tax
+5. Creates or updates tax rates in your Stripe account and applies them to each line item
+
+<Info>
+Tax calculation only runs on **draft** invoices. Once an invoice is finalized or paid, it is no longer modified.
+</Info>
+
+If Stripe's built-in `automatic_tax` feature is enabled on an invoice, Commenda disables it to prevent conflicts.
+
+## Address resolution
+
+Stripe supports multiple address sources. Commenda checks them in the following priority order:
+
+1. **Invoice shipping address** — the shipping details set directly on the invoice
+2. **Customer shipping address** (at finalization) — the customer's shipping address captured when the invoice was created
+3. **Customer shipping address** (current) — the customer's current shipping address
+4. **Invoice billing address** (at finalization) — the customer's billing address captured when the invoice was created
+5. **Customer billing address** (current) — the customer's current billing address
+
+### Fallback to payment method address
+
+For paid invoices, you can enable an additional fallback that extracts the billing address from the payment method used to pay the invoice. This is useful when customers don't have addresses on file but provide billing details during checkout.
+
+You can enable this from your integration settings under **Platform settings** > **Fallback to payment method address**.
+
+## Connecting Stripe
+
+<Steps>
+  <Step title="Start the connection">
+    From your Commenda dashboard, navigate to integrations and select **Stripe**. Commenda generates a secure connection link.
+  </Step>
+  <Step title="Authorize access">
+    Click the connection link to open Stripe's authorization page. Sign in and grant Commenda access to your account data.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose which data models to sync, set the sync frequency, and specify how far back to pull historical data.
+  </Step>
+  <Step title="Verify the connection">
+    After authorization, Commenda begins the initial data sync. Check the sync status on your dashboard to confirm data is flowing.
+  </Step>
+</Steps>
+
+## Platform-specific settings
+
+The Stripe integration has additional settings you can configure:
+
+| Setting | Description |
+|---|---|
+| **Fallback to payment method address** | When enabled, Commenda uses the billing address from the payment method as a last resort for tax jurisdiction resolution on paid invoices |
+
+## Known behaviors
+
+- Only **draft** invoices are eligible for tax calculation
+- Stripe amounts are in the smallest currency unit (cents for USD) and are converted automatically
+- Tax rates are created dynamically in your Stripe account as new rates are encountered
+- Credit notes use the customer's address since they don't carry their own address fields
+
+## Next steps
+
+- [Accounting data integrations overview](/integrations/accounting/overview)
+- [Supported integrations](/integrations/supported-integrations)

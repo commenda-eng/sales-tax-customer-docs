@@ -1,0 +1,33 @@
+---
+title: "Address requirements"
+description: "Look up which address fields are required, optional, or ignored for each country."
+---
+
+## Overview
+
+Different countries have different address formats and requirements. The address requirements endpoint lets you look up the minimum address fields needed for a given country before submitting addresses for tax calculations or transactions.
+
+Use this endpoint to:
+
+- **Validate addresses client-side** before calling `/calculate` or `/transactions`, reducing failed requests.
+- **Build dynamic address forms** that adapt to each country's requirements.
+- **Check postal code formats** using the provided regex pattern.
+- **Restrict state/province inputs** to valid codes for the country.
+
+## Field requirement levels
+
+Each address field returns one of three requirement levels:
+
+| Level | Meaning |
+|-------|---------|
+| `REQUIRED` | The field must be provided. Omitting it may cause tax calculation errors. |
+| `OPTIONAL` | The field is accepted but not mandatory. Providing it improves accuracy. |
+| `IGNORED` | The field is not used for this country and can be omitted. |
+
+## Postal code validation
+
+When `postal_code_regex` is present in the response, you can use it to validate postal codes before submission. For example, the US pattern `^\d{5}(-\d{4})?$` accepts both 5-digit and 9-digit ZIP codes.
+
+## Valid state codes
+
+For countries with defined state or province subdivisions (e.g., US, CA), the `valid_state_codes` array lists all accepted codes. Use this to populate dropdowns or validate state input in your address forms.

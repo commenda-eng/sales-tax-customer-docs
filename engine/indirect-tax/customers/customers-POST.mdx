@@ -24,7 +24,7 @@ Creates a new customer for a corporation.
 </ParamField>
 
 <ParamField body="business_identification_number" type="string">
-  Business identification number for the customer (e.g., tax ID, VAT number, or EIN)
+  A tax or business registration number for the customer (e.g., VAT ID, EIN, GST number). Used to identify the customer's tax status in applicable jurisdictions.
 </ParamField>
 
 <ParamField body="shipping_address" type="object">
@@ -88,7 +88,7 @@ Creates a new customer for a corporation.
 </ResponseField>
 
 <ResponseField name="business_identification_number" type="string">
-  Business identification number for the customer
+  The customer's tax or business registration number, if provided
 </ResponseField>
 
 <RequestExample>
@@ -117,6 +117,7 @@ Creates a new customer for a corporation.
   "id": "cust_789",
   "name": "Acme Corporation",
   "email": "contact@acme.com",
+  "business_identification_number": "US-EIN-123456789",
   "corporation_id": "corp_123",
   "created_at": 1706000000,
   "business_identification_number": "12-3456789"
