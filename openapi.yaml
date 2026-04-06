@@ -1084,6 +1084,28 @@ paths:
             minimum: 1
             maximum: 100
             default: 10
+        - name: type
+          in: query
+          description: Filter by a single transaction type (e.g. SALE, RETURN, REFUND, PURCHASE, PURCHASE_REFUND). Ignored if `types` is provided.
+          required: false
+          schema:
+            type: string
+            enum:
+              - SALE
+              - RETURN
+              - REFUND
+              - PURCHASE
+              - PURCHASE_REFUND
+        - name: types
+          in: query
+          description: |-
+            Filter by one or more transaction types as a comma-separated list (e.g. `SALE,RETURN`).
+            Takes priority over the `type` parameter.
+            When neither `type` nor `types` is provided, defaults to `SALE,REFUND,RETURN` (purchase transactions are excluded unless explicitly requested).
+          required: false
+          schema:
+            type: string
+          example: "SALE,RETURN"
       responses:
         '200':
           description: List of transactions
@@ -1178,8 +1200,10 @@ paths:
     post:
       summary: Create a return transaction
       description: |-
-        Create a RETURN transaction linked to an existing invoice to receive credit against a future tax liability.
-        The resulting RETURN transaction will have negative line amounts and will be properly linked to the original sale.
+        Create a return transaction linked to an existing SALE or PURCHASE transaction.
+        - If the parent is a SALE, the resulting transaction will be of type RETURN (or REFUND).
+        - If the parent is a PURCHASE, the resulting transaction will be of type PURCHASE_REFUND (auto-derived).
+        The resulting transaction will have negative line amounts and will be properly linked to the parent.
       operationId: refundTransaction
       parameters:
         - in: path
@@ -1187,7 +1211,7 @@ paths:
           required: true
           schema:
             type: string
-          description: The unique identifier of the transaction to generate a return for.
+          description: The unique identifier of the SALE or PURCHASE transaction to generate a return for.
       requestBody:
         required: true
         content:

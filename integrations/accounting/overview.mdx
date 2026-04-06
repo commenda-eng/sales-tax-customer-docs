@@ -1,0 +1,127 @@
+---
+title: "Accounting data integrations"
+description: "Connect your accounting platform to sync financial data and automate tax calculations"
+---
+
+## Overview
+
+Commenda connects to your accounting platform to automatically sync transaction data, contacts, and financial statements. Once connected, Commenda uses this data to calculate sales tax, generate financial reports, and keep your records up to date.
+
+You can connect platforms like QuickBooks, Xero, Zoho Books, and others through a guided setup flow. Commenda handles the data sync on a configurable schedule and provides real-time status updates so you always know when your data was last refreshed.
+
+## Supported platforms
+
+| Platform | Category | Syncing | Tax calculation |
+|---|---|---|---|
+| **QuickBooks** | Accounting | Supported | Supported |
+| **Xero** | Accounting | Supported | Supported |
+| **Zoho Books** | Accounting | Supported | Supported |
+| **NetSuite** | Accounting | Supported | Supported |
+| **Stripe** | Payments | Supported | Not supported |
+| **Shopify** | E-commerce | Supported | Not supported |
+| **WooCommerce** | E-commerce | Supported | Supported |
+
+<Tip>
+Each platform supports different data models and sync configurations. See the individual integration pages for platform-specific details.
+</Tip>
+
+## How it works
+
+Commenda uses a unified integration layer to connect to your accounting platform. The connection flow works the same way regardless of which platform you choose:
+
+<Steps>
+  <Step title="Generate a connection link">
+    From your Commenda dashboard, select the accounting platform you want to connect. Commenda generates a secure invite link for the connection.
+  </Step>
+  <Step title="Authorize access">
+    Click the invite link to open your accounting platform's authorization page. Sign in and grant Commenda read access to the data models you want to sync (invoices, contacts, financial statements, etc.).
+  </Step>
+  <Step title="Initial sync begins">
+    After authorization, Commenda starts pulling historical data from your platform. Depending on the volume of data, this can take anywhere from a few minutes to an hour.
+  </Step>
+  <Step title="Ongoing sync">
+    Commenda syncs your data on a configurable schedule. You can also trigger a manual resync at any time from the dashboard.
+  </Step>
+</Steps>
+
+## Data models
+
+Depending on your platform and use case, Commenda can sync the following data:
+
+### Transactions
+
+- **Invoices** — sales invoices with line items, tax amounts, and customer details
+- **Bills** — purchase bills and vendor invoices
+- **Invoice credit notes** — credits issued against invoices
+- **Bill credit notes** — credits received from vendors
+- **Cash refunds** — refund transactions
+
+### Contacts
+
+- **Customers** — customer profiles with billing and shipping addresses
+- **Vendors** — vendor and supplier contact information
+
+### Financial statements
+
+- **Income statement** — revenue, expenses, and net income over a specified period
+- **Balance sheet** — assets, liabilities, and equity at a point in time
+- **Cash flow statement** — cash inflows and outflows over a specified period
+
+### Chart of accounts
+
+- **Accounts** — your full chart of accounts, used for mapping transactions to the correct tax categories
+
+## Sync configuration
+
+When you set up a connection, you configure how frequently Commenda syncs each data model:
+
+| Setting | Description |
+|---|---|
+| **Sync frequency** | How often to pull new data (hourly, daily, weekly, monthly) |
+| **Sync from date** | How far back to pull historical data |
+| **Permissions** | What operations Commenda can perform (read, create, update) |
+| **Enabled** | Whether syncing is active for a specific data model |
+
+You can update these settings at any time from the integration settings page.
+
+## Integration settings
+
+Each connected platform has a settings page where you can manage:
+
+- **Sync enabled** — toggle data syncing on or off
+- **Tax calculation enabled** — toggle automatic tax calculations on synced transactions
+- **Tax calculation start date** — the date from which Commenda should start calculating taxes on your transactions
+- **Platform-specific settings** — some platforms have additional configuration options (for example, Stripe supports a fallback to payment method address for tax jurisdiction resolution)
+
+## Sync status
+
+You can check the current sync status for each connected platform. The status tells you:
+
+- Whether a sync is **in progress**, **completed**, or **failed**
+- When the last successful sync occurred
+- Which use case the connection is configured for
+
+If a sync fails, you can trigger a manual resync from the dashboard. Use the **full resync** option to re-pull all data from the configured start date.
+
+## Disconnecting an integration
+
+You can disconnect an integration at any time. Disconnecting stops all data syncing and tax calculations for that platform. Your previously synced data remains available in Commenda, but no new data will be pulled.
+
+To permanently remove the connection and all associated configuration, use the delete option instead of disconnect.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="QuickBooks" icon="calculator" href="/integrations/quickbooks/overview">
+    Connect QuickBooks for accounting data sync and tax calculation
+  </Card>
+  <Card title="Xero" icon="file-invoice" href="/integrations/xero/overview">
+    Connect Xero for accounting data sync and tax calculation
+  </Card>
+  <Card title="Zoho Books" icon="book" href="/integrations/zoho/overview">
+    Connect Zoho Books for accounting data sync and tax calculation
+  </Card>
+  <Card title="Stripe" icon="credit-card" href="/integrations/stripe/overview">
+    Connect Stripe for payment data syncing
+  </Card>
+</CardGroup>

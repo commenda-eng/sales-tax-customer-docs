@@ -66,6 +66,7 @@
                 "group": "Integrations",
                 "pages": [
                   "integrations/supported-integrations",
+                  "integrations/accounting/overview",
                   {
                     "group": "Integration Guidelines",
                     "pages": [

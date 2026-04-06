@@ -25,7 +25,12 @@ schemas:
         enum:
         - SALE
         - REFUND
-        description: Type of the transaction (sale or refund).
+        - PURCHASE
+        description: |-
+          Type of the transaction:
+          - SALE: Standard sales transaction.
+          - REFUND: Refund/return transaction with negative line item amounts.
+          - PURCHASE: Purchase transaction for input tax credit tracking. Line item amounts must be negative.
       discount:
         type: number
         minimum: 0

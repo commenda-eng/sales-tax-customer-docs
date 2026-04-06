@@ -23,7 +23,7 @@ Files must be uploaded in CSV format, with the headers specified in our bulk upl
 | -------- | ------- | -------- | -------- | 
 | corporation_id | true | string (UUID) | The ID of the corporation whose transactions are being uploaded |
 | process_code | true | [Process Code](#process-code)  | A code indicating the process being performed |
-| transaction_type| true | [Transaction Type](#transaction-type-code) | A code indicating the type of transaction (SALE or RETURN) | 
+| transaction_type| true | [Transaction Type](#transaction-type-code) | A code indicating the type of transaction (SALE, RETURN, or PURCHASE) | 
 | transaction_status | false | string | Status of the transaction. Valid values: UNCOMMITTED, COMMITTED, LOCKED, VOIDED |
 | invoice_number | true | string | A unique ID for this invoice |
 | transacted_at| true | ISO-8601 date string | The date on which the transaction occurred, or the date on which tax liability should be recognized. |
@@ -76,22 +76,24 @@ One of the following values:
 
 - **SALE**: Standard sales transaction. Normally contains positive amounts but can include negative amounts for corrections.
 - **RETURN**: Return/refund transaction. All line items must have negative total amounts (price_per_unit * quantity < 0).
+- **PURCHASE**: Purchase transaction for input tax credit tracking (e.g. EU VAT, UK VAT). All line items must have negative total amounts.
+- **PURCHASE_REFUND**: Refund of a purchase transaction. Auto-derived when creating a refund against a PURCHASE — do not set directly in bulk uploads.
 
-### Special Rules for RETURN Transactions
+### Special rules for RETURN and PURCHASE transactions
 
-When uploading RETURN transactions via CSV, the following rules apply:
+When uploading RETURN or PURCHASE transactions via CSV, the following rules apply:
 
-1. **Required Fields:**
-   - `transaction_type` must be set to "RETURN"
-   - `parent_invoice_id` is recommended but optional
+1. **Required fields:**
+   - `transaction_type` must be set to "RETURN" or "PURCHASE"
+   - `parent_invoice_id` is recommended but optional for RETURN transactions
 
-2. **Amount Sign Rules:**
+2. **Amount sign rules:**
    - All line items must have negative total amounts
    - This can be achieved by either:
      - Setting negative `quantity` with positive `price_per_unit`, OR
      - Setting positive `quantity` with negative `price_per_unit`
 
-3. **Line Number Matching:**
+3. **Line number matching:**
    - For line-level returns, the `line_number` should match the original invoice's line number
 
 ### Common Validation Errors in Bulk Upload
