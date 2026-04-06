@@ -23,6 +23,9 @@ schemas:
         external_id:
           type: string
           description: External identifier for the customer.
+        business_identification_number:
+          type: string
+          description: Business identification number for the customer (e.g., tax ID, VAT number, or EIN).
     CustomerUpdate:
       type: object
       properties:
@@ -36,6 +39,9 @@ schemas:
           format: email
         shipping_address:
           $ref: "./primitives.yaml#/schemas/Address"
+        business_identification_number:
+          type: string
+          description: Business identification number for the customer (e.g., tax ID, VAT number, or EIN).
     CustomerInfo:
       type: object
       properties:
@@ -60,6 +66,9 @@ schemas:
         external_id:
           type: string
           description: External identifier for the customer.
+        business_identification_number:
+          type: string
+          description: Business identification number for the customer (e.g., tax ID, VAT number, or EIN).
     ExemptionMetadata:
       type: object
       properties:

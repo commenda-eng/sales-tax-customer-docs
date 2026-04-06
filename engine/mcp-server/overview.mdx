@@ -1,0 +1,55 @@
+---
+title: 'MCP server'
+description: 'Connect AI assistants to the Commenda platform using the Model Context Protocol.'
+---
+
+## Overview
+
+The Commenda MCP server exposes Commenda APIs as tools for AI assistants that support the [Model Context Protocol (MCP)](https://modelcontextprotocol.io/). Once connected, your AI assistant can manage business entities, compliance items, sales tax filings, transactions, customers, products, and more — all through natural language.
+
+<Note>
+  MCP is an open standard that lets AI assistants call external tools. The Commenda MCP server implements this protocol so tools like Claude Desktop, Cursor, and other MCP-compatible clients can interact with your Commenda data.
+</Note>
+
+## When to use this
+
+Use the MCP server when you want to:
+
+- Query and update business entity data from an AI assistant
+- Manage compliance calendars and filings conversationally
+- Look up sales tax registrations, transactions, or nexus information
+- Create or update customers, products, and exemption certificates
+- Calculate tax rates without leaving your AI workflow
+
+## Available tool categories
+
+The MCP server provides **80+ tools** across the following categories:
+
+| Category | Examples |
+| --- | --- |
+| **Business entities** | List, get, and update business entities |
+| **Locations** | Create, update, list, get, and delete entity locations |
+| **Government identifiers** | Create, update, list, and get identifiers (EIN, PAN, TRN, etc.) |
+| **Registrations** | Manage tax and corporate registrations |
+| **Documents** | List, create, and update entity documents |
+| **Persons** | Add or remove key persons (directors, officers, shareholders) |
+| **Credentials** | Link credentials to entities or registrations |
+| **Compliance** | List, create, update, and delete compliance items; generate compliance calendars |
+| **Sales tax filings** | List, update, approve, submit, and delete filings; generate filing calendars |
+| **Transactions** | List, get, commit, lock, void, and delete transactions |
+| **Nexus** | Get nexus info, recalculate estimates, regenerate, and resync |
+| **Customers** | CRUD operations and exemption lookups |
+| **Products** | CRUD operations and tax code lookups |
+| **Exemption certificates** | List, create, update, and delete certificates |
+| **Tax calculations** | Calculate tax rates for transactions |
+
+## Deployment modes
+
+The MCP server supports two deployment modes:
+
+- **Stdio** — for local use with Claude Desktop, Cursor, and similar tools. The AI client launches the server process directly.
+- **HTTP** — runs as a sidecar service on port 3001 for remote or shared access.
+
+## Setup
+
+See the [setup guide](/engine/mcp-server/setup) for step-by-step configuration instructions.

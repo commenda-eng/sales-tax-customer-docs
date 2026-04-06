@@ -1,0 +1,114 @@
+---
+title: 'Setup'
+description: 'Configure the Commenda MCP server for Claude Desktop, Cursor, or other MCP-compatible clients.'
+---
+
+## Prerequisites
+
+Before you begin, make sure you have:
+
+- **Node.js** (v18 or later)
+- A **Commenda API key** — contact the Commenda team to obtain one
+- The **Commenda API base URL** for your environment
+
+## Configuration
+
+The MCP server uses two environment variables:
+
+| Variable | Description | Default |
+| --- | --- | --- |
+| `COMMENDA_API_BASE_URL` | Base URL of the Commenda API | `http://localhost:8000/api/v1` |
+| `MCP_SERVER_API_KEY` | API key for authenticating with Commenda | — |
+
+## Install and build
+
+```bash
+cd mcp-server
+npm install
+npm run build
+```
+
+## Connect to Claude Desktop
+
+Add the following to your Claude Desktop configuration file:
+
+- **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows**: `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "commenda": {
+      "command": "node",
+      "args": ["/path/to/mcp-server/dist/index.js"],
+      "env": {
+        "COMMENDA_API_BASE_URL": "https://your-commenda-api-url/api/v1",
+        "MCP_SERVER_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+Replace `/path/to/mcp-server` with the actual path to the MCP server directory, and set your API URL and key.
+
+## Connect to Cursor
+
+Add the following to your Cursor MCP settings (`.cursor/mcp.json` in your project root or global settings):
+
+```json
+{
+  "mcpServers": {
+    "commenda": {
+      "command": "node",
+      "args": ["/path/to/mcp-server/dist/index.js"],
+      "env": {
+        "COMMENDA_API_BASE_URL": "https://your-commenda-api-url/api/v1",
+        "MCP_SERVER_API_KEY": "your-api-key"
+      }
+    }
+  }
+}
+```
+
+## Authentication
+
+The MCP server authenticates with the Commenda API using an API key sent via the `x-mcp-api-key` header. When a request is received:
+
+1. The MCP server includes your API key in the `x-mcp-api-key` header.
+2. The Commenda API validates the key and associates the request with a service account.
+3. The service account must have the appropriate permissions for the operations being performed.
+
+<Warning>
+  Use a strong, randomly generated API key in production. Rotate your key regularly and never share it publicly.
+</Warning>
+
+## Verify the connection
+
+After configuring your AI client, test the connection by asking a simple question like:
+
+```
+List all business entities
+```
+
+If the MCP server is configured correctly, your AI assistant will call the `list_business_entities` tool and return results from your Commenda account.
+
+## Example prompts
+
+Once connected, you can interact with Commenda through natural language:
+
+**Business entities**
+- "Get the details of business entity 123"
+- "List all locations for business entity 456"
+- "Create a new headquarters location at 123 Main St, San Francisco, CA 94102"
+
+**Compliance**
+- "What compliance filings are due for company 1?"
+- "Generate a compliance calendar for corporation 123 for fiscal years 2024 to 2025"
+- "Update compliance item abc-123 status to COMPLETED"
+
+**Sales tax**
+- "List all sales tax filings for corporation 123"
+- "Calculate tax for a $100 sale to 123 Main St, San Francisco, CA 94102"
+- "What sales tax registrations does corporation 123 have?"
+- "Get the nexus information for corporation 789"

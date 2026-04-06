@@ -21,6 +21,10 @@ Updates an existing customer's information.
   Customer email address (must be valid email format)
 </ParamField>
 
+<ParamField body="business_identification_number" type="string">
+  Business identification number for the customer (e.g., tax ID, VAT number, or EIN)
+</ParamField>
+
 <ParamField body="shipping_address" type="object">
   Customer's shipping address
   
@@ -60,6 +64,7 @@ Returns a success message upon successful update.
 {
   "name": "Acme Corporation Updated",
   "email": "newemail@acme.com",
+  "business_identification_number": "12-3456789",
   "shipping_address": {
     "line1": "456 New St",
     "line2": "Floor 2",

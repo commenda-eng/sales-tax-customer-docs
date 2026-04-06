@@ -27,27 +27,43 @@ Possible values:
 
 ### Transaction Types
 
-The system supports two primary transaction types:
+The system supports the following transaction types:
 
 | Type | Description | Use Case |
 |------|-------------|----------|
 | SALE | Standard sales transaction | New sales, corrections, re-invoicing |
 | REFUND | Refund transaction | Full or partial refunds of previous sales |
+| PURCHASE | Purchase transaction | Input tax credit tracking for EU VAT and UK VAT |
+| PURCHASE_REFUND | Purchase refund transaction | Auto-derived when refunding a PURCHASE transaction |
 
-#### Amount Sign Rules
+<Note>
+  PURCHASE and PURCHASE_REFUND transactions are excluded from sales-focused queries by default. To include them, you must explicitly pass the `types` query parameter (e.g. `types=PURCHASE,PURCHASE_REFUND`).
+</Note>
 
-**For SALE Transactions**
+#### Amount sign rules
+
+**For SALE transactions**
 - Normally: Line item amounts (price_per_unit * quantity) should be positive
-- Special Cases: Negative amounts are allowed for:
+- Special cases: Negative amounts are allowed for:
   - Price corrections within an invoice (mixed with positive lines)
   - Re-invoicing scenarios with correction lines
 
-**For REFUND Transactions**
+**For REFUND transactions**
 - Line item amounts (price_per_unit * quantity) must be negative
 - Can be achieved through either:
   - Negative quantity with positive price, OR
   - Positive quantity with negative price
 - All line items in a REFUND transaction must have negative amounts
+
+**For PURCHASE transactions**
+- Line item amounts must be negative (same sign rules as REFUND)
+- Can be achieved through either:
+  - Negative quantity with positive price, OR
+  - Positive quantity with negative price
+
+**For PURCHASE_REFUND transactions**
+- Automatically created when you issue a refund against a PURCHASE transaction via the refund endpoint
+- Line item amounts are positive (reversing the original purchase)
 
 ### Bulk Transactions
 
@@ -55,18 +71,22 @@ See [Bulk Transactions](/engine/indirect-tax/transaction/bulk-transactions).
 
 ## Best Practices
 
-### Transaction Type Selection
+### Transaction type selection
 - Use SALE for new sales and correction scenarios with mixed positive/negative lines
 - Use REFUND for complete refunds of previous sales
-- Ensure all REFUND transaction line items have negative amounts
+- Use PURCHASE for recording purchase transactions (e.g. for EU/UK VAT input credit tracking)
+- PURCHASE_REFUND is automatically derived — do not set it directly
+- Ensure all REFUND and PURCHASE transaction line items have negative amounts
 
-### Amounts and Signs
+### Amounts and signs
 - For re-invoicing corrections, use a SALE with mixed line signs
 - For refunds, use a REFUND with negative total line amounts
+- For purchases, use PURCHASE with negative total line amounts
 - Be consistent within each transaction type
 
-### Reference Original Transactions
+### Reference original transactions
 - Always link REFUND transactions to their original sales via parent_invoice_id
+- Refunds against PURCHASE transactions automatically become PURCHASE_REFUND type
 - For line-level refunds, match line_number with the original invoice
 
 ### Date Handling

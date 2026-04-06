@@ -5,11 +5,15 @@ schemas:
     - SALE
     - RETURN
     - REFUND
+    - PURCHASE
+    - PURCHASE_REFUND
     description: |-
       Type of transaction:
       - SALE: Standard sales transaction (new sales, corrections, re-invoicing)
       - RETURN: Return/refund transaction (full or partial returns of previous sales)
       - REFUND: Legacy refund type (use RETURN instead for backward compatibility)
+      - PURCHASE: Purchase transaction for input tax credit tracking (EU VAT, UK VAT). Line item amounts must be negative.
+      - PURCHASE_REFUND: Auto-derived when creating a refund against a PURCHASE transaction. Cannot be set directly.
   transaction_status:
     type: string
     enum:
@@ -81,8 +85,10 @@ schemas:
       transaction_type:
         "$ref": "#/schemas/transaction_type"
         description: |-
-          Type of the transaction. Can be `SALE` for standard sales or `RETURN` for returns/refunds.
-          For `RETURN` transactions, additional fields like `parent_invoice_id` and `refund_type` are required.
+          Type of the transaction. Accepted values for creation: `SALE` or `PURCHASE`.
+          - `SALE`: Standard sales transaction.
+          - `PURCHASE`: Purchase transaction for input tax credit tracking.
+          `RETURN`, `REFUND`, and `PURCHASE_REFUND` types are created via the refund endpoint.
       calculation_id:
         type: string
         description: Optional ID of a previous calculation used for this transaction.
@@ -133,6 +139,7 @@ schemas:
                     Total price for the line item. 
                     For SALE transactions: Typically positive, but can be negative for corrections within an invoice.
                     For RETURN transactions: Must be negative (can be achieved through negative quantity or negative price).
+                    For PURCHASE transactions: Must be negative (same sign rules as RETURN).
                 line_number:
                   type: string
                   description: |-
@@ -249,6 +256,8 @@ schemas:
           - SALE
           - RETURN
           - REFUND
+          - PURCHASE
+          - PURCHASE_REFUND
         description: Type of the invoice/transaction.
         example: SALE
       invoice_number:

@@ -1,9 +1,81 @@
 ---
-title: 'QuickBooks'
-description: 'QuickBooks integration'
+title: "QuickBooks"
+description: "Connect QuickBooks to sync accounting data and automate sales tax calculations"
 ---
 
 ## Overview
 
-QuickBooks integration documentation coming soon.
+The QuickBooks integration connects your QuickBooks Online account to Commenda for automatic transaction syncing and real-time sales tax calculation. Once connected, Commenda pulls your invoices, credit notes, contacts, and items, then calculates and applies sales tax directly on your QuickBooks documents.
+
+## Supported features
+
+| Feature | Status |
+|---|---|
+| Transaction syncing | Supported |
+| Tax calculation | Supported |
+| Real-time webhooks | Supported |
+
+## Data models
+
+Commenda syncs the following data from QuickBooks:
+
+- **Invoices** — sales invoices with line items, amounts, and addresses
+- **Invoice credit notes** — credits issued against invoices
+- **Cash refunds** — refund transactions
+- **Contacts** — customer profiles with billing and shipping addresses
+- **Items** — your product and service catalog
+
+## How tax calculation works
+
+When you create or update an invoice in QuickBooks, Commenda automatically:
+
+1. Receives a webhook notification from QuickBooks
+2. Fetches the full invoice details including shipping address
+3. Calculates the applicable sales tax based on the shipping address
+4. Updates the invoice in QuickBooks with the correct tax amounts
+
+Commenda adds a tax line item labeled **"Tax calculated by Commenda"** to each processed invoice. If a calculation error occurs, an error indicator is added to the invoice's private notes.
+
+<Info>
+Tax calculation runs on invoices, credit notes, cash refunds, estimates, sales orders, and cash sales.
+</Info>
+
+## Address resolution
+
+Commenda determines the tax jurisdiction using the **shipping address on the document**. QuickBooks provides the shipping address (`ShipAddr`) directly on each invoice, so no additional lookups are needed.
+
+If the shipping address is missing or incomplete, the transaction may not be eligible for tax calculation.
+
+## Connecting QuickBooks
+
+<Steps>
+  <Step title="Start the connection">
+    From your Commenda dashboard, navigate to integrations and select **QuickBooks**. Commenda generates a secure connection link.
+  </Step>
+  <Step title="Authorize access">
+    Click the connection link to open the QuickBooks authorization page. Sign in to your QuickBooks account and grant Commenda access to your accounting data.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose which data models to sync, set the sync frequency, and specify how far back to pull historical data.
+  </Step>
+  <Step title="Verify the connection">
+    After authorization, Commenda begins the initial data sync. Check the sync status on your dashboard to confirm data is flowing.
+  </Step>
+</Steps>
+
+<Tip>
+QuickBooks Sandbox accounts are also supported for testing your integration before going live.
+</Tip>
+
+## Known behaviors
+
+- Only **accounts receivable** invoices are processed for tax calculation
+- Invoices with a **draft** or **unknown** status are skipped
+- Invoices that are **paid**, **partially paid**, **submitted**, **void**, or **overdue** are eligible for tax calculation
+- QuickBooks private notes have a character limit, so error messages may be truncated
+
+## Next steps
+
+- [Accounting data integrations overview](/integrations/accounting/overview)
+- [Supported integrations](/integrations/supported-integrations)
 

@@ -66,6 +66,7 @@
                 "group": "Integrations",
                 "pages": [
                   "integrations/supported-integrations",
+                  "integrations/accounting/overview",
                   {
                     "group": "Integration Guidelines",
                     "pages": [
@@ -313,6 +314,12 @@
             ]
           },
           {
+            "group": "Address Requirements",
+            "pages": [
+              "engine/indirect-tax/address-requirements/address-requirements-GET"
+            ]
+          },
+          {
             "group": "Webhooks",
             "pages": [
               "engine/indirect-tax/webhooks/webhooks",
@@ -458,6 +465,13 @@
                   "engine/workflow-builder/reference/service-request-integration"
                 ]
               }
+            ]
+          },
+          {
+            "group": "MCP Server",
+            "pages": [
+              "engine/mcp-server/overview",
+              "engine/mcp-server/setup"
             ]
           },
           {

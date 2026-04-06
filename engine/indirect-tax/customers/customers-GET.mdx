@@ -95,6 +95,10 @@ Retrieves a paginated list of customers for a corporation with optional filterin
       Source platform name (if applicable)
     </ResponseField>
     
+    <ResponseField name="business_identification_number" type="string">
+      Business identification number for the customer
+    </ResponseField>
+    
     <ResponseField name="shipping_address" type="object">
       Customer's shipping address (included when `extend=shipping_address`)
       
@@ -155,6 +159,7 @@ GET /customers?corporation_id=corp_123&limit=20&extend=shipping_address&search_t
       "email": "contact@acme.com",
       "corporation_id": "corp_123",
       "created_at": 1706000000,
+      "business_identification_number": "12-3456789",
       "shipping_address": {
         "line1": "123 Main St",
         "city": "San Francisco",
