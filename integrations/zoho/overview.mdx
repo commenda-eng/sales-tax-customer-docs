@@ -1,9 +1,84 @@
 ---
-title: 'Zoho'
-description: 'Zoho integration'
+title: "Zoho Books"
+description: "Connect Zoho Books to sync accounting data and automate sales tax calculations"
 ---
 
 ## Overview
 
-Zoho integration documentation coming soon.
+The Zoho Books integration connects your Zoho Books account to Commenda for automatic transaction syncing and real-time sales tax calculation. Commenda pulls your invoices, credit notes, contacts, and items, then calculates and applies the correct sales tax on your Zoho Books documents.
 
+## Supported features
+
+| Feature | Status |
+|---|---|
+| Transaction syncing | Supported |
+| Tax calculation | Supported |
+| Real-time webhooks | Requires manual setup |
+
+## Data models
+
+Commenda syncs the following data from Zoho Books:
+
+- **Invoices** — sales invoices with line items and addresses
+- **Invoice credit notes** — credits issued against invoices
+- **Cash refunds** — refund transactions
+- **Contacts** — customer and vendor profiles
+- **Items** — your product and service catalog
+
+## How tax calculation works
+
+When you create or update a document in Zoho Books, Commenda automatically:
+
+1. Receives a webhook notification from Zoho Books
+2. Fetches the full document details including addresses
+3. Calculates the applicable sales tax based on the shipping address
+4. Creates a **Commenda Sales Tax** tax authority in your Zoho Books account (if it doesn't already exist)
+5. Applies the calculated tax using dynamically created tax codes
+
+Commenda tracks the tax calculation status using a custom field called **"Commenda Tax Status"** on your documents.
+
+<Info>
+Tax calculation supports invoices, sales orders, credit notes, and estimates.
+</Info>
+
+## Address resolution
+
+Commenda determines the tax jurisdiction using the **shipping address** on the document. If no shipping address is present, it falls back to the **billing address**.
+
+Both addresses are read directly from the Zoho Books document payload, so no additional API calls are needed.
+
+## Connecting Zoho Books
+
+<Steps>
+  <Step title="Start the connection">
+    From your Commenda dashboard, navigate to integrations and select **Zoho Books**. Commenda generates a secure connection link.
+  </Step>
+  <Step title="Authorize access">
+    Click the connection link to open the Zoho Books authorization page. Sign in and grant Commenda access to your accounting data.
+  </Step>
+  <Step title="Set up webhooks">
+    Zoho Books requires manual webhook configuration. In your Zoho Books account, navigate to **Settings** > **Automation** > **Webhooks** and create a webhook that points to the Commenda endpoint provided in your dashboard.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose which data models to sync, set the sync frequency, and specify how far back to pull historical data.
+  </Step>
+  <Step title="Verify the connection">
+    After setup, Commenda begins the initial data sync. Check the sync status on your dashboard to confirm data is flowing.
+  </Step>
+</Steps>
+
+<Warning>
+Unlike other integrations, Zoho Books requires you to manually configure webhooks. Without this step, real-time tax calculation will not work.
+</Warning>
+
+## Known behaviors
+
+- **Non-taxable transactions are skipped** — if a document is marked as `is_taxable: false` in Zoho Books, Commenda will not calculate tax on it to avoid infinite calculation loops
+- Invoices with **paid** or **void** status are skipped for tax calculation
+- Sales orders and credit notes with **void** or **closed** status are skipped
+- Commenda automatically creates a "Commenda Sales Tax" tax authority and corresponding tax codes in your Zoho Books account
+
+## Next steps
+
+- [Accounting data integrations overview](/integrations/accounting/overview)
+- [Supported integrations](/integrations/supported-integrations)
