@@ -71,7 +71,7 @@ After creating registrations in exposed states, use the [Calculate API](/engine/
 
 To calculate US sales tax, you must provide:
 
-- **Destination address**: The ship-to address of the invoice
+- **Destination address**: The ship-to address of the invoice. The address is validated against the destination country's [address requirements](/engine/indirect-tax/address-requirements/address-requirements-GET).
 - **Calculation date**: The date of the transaction
 - **Invoice information**: Basic invoice details including:
   - Invoice total or subtotal
@@ -79,3 +79,7 @@ To calculate US sales tax, you must provide:
   - Product tax codes (if applicable)
 
 See the [Calculate endpoint documentation](/engine/indirect-tax/calculate/calculate-POST) for complete field requirements and examples.
+
+<Info>
+Commenda also supports tax calculations for other countries beyond the US. Some countries require additional fields — for example, UK (`GB`) calculations require a ship-from address. See the [tax calculations overview](/engine/indirect-tax/calculate/calculate) for the full list of supported countries and their requirements.
+</Info>

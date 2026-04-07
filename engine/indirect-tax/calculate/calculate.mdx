@@ -5,9 +5,26 @@ description: Calculates the tax amount for a given transaction.
 
 ## Overview
 
-The `/calculate` endpoint allows you to determine the amount of sales tax to charge on a transaction. By providing details such as customer information, line items, and pricing, you'll receive accurate tax calculations based on applicable jurisdictions and rates.
+The `/calculate` endpoint allows you to determine the amount of indirect tax to charge on a transaction. By providing details such as customer information, line items, and pricing, you'll receive accurate tax calculations based on applicable jurisdictions and rates.
 
-## Factors Affecting Tax Rates
+## Supported countries
+
+The calculation engine currently supports the following countries:
+
+| Country | Code | Ship-from address required |
+|---------|------|---------------------------|
+| United States | `US` | No |
+| United Kingdom | `GB` | Yes |
+
+<Note>
+For UK (`GB`) calculations, you must include a `ship_from` address in your request. If omitted, the API returns a `400` error.
+</Note>
+
+### Address validation
+
+When you submit a calculation request, the API validates your addresses against the destination country's requirements. This includes checking that all required fields (such as postal code and state) are present and correctly formatted. You can look up which fields are required for a given country using the [address requirements endpoint](/engine/indirect-tax/address-requirements/address-requirements-GET) before making a calculation request.
+
+## Factors affecting tax rates
 
 Our system considers the following factors to determine the appropriate tax for a transaction:
 
@@ -27,8 +44,9 @@ Our system considers the following factors to determine the appropriate tax for 
        - If a product is taxable, the tax is calculated based on the product’s price and applicable tax rates.
 
 3. **Customer Information**
-   - **Shipping Address**: We compute the tax rate based on the shipping address provided for each transaction.
-   - **Customer Exemptions**: Transactions can be exempted from sales tax based on properties of the customer making the purchase. You can read more about these exemptions [here](/engine/indirect-tax/core-concepts/exemptions#purpose-exemptions).
+   - **Shipping address**: We compute the tax rate based on the ship-to address provided for each transaction.
+   - **Ship-from address**: For some countries (e.g., `GB`), the ship-from address is required and factors into the tax calculation.
+   - **Customer exemptions**: Transactions can be exempted from sales tax based on properties of the customer making the purchase. You can read more about these exemptions [here](/engine/indirect-tax/core-concepts/exemptions#purpose-exemptions).
 
 ## Sample Calculation Object
 

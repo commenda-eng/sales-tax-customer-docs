@@ -4,7 +4,7 @@ openapi: "POST /calculate"
 ---
 
 <RequestExample>
-```json Request
+```json US request
 {
   "corporation_id": "b6d009b0-d174-463f-b030-94643c28e209",
   "transaction_date": "2023-12-25",
@@ -41,6 +41,45 @@ openapi: "POST /calculate"
         "amount": 100.00,
         "discount": 0,
         "product_id": "prod_123"
+      }
+    ]
+  }
+}
+```
+
+```json UK request
+{
+  "corporation_id": "b6d009b0-d174-463f-b030-94643c28e209",
+  "transaction_date": "2025-04-01",
+  "transaction_currency": "GBP",
+  "transaction_type": "SALE",
+  "discount": 0,
+  "addresses": {
+    "ship_to": {
+      "address_line_1": "10 Downing Street",
+      "postal_code": "SW1A 2AA",
+      "city": "London",
+      "country": "GB"
+    },
+    "ship_from": {
+      "address_line_1": "1 Canada Square",
+      "postal_code": "E14 5AB",
+      "city": "London",
+      "country": "GB"
+    }
+  },
+  "customer_details": {
+    "customer_id": "customer_456"
+  },
+  "line_items": {
+    "items": [
+      {
+        "line_number": 1,
+        "product_taxability_code": "TPP",
+        "quantity": 1,
+        "amount": 250.00,
+        "discount": 0,
+        "product_id": "prod_456"
       }
     ]
   }

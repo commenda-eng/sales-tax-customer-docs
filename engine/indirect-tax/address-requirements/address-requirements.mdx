@@ -24,6 +24,10 @@ Each address field returns one of three requirement levels:
 | `OPTIONAL` | The field is accepted but not mandatory. Providing it improves accuracy. |
 | `IGNORED` | The field is not used for this country and can be omitted. |
 
+## How address requirements are used
+
+The `/calculate` and `/transactions` endpoints automatically validate addresses against these country-specific requirements. If a required field is missing or incorrectly formatted, the API returns a `400` error with details about the validation failure. Querying address requirements ahead of time lets you catch these issues before submitting a request.
+
 ## Postal code validation
 
 When `postal_code_regex` is present in the response, you can use it to validate postal codes before submission. For example, the US pattern `^\d{5}(-\d{4})?$` accepts both 5-digit and 9-digit ZIP codes.
