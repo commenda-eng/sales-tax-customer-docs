@@ -3102,6 +3102,7 @@ components:
         - LOCAL
         - COUNTRY
         - TERRITORY
+        - TRADEBLOC
       description: Type of tax jurisdiction.
     registration_status:
       type: string
@@ -3729,6 +3730,7 @@ components:
                         - COUNTY
                         - CITY
                         - SPECIAL_DISTRICT
+                        - TRADEBLOC
                       description: Type of tax jurisdiction.
                     rate:
                       type: number

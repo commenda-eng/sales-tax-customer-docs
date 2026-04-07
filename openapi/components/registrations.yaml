@@ -41,6 +41,7 @@ schemas:
         - LOCAL
         - COUNTRY
         - TERRITORY
+        - TRADEBLOC
       description: Type of tax jurisdiction.
 
     TaxType:
