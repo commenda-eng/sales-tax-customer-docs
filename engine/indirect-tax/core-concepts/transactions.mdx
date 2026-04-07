@@ -14,11 +14,11 @@ Commenda provides a range of endpoints to manage transactions:
 
 2. `/transactions` endpoints:
    - Used to submit completed transactions to our system.
-   - Commenda uses this data to file sales tax in states where the seller is registered and track the seller’s progress towards nexus.
-   - Supports both sales (`SALE`) and purchase (`PURCHASE`) transaction types. Purchase transactions are used for input tax credit calculations (EU VAT / UK VAT) and are excluded from sales-focused flows like nexus and filings.
+   - Commenda uses this data to file indirect tax in jurisdictions where the seller is registered and track the seller’s progress toward registration thresholds.
+   - Supports both sales (`SALE`) and purchase (`PURCHASE`) transaction types. Purchase transactions are used for input tax credit calculations (EU VAT / UK VAT) and are excluded from sales-focused flows like threshold tracking and filings.
 
 3. `/nexus` endpoint:
-   - Used to view the seller's progress towards sales tax nexus.
+   - Used to view the seller’s progress toward registration thresholds.
 
 4. `/registrations` endpoints:
    - Used to manage sales tax registrations.

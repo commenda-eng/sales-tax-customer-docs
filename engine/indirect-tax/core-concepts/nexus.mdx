@@ -1,32 +1,34 @@
 ---
-title: "Nexus"
+title: "Registration thresholds"
 ---
 
-## Understanding Sales Tax Nexus
+## Understanding registration thresholds
 
-Sales tax nexus refers to the connection between a seller and a state that requires the seller to register, collect, and remit sales tax in that state. Historically, nexus was based primarily on physical presence. However, following the 2018 South Dakota v. Wayfair Supreme Court decision, states can now require remote sellers to collect and remit sales tax based on their economic activity, known as "economic nexus."
+A registration threshold is the point at which a seller must register to collect and remit indirect tax in a given jurisdiction. Historically, this obligation was based primarily on physical presence. However, following the 2018 South Dakota v. Wayfair Supreme Court decision in the US, jurisdictions can now require remote sellers to collect and remit indirect tax based on their economic activity — commonly referred to as "economic thresholds."
 
-### Variability in State Nexus Rules
+This concept applies globally: VAT and GST jurisdictions also set thresholds that determine when a business must register and begin collecting tax.
 
-Each state sets its own rules for determining nexus, including:
+### How jurisdictions define thresholds
 
-1. **Thresholds:** States establish different sales and/or transaction thresholds that trigger economic nexus. For example, one state may have a USD 100,000 sales threshold, while another sets a USD 500,000 threshold.
+Each jurisdiction sets its own rules for determining when you must register, including:
 
-2. **Threshold Types**: Some states consider only sales revenue, some consider only the number of transactions, and some consider both.
+1. **Threshold amounts:** Jurisdictions establish different sales and/or transaction thresholds that trigger a registration obligation. For example, one jurisdiction may have a USD 100,000 sales threshold, while another sets a USD 500,000 threshold.
 
-3. **Evaluation Periods**: The period over which economic activity is measured varies. Common periods include the previous calendar year, the current or previous calendar year, or a rolling 12-month period.
+2. **Threshold types**: Some jurisdictions consider only sales revenue, some consider only the number of transactions, and some consider both.
 
-## Nexus Tracking
+3. **Evaluation periods**: The period over which economic activity is measured varies. Common periods include the previous calendar year, the current or previous calendar year, or a rolling 12-month period.
 
-Commenda automatically tracks your progress towards state sales tax nexus thresholds based on the transactions you post to the `/transactions` endpoint.
+## Threshold tracking
 
-You can use our nexus API endpoint to get a comprehensive overview of a company's nexus status across all states, taking into account each state's specific rules and thresholds.
+Commenda automatically tracks your progress toward registration thresholds in each jurisdiction based on the transactions you post to the `/transactions` endpoint.
 
-### API Response Structure
+You can use the registration threshold API endpoint to get a comprehensive overview of your threshold status across all jurisdictions, taking into account each jurisdiction's specific rules.
 
-The Nexus API returns an array of state nexus objects. Each state nexus object contains details about your progress towards economic nexus in one state.
+### API response structure
 
-## State Nexus Object Structure
+The API returns an array of jurisdiction threshold objects. Each object contains details about your progress toward the registration threshold in one jurisdiction.
+
+## Jurisdiction threshold object structure
 
 ```json
 {
@@ -86,3 +88,7 @@ The Nexus API returns an array of state nexus objects. Each state nexus object c
   "message": "Successfully fetched nexus."
 }
 ```
+
+<Note>
+The API response uses field names like `is_nexus_breached` and `states` for backward compatibility. These fields represent registration threshold status — `is_nexus_breached` indicates whether you have exceeded the registration threshold in a given jurisdiction.
+</Note>

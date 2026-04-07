@@ -258,7 +258,7 @@
             ]
           },
           {
-            "group": "Global Nexus",
+            "group": "Registration Thresholds",
             "pages": [
               "engine/indirect-tax/nexus/nexus-GET"
             ]

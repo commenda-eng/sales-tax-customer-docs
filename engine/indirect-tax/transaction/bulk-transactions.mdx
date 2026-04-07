@@ -5,7 +5,7 @@ description: "Utility for sellers to bulk upload transactions."
 
 ## Overview
 
-Commenda uses tax transactions to calculate the seller's tax obligations for filings and nexus tracking. In cases where sellers ave been selling in various US states prior to onboarding to Commenda, some retroactive analysis will be necessary for accurate nexus status evaluation.
+Commenda uses tax transactions to calculate the seller's tax obligations for filings and registration threshold tracking. In cases where sellers have been selling in various US states prior to onboarding to Commenda, some retroactive analysis will be necessary for accurate registration threshold evaluation.
 
 ### Usage
 
@@ -121,6 +121,6 @@ Currently the following options are supported: `BUSY`, `HUBSPOT`, `MEKARI_JURNAL
 
 Reason why a purchaser is exempt from sales tax. Used to manually specify that a transaction is exempt because its purchaser is exempt.
 
-When this field is set, the transaction will not be considered for nexus tracking or for filings.
+When this field is set, the transaction will not be considered for registration threshold tracking or for filings.
 
 Currently the following options are supported: `PURPOSE_RESALE`, `ENTITY_TYPE_NONPROFIT`, `GOVERNMENT`, `MANUFACTURER`, `AGRICULTURAL`, `OTHER`.

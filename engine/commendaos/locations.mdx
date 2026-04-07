@@ -6,7 +6,7 @@ icon: 'map-pin'
 
 ## Overview
 
-The Locations API manages physical addresses where business entities operate, including registered offices, operating addresses, warehouses, branches, and points of sale. Locations are used for nexus determination, compliance tracking, and employee management.
+The Locations API manages physical addresses where business entities operate, including registered offices, operating addresses, warehouses, branches, and points of sale. Locations are used for registration threshold determination, compliance tracking, and employee management.
 
 ## Core endpoints
 
@@ -205,18 +205,18 @@ A single location can have multiple types:
 ## Employee tracking
 
 Track employee count at each location for:
-- Payroll tax nexus determination
+- Payroll tax threshold determination
 - Workers' compensation requirements
 - Local tax obligations
 - Headcount reporting
 
 Update `employeeCount` as staff levels change.
 
-## Nexus determination
+## Registration threshold determination
 
 Use `startDate` to track when physical presence began in a jurisdiction. This is critical for:
-- Sales tax nexus
-- Income tax nexus
+- Indirect tax registration thresholds
+- Income tax registration thresholds
 - Payroll tax obligations
 - Registration requirements
 
@@ -245,4 +245,4 @@ This enables historical tracking of where entities operated over time.
 ## Related resources
 
 - [Business Entity API](/engine/commendaos/business-entity) - Manage parent business entities
-- [Registrations API](/engine/commendaos/registrations) - Registrations triggered by location nexus
+- [Registrations API](/engine/commendaos/registrations) - Registrations triggered by location-based thresholds

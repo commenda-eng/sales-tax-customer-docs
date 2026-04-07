@@ -33,7 +33,7 @@ Commenda provides webhook notifications for events related to the following obje
 
 1. Existing Registrations
 2. New Registrations
-3. Nexus
+3. Registration Thresholds
 4. Exemption Certificates
 5. Customs Duty
 
@@ -160,11 +160,11 @@ Commenda provides webhook notifications for events related to the following obje
 }
 ````
 
-## Nexus
+## Registration thresholds
 
 1. #### `NEXUS.THRESHOLD.STATE.ALERT`
 
-   Commenda internally tracks each corporation's progress towards economic nexus. If nexus is about to be breached in a state where the customer is not registered, the customer will need to register in that state. Registrations generally take some time and it's better to register once you have reached around 80% of the nexus threshold.
+   Commenda internally tracks each corporation's progress toward registration thresholds. If a threshold is about to be exceeded in a jurisdiction where the customer is not registered, the customer will need to register in that jurisdiction. Registrations generally take some time, so it's better to register once you have reached around 80% of the threshold.
 
    This webhook is triggered everyday from the day when 80% threshold is crossed in a non registered state.
 
