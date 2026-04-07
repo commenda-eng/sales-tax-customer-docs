@@ -15,11 +15,11 @@ Before you can calculate sales tax, you need:
 2. **Corporation**: Create a corporation that reflects one real-world business entity.
 3. **API Token**: Use your API token for authentication.
 
-## Understanding US sales tax nexus
+## Understanding US sales tax registration thresholds
 
-In the US, you are not required to collect sales tax from customers unless you breach physical or economic nexus in a state. Once you breach nexus (setting aside grace periods), you must:
+In the US, you are not required to collect sales tax from customers unless you exceed a physical or economic registration threshold in a state. Once you exceed a threshold (setting aside grace periods), you must:
 
-1. Register in the state where you have breached nexus
+1. Register in the state where you have exceeded the threshold
 2. Collect sales tax from customers in that state
 3. File and remit the collected taxes
 
@@ -33,25 +33,25 @@ Create a corporation using the [Create Corporation API](/engine/indirect-tax/cor
 - Save the corporation ID returned in the response for subsequent API calls
 - Each corporation should map to one legal entity in your business
 
-### 2. Monitor nexus exposure
+### 2. Monitor registration threshold exposure
 
-Use the [Nexus API](/engine/indirect-tax/nexus/nexus-GET) to track your latest nexus exposure across states:
+Use the [Registration Thresholds API](/engine/indirect-tax/nexus/nexus-GET) to track your latest threshold exposure across states:
 
 - Monitor your transaction volume and revenue by state
-- Identify states where you are approaching or have breached nexus thresholds
+- Identify states where you are approaching or have exceeded registration thresholds
 - Determine which states require registration
 
 ### 3. Ingest transactions
 
 Use the [Transactions API](/engine/indirect-tax/transaction/transaction-POST) to submit your transaction data:
 
-- Submit completed transactions to track nexus progress
+- Submit completed transactions to track registration threshold progress
 - Include transaction details such as amounts, locations, and dates
 - Use [bulk import](/engine/indirect-tax/transaction/bulk-transactions-POST) for large transaction volumes
 
 ### 4. Register in exposed states
 
-Once you have breached nexus in a state, create a registration using the [Create Registration API](/engine/indirect-tax/registrations/registrations-POST):
+Once you have exceeded the registration threshold in a state, create a registration using the [Create Registration API](/engine/indirect-tax/registrations/registrations-POST):
 
 - Provide your API token and corporation ID
 - Specify the state where you need to register
