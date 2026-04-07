@@ -34,13 +34,13 @@ When you send a document for signature, the system automatically creates one tas
 
 | Status | Description |
 |--------|-------------|
-| **Pending** | Recipient is waiting to be notified, or waiting for a previous signer to complete (when using signing order) |
-| **Sent** | Email has been sent to the recipient |
+| **Pending** | Recipient is waiting for notification, or waiting for a previous signer to complete (when using signing order) |
+| **Sent** | DocuSign has sent the email to the recipient |
 | **Viewed** | Recipient has opened the document |
 | **Signed** | Recipient has completed signing |
-| **Canceled** | Signature request has been canceled |
+| **Canceled** | You or an agent canceled the signature request |
 
-If you configure an explicit signing order (e.g., Signer 1 must sign before Signer 2), subsequent signers will remain in "Pending" status until the previous signer completes. Once the previous signer finishes, the next signer's status updates to "Sent" and they receive their email notification.
+If you configure an explicit signing order (for example, Signer 1 must sign before Signer 2), subsequent signers remain in "Pending" status until the previous signer completes. Once the previous signer finishes, DocuSign updates the next signer's status to "Sent" and sends them an email notification.
 
 ## Managing signature requests
 
@@ -54,14 +54,14 @@ You can send reminders to recipients who haven't signed yet by locating the sign
 
 ### Viewing signed documents
 
-Once a recipient signs, the task status updates to "Signed." Agents can download the signed document from the task card, and the signed document is stored with the service request.
+Once a recipient signs, the task status updates to "Signed." Agents can download the signed document from the task card. Commenda stores the signed document with the service request.
 
 ### Canceling signature requests
 
 Agents can cancel signature requests that are in progress. When canceled:
-- All pending signatures are voided
+- Commenda voids all pending signatures
 - Recipients can no longer sign the document
-- Tasks are marked as "Canceled"
+- Commenda marks all tasks as "Canceled"
 
 ## Signer experience
 
@@ -76,22 +76,22 @@ Clients see signature tasks on their Commenda dashboard with the message "An ema
 
 ## What happens after signing
 
-- When a recipient signs, the task status updates and the signed document becomes available for download
-- If multiple signers are required, the next recipient is notified automatically
-- When all recipients sign, the envelope is marked as "Completed"
+- When a recipient signs, the task status updates and you can download the signed document
+- If multiple signers are required, DocuSign automatically notifies the next recipient
+- When all recipients sign, Commenda marks the envelope as "Completed"
 
 ### When a recipient declines to sign
 
 If a recipient declines to sign:
 
-1. **The entire envelope is automatically canceled** — DocuSign voids all signatures, not just the one that was declined
-2. **All tasks are marked as "Canceled"** — including recipients who haven't been notified yet
-3. **The decline reason is recorded** — the task description shows which recipient declined
+1. **DocuSign automatically cancels the entire envelope** — it voids all signatures, not just the one that was declined
+2. **Commenda marks all tasks as "Canceled"** — including recipients who haven't been notified yet
+3. **Commenda records the decline reason** — the task description shows which recipient declined
 4. **No further signatures are possible** — you must create a new signature request
 
 ## Notifications
 
-All signature-related notifications are handled by DocuSign's native notification service — not Commenda's notification system. This includes email reminders, confirmation emails, and completion notifications.
+DocuSign's native notification service handles all signature-related notifications — not Commenda's notification system. This includes email reminders, confirmation emails, and completion notifications.
 
 <Info>
 The DocuSign integration is available to service providers and advisors. Contact your Commenda account manager for setup.
