@@ -1,26 +1,93 @@
 ---
-title: Introduction
-description: Learn how Commenda can help you manage your global indirect taxes.
+title: "API documentation"
+sidebarTitle: "Introduction"
+description: "Build on Commenda's APIs to manage entities, calculate indirect tax, automate workflows, and more."
+keywords: ["API", "developer", "integration", "REST API", "authentication"]
 ---
 
-## About Commenda
+Commenda exposes several APIs that let you programmatically manage business entities, calculate indirect tax, incorporate companies, build workflows, and more. This page helps you find the right API for your use case and get started quickly.
 
-Commenda empowers cross-border companies to streamline and automate their global tax workflows. Our platform simplifies international operations by handling everything from accurate tax rate calculations to automated registration, reporting, and filings.
+## Available APIs
 
-Commenda's Global Indirect Tax API ensures compliance across multiple jurisdictions, helping businesses avoid costly errors and audits.
+<Columns cols={2}>
+  <Card title="Global Indirect Tax" icon="receipt" href="/engine/indirect-tax/introduction">
+    Calculate tax rates, manage registrations, track transactions, handle exemptions, and automate filings across jurisdictions.
+  </Card>
+  <Card title="CommendaOS" icon="microchip" href="/engine/commendaos/overview">
+    Create and manage business entities, government identifiers, registrations, locations, credentials, and documents.
+  </Card>
+  <Card title="Incorporation" icon="building" href="/engine/incorporation/introduction">
+    Create companies, start incorporation services, and track payment intents and document delivery through affiliate-scoped endpoints.
+  </Card>
+  <Card title="Workflow Builder" icon="diagram-project" href="/engine/workflow-builder/overview">
+    Define multi-step service request workflows with conditional logic, approvals, and automated task assignment.
+  </Card>
+  <Card title="Address API" icon="location-dot" href="/engine/address-api/introduction">
+    Geocode and validate addresses for accurate tax jurisdiction resolution.
+  </Card>
+  <Card title="MCP Server" icon="server" href="/engine/mcp-server/overview">
+    Connect Commenda to AI tools and agents using the Model Context Protocol.
+  </Card>
+</Columns>
 
-For accountants and service providers, we provide the tools and support to expand your practice globally.
+## Which API do you need?
 
-### API Reference
+| Use case | API |
+|----------|-----|
+| Calculate indirect tax on a transaction | [Global Indirect Tax](/engine/indirect-tax/introduction) |
+| Create or retrieve business entities | [CommendaOS](/engine/commendaos/overview) |
+| Incorporate a new entity programmatically | [Incorporation](/engine/incorporation/introduction) |
+| Manage tax registrations across jurisdictions | [Global Indirect Tax — Registrations](/engine/indirect-tax/registrations/registrations) |
+| Track economic nexus thresholds | [Global Indirect Tax — Nexus](/engine/indirect-tax/nexus/nexus-GET) |
+| Store and retrieve entity documents | [CommendaOS — Documents](/engine/commendaos/documents) |
+| Automate multi-step service delivery | [Workflow Builder](/engine/workflow-builder/overview) |
+| Validate or geocode an address | [Address API](/engine/address-api/introduction) |
+| Build AI-powered tools on Commenda data | [MCP Server](/engine/mcp-server/overview) |
 
-View our detailed API documentation here:
+## Authentication
 
-{" "}
+Commenda APIs use two authentication methods depending on the API:
 
-<Card title="Global Indirect Tax API Reference" icon="receipt" horizontal href="engine/indirect-tax/introduction">
-  View our Global Indirect Tax API documentation.
-</Card>
+### Bearer token
 
-<Card title="Incorporation API" icon="building" horizontal href="engine/incorporation/introduction">
-View our incorporation API documentation.
-</Card>
+The Global Indirect Tax API and CommendaOS API use Bearer token authentication. Include your token in the `Authorization` header of every request:
+
+```bash
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations' \
+  --header 'Authorization: Bearer <your_token>'
+```
+
+### Affiliate API key
+
+The Incorporation API uses an affiliate API key passed in the `x-api-key` header:
+
+```bash
+curl --request GET \
+  --url 'https://api.prod.commenda.io/api/v1/public/payment-intents' \
+  --header 'x-api-key: <your_api_key>'
+```
+
+<Info>
+Contact the Commenda team to get API keys for both testing and production environments.
+</Info>
+
+## Base URLs
+
+| API | Base URL |
+|-----|----------|
+| Global Indirect Tax | `https://transaction-tax.api.in.commenda.io/api/v1` |
+| CommendaOS / Incorporation | `https://api.prod.commenda.io/api/v1/public` |
+
+All endpoint paths in this documentation are relative to their respective base URL.
+
+## Next steps
+
+<Columns cols={2}>
+  <Card title="Global Indirect Tax quickstart" icon="bolt" href="/engine/indirect-tax/introduction">
+    Start calculating tax rates and managing transactions.
+  </Card>
+  <Card title="CommendaOS overview" icon="database" href="/engine/commendaos/overview">
+    Learn the entity data model before calling the API.
+  </Card>
+</Columns>
