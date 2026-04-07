@@ -76,7 +76,26 @@ Each address is validated against per-country requirements that define which fie
 
 Use the [`/address-requirements`](/engine/indirect-tax/address-requirements/address-requirements) endpoint to query which fields and formats are expected for each country before calling `/calculate`.
 
-## Sample Calculation Object
+## Currency handling
+
+The `/calculate` endpoint supports multi-currency transactions. Tax is always computed in the default currency of the ship-to country (for example, USD for the United States, CAD for Canada, or GBP for the United Kingdom).
+
+### Default currency resolution
+
+When `transaction_currency` is omitted from the request, it defaults to the ship-to country's standard currency. For example, if the ship-to address is in Canada, the default is `CAD`.
+
+### Currency conversion
+
+If you provide a `transaction_currency` that differs from the ship-to country's default currency, the API automatically converts line item amounts and discounts to the local currency before calculating tax. The response includes:
+
+- **`calculation_currency`** — the currency used internally for the tax computation (the ship-to country's default currency).
+- **`exchange_rate`** — the exchange rate applied between the transaction currency and the calculation currency.
+
+All monetary values in the response (`total_amount`, `total_tax`, `total_due`, and line item amounts) are returned in the original `transaction_currency`.
+
+When the `transaction_currency` matches the ship-to country's default currency, no conversion takes place and `exchange_rate` is `1.0`.
+
+## Sample calculation object
 
 The `/calculate` endpoint returns a JSON object containing the transaction details and calculated taxes.
 

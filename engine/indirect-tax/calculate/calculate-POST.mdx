@@ -85,10 +85,44 @@ openapi: "POST /calculate"
   }
 }
 ```
+
+```json CA request (cross-currency)
+{
+  "corporation_id": "b6d009b0-d174-463f-b030-94643c28e209",
+  "transaction_date": "2025-04-01",
+  "transaction_currency": "USD",
+  "transaction_type": "SALE",
+  "discount": 0,
+  "addresses": {
+    "ship_to": {
+      "address_line_1": "200 Bay St",
+      "postal_code": "M5J 2J2",
+      "city": "Toronto",
+      "state": "ON",
+      "country": "CA"
+    }
+  },
+  "customer_details": {
+    "customer_id": "customer_789"
+  },
+  "line_items": {
+    "items": [
+      {
+        "line_number": 1,
+        "product_taxability_code": "TPP",
+        "quantity": 1,
+        "amount": 500.00,
+        "discount": 0,
+        "product_id": "prod_789"
+      }
+    ]
+  }
+}
+```
 </RequestExample>
 
 <ResponseExample>
-```json 200
+```json 200 (same currency)
 {
   "data": {
     "id": "calc_123",

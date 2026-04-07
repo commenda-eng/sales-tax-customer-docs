@@ -20,6 +20,11 @@ schemas:
         description: ISO 8601 formatted date string indicating date on which the transaction took place.
       transaction_currency:
         "$ref": "./primitives.yaml#/schemas/Currency"
+        description: >
+          ISO 4217 alpha-3 currency code for the transaction. If omitted, defaults to the
+          standard currency of the ship-to country (e.g., USD for the US, CAD for Canada,
+          GBP for the UK). When this differs from the ship-to country's default currency,
+          amounts are automatically converted for tax calculation and converted back in the response.
       transaction_type:
         type: string
         enum:
@@ -128,6 +133,21 @@ schemas:
         description: ISO 8601 formatted date string indicating date on which the transaction took place.
       transaction_currency:
         "$ref": "./primitives.yaml#/schemas/Currency"
+      calculation_currency:
+        type: string
+        description: >
+          ISO 4217 alpha-3 currency code representing the currency used internally for
+          the tax computation. This is the default currency of the ship-to country
+          (e.g., USD for the US, CAD for Canada, GBP for the UK).
+        example: USD
+      exchange_rate:
+        type: number
+        format: float
+        description: >
+          The exchange rate applied between the transaction currency and the calculation
+          currency. When no conversion is needed (i.e., the transaction currency matches
+          the ship-to country's default currency), this value is 1.0.
+        example: 1.0
       discount:
         type: number
         format: float
@@ -142,7 +162,7 @@ schemas:
         description: Customer details for this transaction.
       tax_currency:
         "$ref": "./primitives.yaml#/schemas/Currency"
-        description: ISO 4217 alpha-3 currency code representing the currency in which tax details are reported.
+        description: ISO 4217 alpha-3 currency code representing the currency in which tax details are reported. This matches the transaction currency.
       addresses:
         type: object
         properties:
