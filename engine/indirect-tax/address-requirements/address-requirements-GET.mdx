@@ -4,14 +4,22 @@ openapi: "GET /address-requirements"
 ---
 
 <RequestExample>
-```bash Request
+```bash US
 curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requirements?country=US" \
+  -H "Authorization: Bearer <token>"
+```
+```bash GB
+curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requirements?country=GB" \
+  -H "Authorization: Bearer <token>"
+```
+```bash DE
+curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requirements?country=DE" \
   -H "Authorization: Bearer <token>"
 ```
 </RequestExample>
 
 <ResponseExample>
-```json 200
+```json US (200)
 {
   "data": {
     "country_code": "US",
@@ -30,6 +38,36 @@ curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/address-requireme
       "SD", "TN", "TX", "UT", "VT", "VA", "WA", "WV", "WI", "WY",
       "DC"
     ]
+  },
+  "message": "Successfully retrieved address requirements."
+}
+```
+```json GB (200)
+{
+  "data": {
+    "country_code": "GB",
+    "address_line_1": "REQUIRED",
+    "address_line_2": "OPTIONAL",
+    "address_line_3": "IGNORED",
+    "city": "REQUIRED",
+    "state": "OPTIONAL",
+    "postal_code": "OPTIONAL",
+    "postal_code_regex": "^[A-Za-z]{1,2}\\d[A-Za-z\\d]? ?\\d[A-Za-z]{2}$"
+  },
+  "message": "Successfully retrieved address requirements."
+}
+```
+```json DE (200)
+{
+  "data": {
+    "country_code": "DE",
+    "address_line_1": "REQUIRED",
+    "address_line_2": "OPTIONAL",
+    "address_line_3": "IGNORED",
+    "city": "REQUIRED",
+    "state": "OPTIONAL",
+    "postal_code": "OPTIONAL",
+    "postal_code_regex": "^\\d{5}$"
   },
   "message": "Successfully retrieved address requirements."
 }
