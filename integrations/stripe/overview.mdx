@@ -1,11 +1,11 @@
 ---
 title: "Stripe"
-description: "Connect Stripe to sync payment data and automate sales tax calculations"
+description: "Connect Stripe to sync payment data and automate indirect tax calculations"
 ---
 
 ## Overview
 
-The Stripe integration connects your Stripe account to Commenda for automatic payment data syncing and real-time sales tax calculation on invoices. Commenda pulls your invoices, customers, products, and credit notes, then calculates and applies the correct tax rates directly on your Stripe invoices.
+The Stripe integration connects your Stripe account to Commenda for automatic payment data syncing and real-time indirect tax calculation on invoices. Commenda pulls your invoices, customers, products, and credit notes, then calculates and applies the correct tax rates directly on your Stripe invoices.
 
 ## Supported features
 
@@ -32,7 +32,7 @@ When a draft invoice is created or updated in Stripe, Commenda automatically:
 1. Receives a webhook notification from Stripe
 2. Fetches the full invoice details and customer information
 3. Resolves the applicable tax jurisdiction from the available addresses
-4. Calculates the correct sales tax
+4. Calculates the correct indirect tax
 5. Creates or updates tax rates in your Stripe account and applies them to each line item
 
 <Info>

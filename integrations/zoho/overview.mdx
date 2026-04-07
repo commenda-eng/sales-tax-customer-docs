@@ -1,11 +1,11 @@
 ---
 title: "Zoho Books"
-description: "Connect Zoho Books to sync accounting data and automate sales tax calculations"
+description: "Connect Zoho Books to sync accounting data and automate indirect tax calculations"
 ---
 
 ## Overview
 
-The Zoho Books integration connects your Zoho Books account to Commenda for automatic transaction syncing and real-time sales tax calculation. Commenda pulls your invoices, credit notes, contacts, and items, then calculates and applies the correct sales tax on your Zoho Books documents.
+The Zoho Books integration connects your Zoho Books account to Commenda for automatic transaction syncing and real-time indirect tax calculation. Commenda pulls your invoices, credit notes, contacts, and items, then calculates and applies the correct indirect tax on your Zoho Books documents.
 
 ## Supported features
 
@@ -31,7 +31,7 @@ When you create or update a document in Zoho Books, Commenda automatically:
 
 1. Receives a webhook notification from Zoho Books
 2. Fetches the full document details including addresses
-3. Calculates the applicable sales tax based on the shipping address
+3. Calculates the applicable indirect tax based on the shipping address
 4. Creates a **Commenda Sales Tax** tax authority in your Zoho Books account (if it doesn't already exist)
 5. Applies the calculated tax using dynamically created tax codes
 

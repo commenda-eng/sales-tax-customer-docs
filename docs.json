@@ -58,7 +58,7 @@
             ]
           },
           {
-            "group": "Sales Tax",
+            "group": "Indirect Tax",
             "pages": [
               "product/sales-tax/overview",
               "product/sales-tax/getting-started",
