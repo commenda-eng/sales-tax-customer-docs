@@ -90,8 +90,8 @@ The NetSuite integration requires a custom SuiteScript deployment for full funct
 ## Known behaviors
 
 - **Cash sales** is a NetSuite-specific transaction type not found in other integrations
-- Only **draft** status transactions are skipped — NetSuite is more permissive than other platforms with statuses like deposited, not deposited, and unknown all being eligible for processing
-- Customer IDs in NetSuite use a `customer_` prefix internally, which is handled automatically
+- Commenda only skips **draft** status transactions — NetSuite is more permissive than other platforms, with statuses like deposited, not deposited, and unknown all eligible for processing
+- Customer IDs in NetSuite use a `customer_` prefix internally, which Commenda handles automatically
 
 ## Next steps
 

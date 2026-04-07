@@ -70,9 +70,9 @@ Commenda uses the shipping (STREET) address when available. If no shipping addre
 ## Known behaviors
 
 - **Lock dates are respected** — Commenda skips invoices dated before your Xero organisation's period lock date or end-of-year lock date
-- Invoices with **paid**, **voided**, or **deleted** status are skipped for tax calculation
-- Xero does not support shipping lines or shipping amounts on documents, so shipping tax is not calculated separately
-- Tax codes are created dynamically in Xero as new tax rates are encountered
+- Commenda skips invoices with **paid**, **voided**, or **deleted** status for tax calculation
+- Xero does not support shipping lines or shipping amounts on documents, so Commenda does not calculate shipping tax separately
+- Commenda creates tax codes dynamically in Xero as it encounters new tax rates
 
 ## Next steps
 

@@ -73,9 +73,9 @@ Unlike other integrations, Zoho Books requires you to manually configure webhook
 
 ## Known behaviors
 
-- **Non-taxable transactions are skipped** — if a document is marked as `is_taxable: false` in Zoho Books, Commenda will not calculate tax on it to avoid infinite calculation loops
-- Invoices with **paid** or **void** status are skipped for tax calculation
-- Sales orders and credit notes with **void** or **closed** status are skipped
+- **Non-taxable transactions are skipped** — if a document is marked as `is_taxable: false` in Zoho Books, Commenda does not calculate tax on it to avoid infinite calculation loops
+- Commenda skips invoices with **paid** or **void** status for tax calculation
+- Commenda skips sales orders and credit notes with **void** or **closed** status
 - Commenda automatically creates a "Commenda Sales Tax" tax authority and corresponding tax codes in your Zoho Books account
 
 ## Next steps
