@@ -32,6 +32,10 @@ The `/calculate` and `/transactions` endpoints automatically validate addresses 
 
 When `postal_code_regex` is present in the response, you can use it to validate postal codes before submission. For example, the US pattern `^\d{5}(-\d{4})?$` accepts both 5-digit and 9-digit ZIP codes.
 
+<Note>
+The `postal_code` field is **optional** for EU countries (such as DE and FR), GB, and CA. If a postal code is provided for these countries, it is still validated against the country's regex pattern. For the US, postal code remains **required**.
+</Note>
+
 ## Valid state codes
 
 For countries with defined state or province subdivisions (e.g., US, CA), the `valid_state_codes` array lists all accepted codes. Use this to populate dropdowns or validate state input in your address forms.
