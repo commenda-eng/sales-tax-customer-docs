@@ -159,6 +159,12 @@
         "icon": "code",
         "groups": [
           {
+            "group": "Getting started",
+            "pages": [
+              "engine/api-introduction"
+            ]
+          },
+          {
             "group": "Global Indirect Tax",
             "pages": [
               {
