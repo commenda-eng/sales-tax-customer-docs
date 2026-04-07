@@ -1,16 +1,30 @@
 ---
-title: User roles
-description: Understand the three types of users on the Commenda platform and what each role can access.
+title: "User roles"
+description: "Understand the different user types and roles available in Commenda."
+keywords: ["user roles", "permissions", "access control", "company user", "advisor"]
 ---
 
 Commenda is a multi-tenant platform with three distinct user experiences. Your role determines which features, dashboards, and navigation items are available to you.
 
 ## Company users
 
-Company users are businesses managing their own tax compliance and corporate operations. As a company user, you have access to:
+Company users are businesses managing their own tax compliance and corporate operations.
+
+### Company roles
+
+| Role | Description |
+|------|-------------|
+| **Company Admin** | Full access to all company data, entities, and settings. Can manage team members and billing. |
+| **Company User** | Full access to company data and entities. Cannot manage team members. |
+| **Accountant** | Access to financial data across entities. Designed for external accountants and advisors. |
+| **Controller** | Access limited to specific entities assigned to them. Useful for team members who manage a subset of your entities. |
+| **Employee** | Limited access to their own payroll and equity information. |
+| **Custom** | Permissions defined on a per-user basis. |
+
+### What company users can access
 
 - **Home dashboard** — Overview of your entities, active services, and tasks
-- **Corporations** — Manage your legal entities and corporate structure
+- **Entities** — Manage your legal entities and corporate structure
 - **Indirect tax** — Registrations, filings, exemptions, calculations, transactions, and products
 - **Tax & reporting** — Direct tax compliance, fiscal year management, and filing requirements
 - **Compliance calendar** — All upcoming deadlines and compliance tasks
@@ -22,7 +36,7 @@ Company users are businesses managing their own tax compliance and corporate ope
 
 ## Advisor users
 
-Advisor users are accounting firms, tax consultancies, and other advisory firms that manage compliance for multiple client businesses. As an Advisor, you have access to:
+Advisor users are members of accounting or advisory firms that serve companies through Commenda. They access the Advisor Portal, which provides:
 
 - **Clients** — View and manage all client businesses in your portfolio
 - **Team members** — Add team members and assign them to specific clients
@@ -35,14 +49,19 @@ Advisor users are accounting firms, tax consultancies, and other advisory firms 
 
 ## Service provider users
 
-Service provider users are operational teams that fulfill compliance work on behalf of businesses. As a service provider, you have access to:
+Service provider users are members of agent firms that deliver specific services (incorporation, tax registration, registered agent, etc.) through the Commenda agent portal. They can:
 
 - **Service request inbox** — View and manage incoming compliance requests
 - **Client accounts** — Access client data needed to complete service work
 - **Document templates** — Standardized templates for compliance deliverables
 - **SLA management** — Track service level agreements and deadlines
 - **Team management** — Assign requests to team members and manage workload
+- **Tools** — Use e-signatures, document templates, and other delivery tools
 - **Settings** — Firm configuration and team preferences
+
+## Switching between views
+
+If you have access to multiple roles (for example, you're both a company user and part of an advisor firm), you can switch between views using the account switcher in the sidebar.
 
 ## Permissions and access
 

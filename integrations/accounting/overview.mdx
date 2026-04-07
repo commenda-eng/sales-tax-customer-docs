@@ -1,24 +1,27 @@
 ---
-title: "Accounting data integrations"
-description: "Connect your accounting platform to sync financial data and automate tax calculations"
+title: "Accounting software integrations"
+description: "Connect your accounting platform to sync financial data and automate tax calculations."
+keywords: ["accounting integration", "QuickBooks", "Xero", "NetSuite", "accounting sync"]
 ---
 
-## Overview
-
-Commenda connects to your accounting platform to automatically sync transaction data, contacts, and financial statements. Once connected, Commenda uses this data to calculate sales tax, generate financial reports, and keep your records up to date.
-
-You can connect platforms like QuickBooks, Xero, Zoho Books, and others through a guided setup flow. Commenda handles the data sync on a configurable schedule and provides real-time status updates so you always know when your data was last refreshed.
+Commenda integrates with 20+ accounting platforms, allowing you to automatically sync transaction data, invoices, contacts, and chart of accounts. Once connected, Commenda uses this data to calculate sales tax, generate financial reports, and keep your records up to date.
 
 ## Supported platforms
 
 | Platform | Category | Syncing | Tax calculation |
 |---|---|---|---|
-| **QuickBooks** | Accounting | Supported | Supported |
+| **QuickBooks Online** | Accounting | Supported | Supported |
+| **QuickBooks Desktop** | Accounting | Supported | Supported |
 | **Xero** | Accounting | Supported | Supported |
-| **Zoho Books** | Accounting | Supported | Supported |
 | **NetSuite** | Accounting | Supported | Supported |
+| **Zoho Books** | Accounting | Supported | Supported |
+| **Wave** | Accounting | Supported | Limited |
+| **Sage** | Accounting | Supported | Limited |
+| **FreshBooks** | Accounting | Supported | Limited |
+| **Tally** | Accounting | Supported | Limited |
 | **Stripe** | Payments | Supported | Not supported |
 | **Shopify** | E-commerce | Supported | Not supported |
+| **Amazon** | E-commerce | Supported | Limited |
 | **WooCommerce** | E-commerce | Supported | Supported |
 
 <Tip>
@@ -27,14 +30,18 @@ Each platform supports different data models and sync configurations. See the in
 
 ## How it works
 
-Commenda uses a unified integration layer to connect to your accounting platform. The connection flow works the same way regardless of which platform you choose:
-
 <Steps>
-  <Step title="Generate a connection link">
-    From your Commenda dashboard, select the accounting platform you want to connect. Commenda generates a secure invite link for the connection.
+  <Step title="Go to your entity">
+    Navigate to the entity you want to connect.
   </Step>
-  <Step title="Authorize access">
-    Click the invite link to open your accounting platform's authorization page. Sign in and grant Commenda read access to the data models you want to sync (invoices, contacts, financial statements, etc.).
+  <Step title="Open integrations">
+    Look for the **Connect accounting software** option in your Sales Tax or entity settings. Select the accounting platform you want to connect.
+  </Step>
+  <Step title="Authorize the connection">
+    You'll be redirected to your accounting platform's authorization page. Sign in and grant Commenda read access to the data models you want to sync.
+  </Step>
+  <Step title="Configure sync settings">
+    Choose what data to sync and how often. Options include transactions, invoices, contacts, chart of accounts, and journal entries.
   </Step>
   <Step title="Initial sync begins">
     After authorization, Commenda starts pulling historical data from your platform. Depending on the volume of data, this can take anywhere from a few minutes to an hour.
@@ -102,6 +109,10 @@ You can check the current sync status for each connected platform. The status te
 - Which use case the connection is configured for
 
 If a sync fails, you can trigger a manual resync from the dashboard. Use the **full resync** option to re-pull all data from the configured start date.
+
+<Warning>
+Make sure your accounting data is up to date before relying on synced data for tax filings. Commenda syncs data periodically, so very recent transactions may not appear immediately.
+</Warning>
 
 ## Disconnecting an integration
 

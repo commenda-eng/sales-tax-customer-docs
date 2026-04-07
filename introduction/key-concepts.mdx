@@ -1,40 +1,81 @@
 ---
 title: "Key concepts"
-description: "Core terminology and concepts used throughout the Commenda platform."
+description: "Understand the core concepts and terminology used throughout Commenda."
+keywords: ["concepts", "terminology", "entities", "compliance", "service requests"]
 ---
 
 <Tip>
   Commenda operates across many countries and regions. Throughout this documentation, we use jurisdiction-agnostic language that applies regardless of where your business operates.
 </Tip>
 
-## Jurisdiction
+## Company
 
-A jurisdiction is any taxing authority — a country, state, province, emirate, or other governmental region that imposes tax obligations. Commenda helps you manage compliance across multiple jurisdictions from a single platform.
+A **company** is your top-level account in Commenda. It represents the parent organization that owns or manages one or more business entities. All your team members, settings, and billing are managed at the company level.
 
 ## Entity
 
-An entity is a legal business structure (corporation, LLC, partnership, etc.) registered in one or more jurisdictions. You can manage multiple entities under a single Commenda organization, each with its own compliance settings and obligations.
+An **entity** (also called a corporation) is an individual legal business — such as a C-Corp, LLC, Private Limited company, or LLP. A single company in Commenda can manage dozens or even hundreds of entities across different countries and jurisdictions.
+
+Each entity has its own:
+- Business information (name, EIN, formation date)
+- Key persons (directors, officers, signatories)
+- Ownership structure (stakeholders, cap table)
+- Registrations (tax IDs, state registrations)
+- Documents
+
+## Jurisdiction
+
+A **jurisdiction** is any taxing authority — a country, state, province, emirate, or other governmental region that imposes tax obligations. Commenda helps you manage compliance across multiple jurisdictions from a single platform.
 
 ## Indirect tax
 
-Indirect tax refers to consumption-based taxes such as VAT, GST, sales tax and similar levies that are collected on goods and services. Commenda helps you manage the full lifecycle of indirect tax compliance — from tracking when you need to register, through filing returns and managing exemptions.
+**Indirect tax** refers to consumption-based taxes such as VAT, GST, sales tax, and similar levies that are collected on goods and services. Commenda helps you manage the full lifecycle of indirect tax compliance — from tracking when you need to register, through filing returns and managing exemptions.
 
 ## Registration threshold
 
-A registration threshold is the point at which a business becomes required to register for indirect tax collection in a given jurisdiction. Thresholds vary by jurisdiction and are typically based on revenue, transaction volume, or physical presence. Commenda tracks your activity against these thresholds automatically and alerts you when action is needed.
+A **registration threshold** is the point at which a business becomes required to register for indirect tax collection in a given jurisdiction. Thresholds vary by jurisdiction and are typically based on revenue, transaction volume, or physical presence. Commenda tracks your activity against these thresholds automatically and alerts you when action is needed.
+
+## Compliance item
+
+A **compliance item** is a specific obligation your entity needs to fulfill — such as filing an annual report, paying franchise tax, or submitting a tax return. Commenda automatically generates compliance items based on your entity's type, jurisdiction, and registration status.
+
+Each compliance item has a due date, status, and can be linked to a service request if you need help completing it.
 
 ## Compliance calendar
 
-The compliance calendar is a centralized view of all your upcoming filing deadlines and compliance tasks across every entity and jurisdiction. It helps you stay ahead of obligations and avoid missed deadlines.
+The **compliance calendar** is a centralized view of all your upcoming filing deadlines and compliance tasks across every entity and jurisdiction. It helps you stay ahead of obligations and avoid missed deadlines.
 
 ## Service request
 
-A service request is a task-based workflow for requesting compliance services such as tax filings, registrations, or incorporations. Each service request tracks progress through defined steps, includes SLA timelines, and supports collaboration between you and your service team via built-in chat.
+A **service request** is a unit of work being done on your behalf — like incorporating a new entity, filing a tax return, or registering for sales tax. Service requests track tasks, assignees, deadlines, and related documents.
 
-## Advisor Portal
+Service requests can be:
+- Created manually by your team
+- Generated from the service marketplace
+- Created automatically from compliance items
 
-An Advisor is an accounting firm, tax consultancy, or other advisory firm that manages compliance on behalf of multiple client businesses. The Advisor Portal is a dedicated view within Commenda where Advisors can manage their client portfolio, assign team members, create proposals, and monitor compliance status across all clients.
+## Task
+
+A **task** is an individual action item within a service request. Tasks are assigned to specific people (you, your advisor, or a Commenda agent) and tracked through completion.
+
+Tasks have statuses like **Not started**, **In progress**, **Action required**, and **Completed**.
+
+## Key person
+
+A **key person** is a director, officer, signatory, or other individual associated with one of your entities. Key persons are managed centrally, so the same individual can be linked to multiple entities without duplicating their information.
+
+## Registration
+
+A **registration** is a record of your entity being registered with a government authority — such as a state tax registration, business license, or employer ID. Registrations track the registration number, status, filing frequency, and associated credentials.
+
+## Advisor firm
+
+An **advisor firm** (also called an accountant firm or CA firm) is an external accounting or advisory firm that works with your company through Commenda. Advisor firms can view your entities, manage compliance work, and deliver services on your behalf. The Advisor Portal is a dedicated view within Commenda where advisors can manage their client portfolio, assign team members, create proposals, and monitor compliance status across all clients.
+
+## Agent firm
+
+An **agent firm** is a service provider that handles specific tasks like incorporation filings, registered agent services, or tax registrations. Agent firms work through the Commenda agent portal to deliver services assigned to them.
 
 ## Integration
 
-An integration is a connection between Commenda and an external data source — such as Shopify, Stripe, Xero, QuickBooks, NetSuite, Zoho, or WooCommerce. Integrations automatically import transaction and financial data into Commenda, reducing manual data entry and keeping your compliance data up to date.
+An **integration** is a connection between Commenda and an external system — like your accounting software (QuickBooks, Xero, etc.) or bank account (via Plaid). Integrations automatically sync data so you don't need to enter it manually.
