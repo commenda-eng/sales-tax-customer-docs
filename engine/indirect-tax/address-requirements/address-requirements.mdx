@@ -26,7 +26,7 @@ Each address field returns one of three requirement levels:
 
 ## How address requirements are used
 
-The `/calculate` and `/transactions` endpoints automatically validate addresses against these country-specific requirements. If a required field is missing or incorrectly formatted, the API returns a `400` error with details about the validation failure. Querying address requirements ahead of time lets you catch these issues before submitting a request.
+The `/calculate` and `/transactions` endpoints only require `country` at the schema level for all addresses. All other field requirements — including `postal_code` and `state` — are determined per-country using the rules returned by this endpoint. If a field marked as `REQUIRED` for a country is missing or incorrectly formatted, the API returns a `400` error with details about the validation failure. Querying address requirements ahead of time lets you catch these issues before submitting a request.
 
 ## Regional differences
 

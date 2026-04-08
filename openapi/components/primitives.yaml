@@ -11,14 +11,12 @@ schemas:
   Address:
     type: object
     required:
-    - postal_code
-    - state
     - country
     description: >
-      Address object. The fields `postal_code`, `state`, and `country` are always required at the schema level.
-      Additional field requirements (e.g., `address_line_1`, `city`) vary by country — use the
+      Address object. Only `country` is required at the schema level.
+      All other field requirements (including `postal_code` and `state`) vary by country — use the
       `/address-requirements` endpoint to check which fields are REQUIRED, OPTIONAL, or IGNORED for a given country.
-      Postal codes and state codes are validated against country-specific formats and allowed values.
+      When provided, postal codes and state codes are validated against country-specific formats and allowed values.
     properties:
       address_line_1:
         type: string
@@ -34,8 +32,9 @@ schemas:
       postal_code:
         type: string
         description: >
-          Postal or ZIP code. Format varies by country. For US addresses, either 5-digit ZIP or 9-digit ZIP+4 is accepted.
-          Use the `/address-requirements` endpoint to get the validation regex for each country.
+          Postal or ZIP code. Required for some countries (e.g., US) and optional for others (e.g., GB, DE).
+          Format varies by country. For US addresses, either 5-digit ZIP or 9-digit ZIP+4 is accepted.
+          Use the `/address-requirements` endpoint to check whether this field is required and to get the validation regex for each country.
         example: '90401'
       city:
         type: string
@@ -44,8 +43,9 @@ schemas:
       state:
         "$ref": "#/schemas/State"
         description: >
-          State or province code. Must be a valid ISO 3166-2 subdivision code for the given country.
-          Use the `/address-requirements` endpoint to get the list of valid state codes for each country.
+          State or province code. Required for some countries (e.g., US) and optional for others (e.g., GB, DE).
+          Must be a valid ISO 3166-2 subdivision code for the given country when provided.
+          Use the `/address-requirements` endpoint to check whether this field is required and to get the list of valid state codes for each country.
       country:
         "$ref": "#/schemas/Country"
   Currency:
