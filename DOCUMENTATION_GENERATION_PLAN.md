@@ -465,9 +465,9 @@ Event triggers execute immediately when the event occurs. For delayed execution,
 
 ## Next steps
 
-- Learn about [workflow actions](/engine/workflow-builder/concepts/actions)
-- See [trigger configuration reference](/engine/workflow-builder/reference/api#triggers)
-- View [example workflows](/engine/workflow-builder/reference/examples)
+- Learn about [step types](/engine/workflow-builder/concepts/step-types)
+- See [DSL types reference](/engine/workflow-builder/reference/dsl-types)
+- View [creating workflows](/engine/workflow-builder/guides/creating-workflows)
 ```
 
 ---

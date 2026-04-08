@@ -82,4 +82,4 @@ __Glossary:__
 
 __Things to think about:__
 
-1. If a line item has a shipping amount, Avalara will link a second record (probably a record called Taxes) that is linked to the original line item. This Tax record contains the tax type, in this case it will be shipping. But I think the original tax that is applicable on the line item level is also stored as a separate record on this Tax table. That means, the tax table will look like [{taxOn: “shipping”, taxAmount: $25, taxType: “sales_tax”, taxAuthority: “United States”}]
+1. If a line item has a shipping amount, Avalara will link a second record (probably a record called Taxes) that is linked to the original line item. This Tax record contains the tax type, in this case it will be shipping. But I think the original tax that is applicable on the line item level is also stored as a separate record on this Tax table. That means, the tax table will look like `[{taxOn: "shipping", taxAmount: $25, taxType: "sales_tax", taxAuthority: "United States"}]`
