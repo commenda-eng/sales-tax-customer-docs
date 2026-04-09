@@ -1316,29 +1316,57 @@ paths:
                 $ref: '#/components/schemas/Error'
   /nexus:
     get:
-      summary: Get nexus information
-      description: Get nexus status for one seller for all US states
+      summary: Get registration threshold exposure
+      description: >-
+        Get registration threshold exposure for a corporation. By default, returns US-state-level data.
+        Pass `v2=true` to get global jurisdiction-level data covering US, Canada, UK, and EU jurisdictions,
+        including support for multiple exposure rules per jurisdiction (for example, EU Union OSS, Non-Union OSS, and IOSS).
       operationId: getNexusDetails
       parameters:
         - name: corporation_id
           in: query
-          description: The unique identifier for a corporation. All transactions associated with the specified corporation will be returned.
+          description: The unique identifier for the corporation to retrieve registration threshold data for.
           required: true
           schema:
             type: string
+        - name: v2
+          in: query
+          description: >-
+            Set to `true` to use the global registration threshold engine. When enabled, the response
+            uses a `jurisdictions` array with expanded fields including `jurisdiction_id`, `exposure_type`,
+            `exposure_rule_id`, `country`, `subdivision`, and `currency`. When omitted or `false`,
+            the legacy response format with a `states` array is returned.
+          required: false
+          schema:
+            type: string
+            enum:
+              - "true"
+              - "false"
       responses:
         '200':
-          description: Nexus data for all states
+          description: Registration threshold exposure data
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  data:
-                    $ref: '#/components/schemas/NexusResponse'
-                  message:
-                    type: string
-                    example: Successfully fetched nexus.
+                oneOf:
+                  - type: object
+                    title: Default response
+                    description: Returned when `v2` is not set or `false`.
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NexusResponse'
+                      message:
+                        type: string
+                        example: Successfully fetched nexus.
+                  - type: object
+                    title: V2 response
+                    description: Returned when `v2=true`.
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/NexusV2Response'
+                      message:
+                        type: string
+                        example: Successfully fetched nexus.
         '400':
           description: Bad request
           content:
@@ -4317,6 +4345,7 @@ components:
           description: The date when the nexus threshold was breached, if applicable.
     NexusResponse:
       type: object
+      description: Default response when `v2` is not set or `false`. Returns US-state-level registration threshold data.
       properties:
         corporation_id:
           type: string
@@ -4326,6 +4355,135 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/EconomicExposure'
+    NexusV2Response:
+      type: object
+      description: Response when `v2=true`. Returns global jurisdiction-level registration threshold data covering US, Canada, UK, and EU jurisdictions.
+      properties:
+        corporation_id:
+          type: string
+          description: The unique identifier for the corporation.
+          example: b6d009b0-d174-463f-b030-94643c28e209
+        jurisdictions:
+          type: array
+          description: Registration threshold exposure data for each jurisdiction. A single jurisdiction may appear multiple times if multiple exposure rules apply (for example, EU Union OSS and Non-Union OSS).
+          items:
+            $ref: '#/components/schemas/JurisdictionExposure'
+    JurisdictionExposure:
+      type: object
+      required:
+        - jurisdiction_id
+        - jurisdiction_type
+        - exposure_type
+        - exposure_rule_id
+        - country
+        - currency
+        - rule
+        - calculation
+        - is_nexus_breached
+      properties:
+        jurisdiction_id:
+          type: string
+          description: Commenda's internal jurisdiction identifier.
+          example: US_CA_1000
+        jurisdiction_type:
+          type: string
+          description: The type of jurisdiction.
+          enum:
+            - STATE
+            - COUNTRY
+            - TRADEBLOC
+          example: STATE
+        exposure_type:
+          type: string
+          description: The type of exposure rule being evaluated.
+          enum:
+            - ECONOMIC
+            - PHYSICAL
+            - REGISTRATION
+          example: ECONOMIC
+        exposure_rule_id:
+          type: string
+          description: Unique identifier for the exposure rule being evaluated.
+          example: US_CA_ECONOMIC_001
+        country:
+          type: string
+          description: ISO 3166-1 alpha-2 country code.
+          example: US
+        subdivision:
+          type: string
+          description: State or province code within the country, if applicable.
+          example: CA
+        currency:
+          type: string
+          description: ISO 4217 currency code used for threshold amounts.
+          example: USD
+        rule:
+          $ref: '#/components/schemas/NexusRuleV2'
+        calculation:
+          $ref: '#/components/schemas/CalculationObjectV2'
+        is_nexus_breached:
+          type: boolean
+          description: Whether the registration threshold has been exceeded for this rule.
+        date_of_breach:
+          type: string
+          format: date
+          description: The earliest date the threshold was exceeded, if applicable.
+    NexusRuleV2:
+      type: object
+      required:
+        - threshold_type
+        - evaluation_period_type
+      properties:
+        sales_threshold:
+          type: number
+          nullable: true
+          description: The sales revenue threshold that triggers a registration obligation, in the jurisdiction's currency. Null if the rule does not use a sales threshold.
+          example: 100000
+        transactions_threshold:
+          type: integer
+          nullable: true
+          description: The transaction count threshold that triggers a registration obligation. Null if the rule does not use a transaction threshold.
+          example: 200
+        threshold_type:
+          $ref: '#/components/schemas/ThresholdType'
+        evaluation_period_type:
+          $ref: '#/components/schemas/EvaluationPeriod'
+    CalculationObjectV2:
+      type: object
+      required:
+        - included_sales
+        - included_transactions
+        - gross_sales
+        - gross_transactions
+        - sales_exposure_percentage
+        - transactions_exposure_percentage
+      properties:
+        included_sales:
+          type: number
+          description: Sales amount included in the threshold calculation for this rule, based on the rule's includable sales type. Expressed in the jurisdiction's currency.
+          example: 75000
+        included_transactions:
+          type: integer
+          description: Number of transactions included in the threshold calculation for this rule.
+          example: 150
+        gross_sales:
+          type: number
+          description: Total gross sales in the jurisdiction during the evaluation period.
+          example: 80000
+        gross_transactions:
+          type: integer
+          description: Total gross transaction count in the jurisdiction during the evaluation period.
+          example: 160
+        sales_exposure_percentage:
+          type: number
+          description: Percentage of the sales threshold reached (0 to 1). Values above 1 indicate the threshold has been exceeded.
+          example: 0.75
+          minimum: 0
+        transactions_exposure_percentage:
+          type: number
+          description: Percentage of the transaction threshold reached (0 to 1). Values above 1 indicate the threshold has been exceeded.
+          example: 0.75
+          minimum: 0
     CountrySpecificDetails:
       type: object
       properties:

@@ -1259,30 +1259,57 @@
               "$ref": "../components/components.yaml#/components/schemas/Error"
 "/nexus":
   get:
-    summary: Get nexus information
-    description: Get nexus status for one seller for all US states
+    summary: Get registration threshold exposure
+    description: >-
+      Get registration threshold exposure for a corporation. By default, returns US-state-level data.
+      Pass `v2=true` to get global jurisdiction-level data covering US, Canada, UK, and EU jurisdictions,
+      including support for multiple exposure rules per jurisdiction (for example, EU Union OSS, Non-Union OSS, and IOSS).
     operationId: getNexusDetails
     parameters:
     - name: corporation_id
       in: query
-      description: The unique identifier for a corporation. All transactions associated
-        with the specified corporation will be returned.
+      description: The unique identifier for the corporation to retrieve registration threshold data for.
       required: true
       schema:
         type: string
+    - name: v2
+      in: query
+      description: >-
+        Set to `true` to use the global registration threshold engine. When enabled, the response
+        uses a `jurisdictions` array with expanded fields including `jurisdiction_id`, `exposure_type`,
+        `exposure_rule_id`, `country`, `subdivision`, and `currency`. When omitted or `false`,
+        the legacy response format with a `states` array is returned.
+      required: false
+      schema:
+        type: string
+        enum:
+          - "true"
+          - "false"
     responses:
       '200':
-        description: Nexus data for all states
+        description: Registration threshold exposure data
         content:
           application/json:
             schema:
-              type: object
-              properties:
-                data:
-                  "$ref": "../components/components.yaml#/components/schemas/NexusResponse"
-                message:
-                  type: string
-                  example: Successfully fetched nexus.
+              oneOf:
+                - type: object
+                  title: Default response
+                  description: Returned when `v2` is not set or `false`.
+                  properties:
+                    data:
+                      "$ref": "../components/components.yaml#/components/schemas/NexusResponse"
+                    message:
+                      type: string
+                      example: Successfully fetched nexus.
+                - type: object
+                  title: V2 response
+                  description: Returned when `v2=true`.
+                  properties:
+                    data:
+                      "$ref": "../components/components.yaml#/components/schemas/NexusV2Response"
+                    message:
+                      type: string
+                      example: Successfully fetched nexus.
       '400':
         description: Bad request
         content:

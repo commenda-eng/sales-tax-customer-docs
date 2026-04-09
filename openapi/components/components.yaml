@@ -524,6 +524,14 @@ components:
       $ref: "./registrations.yaml#/schemas/RegistrationIdPost"
     NexusResponse:
       $ref: "./nexus.yaml#/schemas/NexusResponse"
+    NexusV2Response:
+      $ref: "./nexus.yaml#/schemas/NexusV2Response"
+    JurisdictionExposure:
+      $ref: "./nexus.yaml#/schemas/JurisdictionExposure"
+    NexusRuleV2:
+      $ref: "./nexus.yaml#/schemas/NexusRuleV2"
+    CalculationObjectV2:
+      $ref: "./nexus.yaml#/schemas/CalculationObjectV2"
     CreateExemptionCertificateRequest:
       $ref: "./exemption-certificates.yaml#/schemas/CreateExemptionCertificateRequest"
     ExemptionCertificateResponse:

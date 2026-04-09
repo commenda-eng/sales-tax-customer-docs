@@ -12,7 +12,7 @@ This concept applies globally: VAT and GST jurisdictions also set thresholds tha
 
 Each jurisdiction sets its own rules for determining when you must register, including:
 
-1. **Threshold amounts:** Jurisdictions establish different sales and/or transaction thresholds that trigger a registration obligation. For example, one jurisdiction may have a USD 100,000 sales threshold, while another sets a USD 500,000 threshold.
+1. **Threshold amounts:** Jurisdictions establish different sales and/or transaction thresholds that trigger a registration obligation. For example, one jurisdiction may have a USD 100,000 sales threshold, while another sets a EUR 10,000 threshold.
 
 2. **Threshold types**: Some jurisdictions consider only sales revenue, some consider only the number of transactions, and some consider both.
 
@@ -24,11 +24,9 @@ Commenda automatically tracks your progress toward registration thresholds in ea
 
 You can use the registration threshold API endpoint to get a comprehensive overview of your threshold status across all jurisdictions, taking into account each jurisdiction's specific rules.
 
-### API response structure
+### Default response (US states)
 
-The API returns an array of jurisdiction threshold objects. Each object contains details about your progress toward the registration threshold in one jurisdiction.
-
-## Jurisdiction threshold object structure
+By default, the `GET /nexus` endpoint returns US-state-level threshold data. The response contains a `states` array where each object represents your exposure in one US state.
 
 ```json
 {
@@ -58,30 +56,6 @@ The API returns an array of jurisdiction threshold objects. Each object contains
           "includable_sales_type": "GROSS"
         },
         "is_nexus_breached": false
-      },
-      {
-        "state": "MI",
-        "rule": {
-          "sales_threshold": 100000,
-          "transactions_threshold": 200,
-          "threshold_type": "SALES_OR_TRANSACTIONS",
-          "evaluation_period_type": "PREVIOUS_CALENDAR_YEAR",
-          "includable_sales_type": "GROSS"
-        },
-        "calculation": {
-          "total_sales": 0,
-          "total_transactions": 0,
-          "gross_sales": 0,
-          "gross_transactions": 0,
-          "taxable_sales": 0,
-          "taxable_transactions": 0,
-          "retail_sales": 0,
-          "retail_transactions": 0,
-          "sales_exposure_percentage": 0,
-          "transactions_exposure_percentage": 0,
-          "includable_sales_type": "GROSS"
-        },
-        "is_nexus_breached": false
       }
     ]
   },
@@ -90,5 +64,82 @@ The API returns an array of jurisdiction threshold objects. Each object contains
 ```
 
 <Note>
-The API response uses field names like `is_nexus_breached` and `states` for backward compatibility. These fields represent registration threshold status — `is_nexus_breached` indicates whether you have exceeded the registration threshold in a given jurisdiction.
+The default response uses field names like `is_nexus_breached` and `states` for backward compatibility. These fields represent registration threshold status — `is_nexus_breached` indicates whether you have exceeded the registration threshold in a given jurisdiction.
 </Note>
+
+### Global response (`v2=true`)
+
+Pass `v2=true` as a query parameter to get global jurisdiction-level threshold data. This covers US, Canada, UK, and EU jurisdictions, including support for multiple exposure rules per jurisdiction (for example, EU Union OSS, Non-Union OSS, and IOSS).
+
+The v2 response uses a `jurisdictions` array instead of `states`, and includes additional fields such as `jurisdiction_id`, `exposure_type`, `exposure_rule_id`, `country`, `subdivision`, and `currency`.
+
+```json
+{
+  "data": {
+    "corporation_id": "74df772f-9260-42cf-9c20-3b613b60fecd",
+    "jurisdictions": [
+      {
+        "jurisdiction_id": "US_CA_1000",
+        "jurisdiction_type": "STATE",
+        "exposure_type": "ECONOMIC",
+        "exposure_rule_id": "US_CA_ECONOMIC_001",
+        "country": "US",
+        "subdivision": "CA",
+        "currency": "USD",
+        "rule": {
+          "sales_threshold": 500000,
+          "transactions_threshold": null,
+          "threshold_type": "SALES_ONLY",
+          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR"
+        },
+        "calculation": {
+          "included_sales": 150000,
+          "included_transactions": 320,
+          "gross_sales": 175000,
+          "gross_transactions": 350,
+          "sales_exposure_percentage": 0.30,
+          "transactions_exposure_percentage": 0
+        },
+        "is_nexus_breached": false
+      },
+      {
+        "jurisdiction_id": "TRADEBLOC_EU_3000",
+        "jurisdiction_type": "TRADEBLOC",
+        "exposure_type": "ECONOMIC",
+        "exposure_rule_id": "EU_UNION_OSS_001",
+        "country": "DE",
+        "subdivision": "",
+        "currency": "EUR",
+        "rule": {
+          "sales_threshold": 10000,
+          "transactions_threshold": null,
+          "threshold_type": "SALES_ONLY",
+          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR"
+        },
+        "calculation": {
+          "included_sales": 12000,
+          "included_transactions": 45,
+          "gross_sales": 14000,
+          "gross_transactions": 50,
+          "sales_exposure_percentage": 1.20,
+          "transactions_exposure_percentage": 0
+        },
+        "is_nexus_breached": true,
+        "date_of_breach": "2026-03-15"
+      }
+    ]
+  },
+  "message": "Successfully fetched nexus."
+}
+```
+
+#### Key differences from the default response
+
+| Field | Default | V2 (`v2=true`) |
+|---|---|---|
+| Top-level array | `states` | `jurisdictions` |
+| Jurisdiction identifier | `state` (US state code) | `jurisdiction_id`, `country`, `subdivision` |
+| Currency | Implicitly USD | Explicit `currency` field |
+| Exposure rule metadata | Not included | `exposure_type`, `exposure_rule_id`, `jurisdiction_type` |
+| Calculation fields | `total_sales`, `total_transactions`, etc. | `included_sales`, `included_transactions`, etc. |
+| Supported jurisdictions | US states only | US, Canada, UK, EU (country-level and tradebloc) |
