@@ -15,33 +15,38 @@ The Commenda MCP server exposes Commenda APIs as tools for AI assistants that su
 
 Use the MCP server when you want to:
 
+- Discover which organizations and entities you have access to
 - Query and update business entity data from an AI assistant
 - Manage compliance calendars and filings conversationally
-- Look up indirect tax registrations, transactions, or registration threshold information
+- Look up nexus information and registration thresholds
+- Manage sales tax registrations, filings, and onboarding
 - Create or update customers, products, and exemption certificates
 - Calculate tax rates without leaving your AI workflow
 
 ## Available tool categories
 
-The MCP server provides **80+ tools** across the following categories:
+The MCP server provides **95+ tools** across the following categories:
 
 | Category | Examples |
 | --- | --- |
+| **Organizations** | List all organizations (companies, firms) you have access to |
 | **Business entities** | List, get, and update business entities |
 | **Locations** | Create, update, list, get, and delete entity locations |
 | **Government identifiers** | Create, update, list, and get identifiers (EIN, PAN, TRN, etc.) |
-| **Registrations** | Manage tax and corporate registrations |
-| **Documents** | List, create, and update entity documents |
+| **Registrations** | Manage tax and corporate registrations; get supported types |
+| **Documents** | List, create, update, and get supported document types |
 | **Persons** | Add or remove key persons (directors, officers, shareholders) |
 | **Credentials** | Link credentials to entities or registrations |
-| **Compliance** | List, create, update, and delete compliance items; generate compliance calendars |
-| **Sales tax filings** | List, update, approve, submit, and delete filings; generate filing calendars |
-| **Transactions** | List, get, commit, lock, void, and delete transactions |
-| **Registration thresholds** | Get threshold info, recalculate estimates, regenerate, and resync |
+| **Compliance** | Create, update, delete, and bulk-update compliance items; generate calendars; manage extensions; get accountant inputs |
+| **Sales tax filings** | List, update, approve, submit, and delete filings; generate and preview filing calendars; manage assignees |
+| **Transactions** | List, get, commit, lock, void, and bulk-delete transactions; get aggregates and line items |
+| **Nexus** | Get nexus data, recalculate tax estimates, regenerate, clear, and resync |
+| **Sales tax registrations** | Create, update, delete, list, and validate registrations |
 | **Customers** | CRUD operations and exemption lookups |
 | **Products** | CRUD operations and tax code lookups |
 | **Exemption certificates** | List, create, update, and delete certificates |
-| **Tax calculations** | Calculate tax rates for transactions |
+| **Tax calculations** | List calculations, get details, and calculate tax rates |
+| **Sales tax onboarding** | Get onboarding status including products, transactions, and registrations |
 
 ## Deployment modes
 

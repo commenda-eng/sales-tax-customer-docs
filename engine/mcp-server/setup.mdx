@@ -79,6 +79,10 @@ The MCP server authenticates with the Commenda API using an API key sent via the
 2. The Commenda API validates the key and associates the request with a service account.
 3. The service account must have the appropriate permissions for the operations being performed.
 
+### Per-request user authentication
+
+The MCP server also supports making API calls as a specific user by passing an `_authToken` parameter in any tool call. When provided, the server uses the user's token instead of the service account API key. This is useful when you need requests to run under a specific user's permissions.
+
 <Warning>
   Use a strong, randomly generated API key in production. Rotate your key regularly and never share it publicly.
 </Warning>
@@ -97,6 +101,10 @@ If the MCP server is configured correctly, your AI assistant will call the `list
 
 Once connected, you can interact with Commenda through natural language:
 
+**Getting started**
+- "What organizations do I have access to?"
+- "List all business entities for company 1"
+
 **Business entities**
 - "Get the details of business entity 123"
 - "List all locations for business entity 456"
@@ -106,9 +114,11 @@ Once connected, you can interact with Commenda through natural language:
 - "What compliance filings are due for company 1?"
 - "Generate a compliance calendar for corporation 123 for fiscal years 2024 to 2025"
 - "Update compliance item abc-123 status to COMPLETED"
+- "What inputs does the accountant need to file compliance item xyz?"
 
 **Sales tax**
 - "List all sales tax filings for corporation 123"
 - "Calculate tax for a $100 sale to 123 Main St, San Francisco, CA 94102"
 - "What sales tax registrations does corporation 123 have?"
-- "Get the registration threshold information for corporation 789"
+- "Where does corporation 789 have nexus?"
+- "Get the sales tax onboarding status for corporation 123"
