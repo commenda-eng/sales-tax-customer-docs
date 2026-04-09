@@ -68,7 +68,7 @@ Search for tax jurisdictions where registrations are available. Returns jurisdic
 | `jurisdictions[].jurisdiction_id` | string | Unique identifier for the jurisdiction |
 | `jurisdictions[].jurisdiction_name` | string | Human-readable name |
 | `jurisdictions[].jurisdiction_type` | string | Type of jurisdiction (`STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `COUNTRY`, `TERRITORY`, `TRADEBLOC`) |
-| `jurisdictions[].state_or_province` | string | State/province code if applicable |
+| `jurisdictions[].state_or_province` | string \| null | State or province code. Null for country-level and tradebloc jurisdictions. |
 | `jurisdictions[].country` | string | ISO country code |
 | `total` | integer | Total number of matching jurisdictions |
 | `cursor` | string | Cursor for the next page (empty if no more results) |
@@ -193,6 +193,12 @@ curl --request POST \
         "jurisdiction_type": "STATE_OR_PROVINCE",
         "state_or_province": "NY",
         "country": "US"
+      },
+      {
+        "jurisdiction_id": "JUR_GB_COUNTRY_GB",
+        "jurisdiction_name": "United Kingdom",
+        "jurisdiction_type": "COUNTRY",
+        "country": "GB"
       }
     ],
     "total": 45,
