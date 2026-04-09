@@ -23,7 +23,7 @@ Retrieve the full details of a registration, including its current status, juris
 | `jurisdiction_type` | string | Type: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `COUNTRY`, `TERRITORY`, `TRADEBLOC` |
 | `jurisdiction_name` | string | Human-readable name of the jurisdiction |
 | `country` | string | ISO 3166-1 alpha-2 country code |
-| `state_or_province` | string | State or province code (e.g., "CA", "TX") |
+| `state_or_province` | string \| null | State or province code (e.g., "CA", "TX"). Null for country-level and tradebloc jurisdictions. |
 | `tax_types` | array | Tax types registered for (e.g., `["RST", "DTT"]`) |
 | `frequency` | string | Filing frequency |
 | `effective_start_date` | string | When the registration became effective (YYYY-MM-DD) |
