@@ -177,6 +177,7 @@
                     "pages": [
                       "engine/indirect-tax/core-concepts/transactions",
                       "engine/indirect-tax/core-concepts/nexus",
+                      "engine/indirect-tax/core-concepts/global-exposure",
                       "engine/indirect-tax/core-concepts/exemptions"
                     ]
                   },

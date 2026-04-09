@@ -1,0 +1,189 @@
+---
+title: "Global exposure tracking"
+description: "Track registration threshold exposure across US, Canada, UK, and EU jurisdictions with support for trade bloc rules."
+---
+
+## Overview
+
+Commenda's exposure engine evaluates your transaction data against registration threshold rules for jurisdictions worldwide. It determines whether your business has exceeded — or is approaching — the point where you must register to collect and remit indirect tax in a given jurisdiction.
+
+The exposure engine supports:
+
+- **US economic thresholds** — state-level sales and transaction count thresholds (post-Wayfair)
+- **Canada GST/HST** — federal and provincial thresholds
+- **UK VAT** — standard UK VAT registration threshold
+- **EU country-level VAT** — per-country thresholds for EU member states
+- **EU trade bloc rules** — Union OSS, Non-Union OSS, and IOSS schemes with cross-border scope
+
+## Key concepts
+
+### Exposure rules
+
+Each jurisdiction has one or more exposure rules that define when registration is required. A rule specifies:
+
+| Field | Description |
+|---|---|
+| `exposure_rule_id` | Unique identifier for the rule |
+| `exposure_type` | The type of tax obligation (e.g., `EXPOSURE`) |
+| `threshold_type` | Whether the threshold is based on `SALES`, `TRANSACTIONS`, or `SALES_OR_TRANSACTIONS` |
+| `sales_threshold` | Revenue amount that triggers registration |
+| `transactions_threshold` | Transaction count that triggers registration |
+| `evaluation_period` | Time window for measuring activity (e.g., `PRECEDING_12_MONTHS`, `PREVIOUS_OR_CURRENT_CALENDAR_YEAR`) |
+
+### Multi-rule jurisdictions
+
+Some jurisdictions have multiple rules that apply based on your business's establishment status. For example, an EU member state may have:
+
+- A **resident rule** for businesses with a physical establishment in that country (e.g., office, warehouse)
+- A **non-resident rule** for businesses selling into the country without a local establishment
+
+The engine automatically selects the applicable rules based on your registered locations.
+
+### Location-based scope
+
+Rules define which transactions count toward the threshold based on the geographic relationship between buyer and seller:
+
+| Scope | Description |
+|---|---|
+| `DESTINATION` | Transactions where the buyer is in the rule's jurisdiction |
+| `WORLDWIDE` | All transactions regardless of destination |
+| `INTRA_COMMUNITY` | Cross-border transactions within a trade bloc (e.g., EU seller to EU buyer in a different member state) |
+| `IMPORT` | Transactions where the seller is outside the trade bloc and the buyer is inside |
+
+### Exclusions
+
+Certain transactions are automatically excluded from threshold calculations when the rule defines exclusions:
+
+- **Marketplace transactions** — sales facilitated by a marketplace that collects tax on your behalf
+- **B2B transactions** — sales to business customers identified by a business identification number (e.g., VAT number), which are typically subject to reverse charge
+- **Resale transactions** — sales to customers with valid resale certificates
+- **Product taxability** — specific product categories excluded per jurisdiction rules (e.g., tangible goods excluded from digital services thresholds)
+- **Destination registered** — transactions to jurisdictions where you are already registered
+
+### Max transaction value (IOSS)
+
+The EU Import One-Stop Shop (IOSS) scheme applies only to consignments valued at or below €150. Transactions exceeding this cap are excluded from IOSS threshold tracking. An invoice exactly equal to the cap is included.
+
+## Querying exposure data
+
+Use the registration thresholds endpoint with `v2=true` to retrieve exposure data across all supported jurisdictions:
+
+```bash
+curl -X GET "https://transaction-tax.api.in.commenda.io/api/v1/nexus?corporation_id={corporation_id}&v2=true" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+### Response structure
+
+The v2 response returns an array of jurisdiction objects, each representing one exposure rule evaluation:
+
+```json
+{
+  "data": {
+    "corporation_id": "74df772f-9260-42cf-9c20-3b613b60fecd",
+    "jurisdictions": [
+      {
+        "jurisdiction_id": "STATE_US_NY_1036",
+        "jurisdiction_type": "STATE",
+        "exposure_type": "EXPOSURE",
+        "exposure_rule_id": "us_ny_economic",
+        "country": "US",
+        "subdivision": "NY",
+        "currency": "USD",
+        "rule": {
+          "sales_threshold": 500000,
+          "transactions_threshold": null,
+          "threshold_type": "SALES",
+          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR"
+        },
+        "calculation": {
+          "included_sales": 320000,
+          "included_transactions": 1500,
+          "gross_sales": 350000,
+          "gross_transactions": 1800,
+          "sales_exposure_percentage": 0.64,
+          "transactions_exposure_percentage": 0
+        },
+        "is_nexus_breached": false
+      },
+      {
+        "jurisdiction_id": "TRADEBLOC_EU_3000",
+        "jurisdiction_type": "TRADEBLOC",
+        "exposure_type": "EXPOSURE",
+        "exposure_rule_id": "eu_union_oss",
+        "country": "",
+        "subdivision": "",
+        "currency": "EUR",
+        "rule": {
+          "sales_threshold": 10000,
+          "transactions_threshold": null,
+          "threshold_type": "SALES",
+          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR"
+        },
+        "calculation": {
+          "included_sales": 8500,
+          "included_transactions": 42,
+          "gross_sales": 12000,
+          "gross_transactions": 60,
+          "sales_exposure_percentage": 0.85,
+          "transactions_exposure_percentage": 0
+        },
+        "is_nexus_breached": false
+      }
+    ]
+  },
+  "message": "Successfully fetched nexus."
+}
+```
+
+### Response fields
+
+Each jurisdiction object includes:
+
+| Field | Description |
+|---|---|
+| `jurisdiction_id` | Internal identifier for the jurisdiction. For trade bloc rules, this is the trade bloc ID (e.g., `TRADEBLOC_EU_3000`) |
+| `jurisdiction_type` | `STATE`, `COUNTRY`, or `TRADEBLOC` |
+| `exposure_type` | Type of exposure obligation |
+| `exposure_rule_id` | Identifier for the specific rule being evaluated |
+| `country` | ISO country code, empty for trade bloc-level rules |
+| `subdivision` | State or province code, if applicable |
+| `currency` | Currency of the threshold amounts |
+| `rule` | The threshold rule being applied |
+| `calculation` | Your current progress toward the threshold |
+| `is_nexus_breached` | Whether you have exceeded the registration threshold |
+| `date_of_breach` | Date when the threshold was exceeded, if breached |
+
+<Note>
+A single jurisdiction may appear multiple times in the response if multiple exposure rules apply (e.g., separate rules for goods and services in France or Ireland).
+</Note>
+
+### Calculation fields
+
+| Field | Description |
+|---|---|
+| `included_sales` | Revenue counted toward the threshold after applying exclusions |
+| `included_transactions` | Transaction count after exclusions |
+| `gross_sales` | Total revenue before exclusions |
+| `gross_transactions` | Total transaction count before exclusions |
+| `sales_exposure_percentage` | Ratio of included sales to the sales threshold (0 to 1+) |
+| `transactions_exposure_percentage` | Ratio of included transactions to the transactions threshold (0 to 1+) |
+
+## Triggering a sync
+
+The exposure engine runs automatically on a schedule. You can also trigger a manual sync for a specific corporation:
+
+```bash
+curl -X POST "https://transaction-tax.api.in.commenda.io/api/v1/internal/nexus/sync/corporation/{corporation_id}?v2=true" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+<Warning>
+Pass `v2=true` to run the global exposure engine. Without this parameter, only the legacy US-focused sync runs.
+</Warning>
+
+## Physical presence
+
+If your business has a physical establishment (office, warehouse, or other location) in a jurisdiction, the engine evaluates resident rules for that jurisdiction. Resident rules may have different thresholds or no threshold at all — physical presence can trigger an immediate registration obligation.
+
+Register your business locations via the [Locations API](/engine/commendaos/locations) to ensure the engine correctly identifies which rules apply.
