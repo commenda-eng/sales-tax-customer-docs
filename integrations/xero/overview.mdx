@@ -21,6 +21,8 @@ Commenda syncs the following data from Xero:
 
 - **Invoices** — accounts receivable invoices with line items
 - **Invoice credit notes** — credits issued against invoices
+- **Bills** — accounts payable purchase bills
+- **Bill credit notes** — credits received against bills
 - **Cash refunds** — refund transactions
 - **Contacts** — customer and vendor profiles with addresses
 - **Items** — your product and service catalog
@@ -38,7 +40,7 @@ When you create or update an invoice in Xero, Commenda automatically:
 Commenda dynamically creates tax codes in Xero for each effective tax rate, so your tax reporting stays accurate.
 
 <Info>
-Only accounts receivable invoices (`ACCREC`) and accounts receivable credit notes (`ACCRECCREDIT`) are processed for tax calculation.
+Tax calculation is supported for accounts receivable invoices (`ACCREC`), accounts receivable credit notes (`ACCRECCREDIT`), and cash refunds. Bills and bill credit notes are synced for data tracking but are not processed for tax calculation.
 </Info>
 
 ## Address resolution
