@@ -52,17 +52,7 @@ Commenda exposes several APIs that let you programmatically manage business enti
 
 Commenda APIs use two authentication methods depending on the API:
 
-### Bearer token
-
-The Global Indirect Tax API and CommendaOS API use Bearer token authentication. Include your token in the `Authorization` header of every request:
-
-```bash
-curl --request GET \
-  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations' \
-  --header 'Authorization: Bearer <your_token>'
-```
-
-### Affiliate API key
+### Incorporation API
 
 The Incorporation API uses an affiliate API key passed in the `x-api-key` header:
 
@@ -70,6 +60,26 @@ The Incorporation API uses an affiliate API key passed in the `x-api-key` header
 curl --request GET \
   --url 'https://api.prod.commenda.io/api/v1/public/payment-intents' \
   --header 'x-api-key: <your_api_key>'
+```
+
+### CommendaOS public API
+
+The CommendaOS public API also uses an affiliate API key passed in the `x-api-key` header:
+
+```bash
+curl --request GET \
+  --url 'https://api.prod.commenda.io/api/v1/public/business-entities' \
+  --header 'x-api-key: <your_api_key>'
+```
+
+### Global Indirect Tax API
+
+The Global Indirect Tax API uses Bearer token authentication. Include your token in the `Authorization` header of every request:
+
+```bash
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations' \
+  --header 'Authorization: Bearer <your_token>'
 ```
 
 <Info>
