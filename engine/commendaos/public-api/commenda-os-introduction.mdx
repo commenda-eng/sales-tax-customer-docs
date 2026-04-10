@@ -24,6 +24,7 @@ curl --request GET \
 - List endpoints return `{ <resourcePlural>, count }`.
 - Detail endpoints return `{ <resourceSingular> }`.
 - Business-entity-scoped endpoints return `403` when the authenticated affiliate cannot access the requested entity.
+- Business-entity-scoped endpoints return `404 Not Found` when the `businessEntityId` does not match an existing entity.
 
 ## Available resources
 

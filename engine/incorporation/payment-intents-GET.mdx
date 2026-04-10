@@ -4,3 +4,5 @@ openapi: "GET /public/payment-intents"
 ---
 
 Lists payment intents visible to the authenticated affiliate. Use the optional filters to narrow to a single company or payment state.
+
+When you pass a `companyId` filter, the API verifies that the company belongs to the authenticated affiliate. Requests that reference a company outside the affiliate's scope return `403 Forbidden`.

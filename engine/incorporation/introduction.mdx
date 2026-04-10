@@ -31,10 +31,12 @@ curl --request GET \
 4. Use the Commenda OS documents endpoints for document retrieval.
 5. Download a concrete file with `GET /public/file/{fileId}`.
 
-## Contract Notes
+## Contract notes
 
 - Access is resolved through affiliate-firm ownership, not end-user login.
+- `POST /public/services` only accepts [supported incorporation service types](/engine/incorporation/services-POST). Unsupported types return `400 Bad Request`.
 - `POST /public/services` returns a `paymentIntentId`, which is the current public anchor for the flow.
+- Filtering payment intents by `companyId` enforces affiliate ownership — requests for companies outside your affiliate return `403 Forbidden`.
 - `GET /public/documents` is deprecated. Callers should use the Commenda OS documents endpoints instead.
 
 ## Commenda OS Read API

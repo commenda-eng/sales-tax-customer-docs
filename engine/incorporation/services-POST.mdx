@@ -5,4 +5,30 @@ openapi: "POST /public/services"
 
 Creates a supported incorporation service for an affiliate-owned company and returns the `paymentIntentId` used by the current public handoff flow.
 
-Only the currently supported incorporation `serviceType` values are accepted here.
+## Supported service types
+
+Only the following `serviceType` values are accepted:
+
+| Service type | Description |
+|---|---|
+| `US_CCORP_INCORPORATION` | United States C-Corporation |
+| `US_LLC_INCORPORATION` | United States LLC |
+| `CA_CORP_INCORPORATION` | Canada Corporation |
+| `INDIA_PVT_LTD_INCORPORATION` | India Private Limited |
+| `INDIA_LLP_INCORPORATION` | India LLP |
+| `UAE_INCORPORATION` | United Arab Emirates |
+| `UK_INCORPORATION` | United Kingdom |
+| `IE_INCORPORATION` | Ireland |
+| `SG_INCORPORATION` | Singapore |
+
+Requests with an unsupported `serviceType` return `400 Bad Request` with a message listing the valid options.
+
+```json Example error response
+{
+  "statusCode": 400,
+  "message": [
+    "serviceType must be one of the supported affiliate public API services: US_CCORP_INCORPORATION, US_LLC_INCORPORATION, CA_CORP_INCORPORATION, INDIA_PVT_LTD_INCORPORATION, INDIA_LLP_INCORPORATION, UAE_INCORPORATION, UK_INCORPORATION, IE_INCORPORATION, SG_INCORPORATION"
+  ],
+  "error": "Bad Request"
+}
+```

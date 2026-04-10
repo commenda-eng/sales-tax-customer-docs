@@ -3,4 +3,4 @@ title: "List supported registrations for a business entity"
 openapi: "GET /public/business-entities/{businessEntityId}/registrations/supported"
 ---
 
-List the registrations Commenda OS supports for a business entity.
+Returns the registration types available for a specific business entity. The `businessEntityId` must reference an existing entity — requests for a non-existent entity return `404 Not Found`.
