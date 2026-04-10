@@ -1,0 +1,68 @@
+schemas:
+  AddressRequirementsResponse:
+    type: object
+    properties:
+      country_code:
+        type: string
+        description: The ISO 3166-1 alpha-2 country code.
+        example: US
+      address_line_1:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether address line 1 is required for this country.
+        example: REQUIRED
+      address_line_2:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether address line 2 is required for this country.
+        example: OPTIONAL
+      address_line_3:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether address line 3 is required for this country.
+        example: IGNORED
+      city:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether the city field is required for this country.
+        example: REQUIRED
+      state:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether the state or province field is required for this country.
+        example: REQUIRED
+      postal_code:
+        type: string
+        enum:
+          - REQUIRED
+          - OPTIONAL
+          - IGNORED
+        description: Whether the postal code field is required for this country.
+        example: REQUIRED
+      postal_code_regex:
+        type: string
+        nullable: true
+        description: A regex pattern for validating postal codes in this country. Null if no specific format is enforced.
+        example: "^\\d{5}(-\\d{4})?$"
+      valid_state_codes:
+        type: array
+        nullable: true
+        items:
+          type: string
+        description: The list of accepted state or province codes for this country. Null if no specific codes are enforced.
+        example: ["AL", "AK", "AZ", "AR", "CA"]

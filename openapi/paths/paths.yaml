@@ -1024,6 +1024,44 @@
           application/json:
             schema:
               "$ref": "../components/components.yaml#/components/schemas/Error"
+"/address-requirements":
+  get:
+    summary: Get address requirements for a country
+    description: Returns the minimum address field requirements for a given country. Use this to determine which address fields are required, optional, or ignored when submitting addresses for tax calculations and transactions.
+    operationId: getAddressRequirements
+    parameters:
+    - name: country
+      in: query
+      description: A valid 2-letter ISO 3166-1 alpha-2 country code (e.g., US, CA, GB).
+      required: true
+      schema:
+        type: string
+        example: US
+    responses:
+      '200':
+        description: Address requirements for the specified country
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/components.yaml#/components/schemas/AddressRequirementsResponse"
+                message:
+                  type: string
+                  example: Successfully retrieved address requirements.
+      '400':
+        description: Bad request — missing or invalid country parameter
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: No address requirements found for the specified country
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
 "/transactions":
   post:
     summary: Create a transaction
@@ -1081,6 +1119,22 @@
         minimum: 1
         maximum: 100
         default: 10
+    - name: type
+      in: query
+      description: Filter by a single transaction type. Superseded by `types` if both are provided.
+      required: false
+      schema:
+        "$ref": "../components/tax-transactions.yaml#/schemas/transaction_type"
+    - name: types
+      in: query
+      description: |-
+        Filter by one or more transaction types. Takes priority over `type` when both are provided.
+        If neither `types` nor `type` is specified, defaults to `[SALE, REFUND, RETURN]` — PURCHASE and PURCHASE_REFUND are excluded unless explicitly requested.
+      required: false
+      schema:
+        type: array
+        items:
+          "$ref": "../components/tax-transactions.yaml#/schemas/transaction_type"
     responses:
       '200':
         description: List of transactions
@@ -1175,8 +1229,9 @@
   post:
     summary: Create a return transaction
     description: |-
-      Create a RETURN transaction linked to an existing invoice to receive credit against a future tax liability.
-      The resulting RETURN transaction will have negative line amounts and will be properly linked to the original sale.
+      Create a refund transaction linked to an existing invoice. The parent transaction can be a SALE or PURCHASE.
+      When the parent is a SALE, the refund type is RETURN. When the parent is a PURCHASE, the refund type is automatically set to PURCHASE_REFUND.
+      The resulting transaction will be properly linked to the original transaction.
     operationId: refundTransaction
     parameters:
     - in: path
@@ -1184,7 +1239,7 @@
       required: true
       schema:
         type: string
-      description: The unique identifier of the transaction to generate a return for.
+      description: The unique identifier of the SALE or PURCHASE transaction to generate a return for.
     requestBody:
       required: true
       content:
@@ -1220,8 +1275,8 @@
     summary: Bulk submit transactions
     description: |-
       Submit a file of completed transactions for processing.
-      The CSV file must include required fields for both SALE and RETURN transactions.
-      For RETURN transactions, all line items must have negative total amounts and should include parent_invoice_id when available.
+      The CSV file must include required fields for SALE, RETURN, and PURCHASE transactions.
+      For RETURN and PURCHASE transactions, all line items must have negative total amounts. RETURN transactions should include parent_invoice_id when available.
     operationId: submitBulkTransactions
     requestBody:
       required: true

@@ -208,6 +208,8 @@ components:
       "$ref": "./tax-calculations.yaml#/schemas/TaxCalculationRequest"
     TaxCalculationResponse: 
       "$ref": "./tax-calculations.yaml#/schemas/TaxCalculationResponse"
+    AddressRequirementsResponse:
+      $ref: "./address-requirements.yaml#/schemas/AddressRequirementsResponse"
     AffiliatePublicError:
       $ref: "./affiliate-incorporation.yaml#/schemas/AffiliatePublicError"
     AffiliateCreateCompanyRequest:
@@ -333,6 +335,10 @@ components:
       "$ref": "./tax-transactions.yaml#/schemas/CreateTaxTransactionRequest"
     TaxTransactionResponse:
       "$ref": "./tax-transactions.yaml#/schemas/TaxTransactionResponse"
+    transaction_type:
+      "$ref": "./tax-transactions.yaml#/schemas/transaction_type"
+    transaction_status:
+      "$ref": "./tax-transactions.yaml#/schemas/transaction_status"
     filing_frequency:
       type: string
       enum:
@@ -513,11 +519,6 @@ components:
       type: string
       example: USD
       description: ISO 4217 alpha-3 currency code for the transaction.
-    State:
-      type: string
-      example: CA
-      description: '2-letter code for each state. Suffix of the ISO 3166-2 code. Ex:
-        CA, NY, TX.'
     RegistrationPost:
       $ref: "./registrations.yaml#/schemas/RegistrationPost"
     RegistrationIdPost:
