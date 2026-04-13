@@ -19,7 +19,7 @@ schemas:
               type: string
       error:
         type: string
-        description: Standard NestJS error label for the response status.
+        description: Standard error label for the response status.
   CommendaOsUniqueIdentifierFromJurisdiction:
     type: object
     required:

@@ -5793,7 +5793,7 @@ components:
                 type: string
         error:
           type: string
-          description: Standard NestJS error label for the response status.
+          description: Standard error label for the response status.
     CommendaOsBusinessEntityResponse:
       type: object
       required:
