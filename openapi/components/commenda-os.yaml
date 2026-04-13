@@ -16,7 +16,7 @@ schemas:
           - type: array
             items:
               type: string
-        example: Business entity is not accessible to the authenticated affiliate
+        example: Company does not belong to this affiliate firm
       error:
         type: string
         example: Forbidden

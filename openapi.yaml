@@ -2210,15 +2210,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AffiliatePublicError'
-  /public/business-entities:
+  /public/companies/{companyId}/business-entities:
     get:
-      summary: List business entities
-      description: List the business entities visible to the authenticated affiliate.
+      summary: List business entities for a company
+      description: List the business entities attached to an affiliate-accessible company.
       operationId: listPublicCommendaOsBusinessEntities
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
       responses:
         '200':
           description: Business entities retrieved successfully
@@ -2232,22 +2239,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}:
+        '403':
+          description: Company does not belong to this affiliate firm
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}:
     get:
-      summary: Get a business entity
-      description: Retrieve a single business entity.
+      summary: Get a business entity for a company
+      description: Retrieve a single business entity attached to an affiliate-accessible company.
       operationId: getPublicCommendaOsBusinessEntity
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Business entity retrieved successfully
@@ -2262,7 +2281,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
@@ -2273,22 +2292,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/locations:
+  /public/companies/{companyId}/business-entities/{businessEntityId}/locations:
     get:
       summary: List locations for a business entity
-      description: List locations attached to a business entity.
+      description: List locations attached to a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsLocations
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Locations retrieved successfully
@@ -2303,27 +2328,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/locations/{locationId}:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/locations/{locationId}:
     get:
       summary: Get a location
-      description: Retrieve a single location for a business entity.
+      description: Retrieve a single location for a business entity within an affiliate-accessible company.
       operationId: getPublicCommendaOsLocation
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
         - name: locationId
           in: path
           required: true
@@ -2344,33 +2381,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '404':
-          description: Location not found
+          description: Business entity or location not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/persons:
+  /public/companies/{companyId}/business-entities/{businessEntityId}/persons:
     get:
       summary: List persons for a business entity
-      description: List people associated with a business entity.
+      description: List people associated with a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsBusinessEntityPersons
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Persons retrieved successfully
@@ -2385,20 +2428,33 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/persons:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/persons:
     get:
-      summary: List persons
-      description: List people visible to the authenticated affiliate across accessible companies and business entities.
+      summary: List persons for a company
+      description: List people visible for a single affiliate-accessible company across all of its business entities.
       operationId: listPublicCommendaOsPersons
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
+      parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
       responses:
         '200':
           description: Persons retrieved successfully
@@ -2412,22 +2468,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/government-identifiers:
+        '403':
+          description: Company does not belong to this affiliate firm
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/government-identifiers:
     get:
       summary: List government identifiers
-      description: List government identifiers attached to a business entity.
+      description: List government identifiers attached to a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsGovernmentIdentifiers
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Government identifiers retrieved successfully
@@ -2442,27 +2510,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/government-identifiers/{governmentIdentifierId}:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/government-identifiers/{governmentIdentifierId}:
     get:
       summary: Get a government identifier
-      description: Retrieve a single government identifier for a business entity.
+      description: Retrieve a single government identifier for a business entity within an affiliate-accessible company.
       operationId: getPublicCommendaOsGovernmentIdentifier
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
         - name: governmentIdentifierId
           in: path
           required: true
@@ -2483,33 +2563,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '404':
-          description: Government identifier not found
+          description: Business entity or government identifier not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/documents:
+  /public/companies/{companyId}/business-entities/{businessEntityId}/documents:
     get:
       summary: List documents for a business entity
-      description: List documents for a business entity.
+      description: List documents for a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsDocuments
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Documents retrieved successfully
@@ -2524,27 +2610,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/documents/supported:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/documents/supported:
     get:
       summary: List supported document types
-      description: List the document types Commenda OS supports for a business entity.
+      description: List the document types Commenda OS supports for a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsSupportedDocuments
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Supported document types retrieved successfully
@@ -2559,27 +2657,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/registrations:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/registrations:
     get:
       summary: List registrations for a business entity
-      description: List registrations for a business entity.
+      description: List registrations for a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsRegistrations
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Registrations retrieved successfully
@@ -2594,27 +2704,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/registrations/{registrationId}:
+        '404':
+          description: Business entity not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+  /public/companies/{companyId}/business-entities/{businessEntityId}/registrations/{registrationId}:
     get:
       summary: Get a registration
-      description: Retrieve a single registration for a business entity.
+      description: Retrieve a single registration for a business entity within an affiliate-accessible company.
       operationId: getPublicCommendaOsRegistration
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
         - name: registrationId
           in: path
           required: true
@@ -2635,33 +2757,39 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '404':
-          description: Registration not found
+          description: Business entity or registration not found
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
-  /public/business-entities/{businessEntityId}/registrations/supported:
+  /public/companies/{companyId}/business-entities/{businessEntityId}/registrations/supported:
     get:
       summary: List supported registrations for a business entity
-      description: List the registrations Commenda OS supports for a business entity.
+      description: List the registrations Commenda OS supports for a business entity within an affiliate-accessible company.
       operationId: listPublicCommendaOsBusinessEntitySupportedRegistrations
       servers:
         - url: https://api.prod.commenda.io/api/v1
       security:
         - xApiKeyAuth: []
       parameters:
+        - name: companyId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Commenda company identifier accessible to the authenticated affiliate.
         - name: businessEntityId
           in: path
           required: true
           schema:
             type: integer
-          description: Commenda business-entity identifier.
+          description: Commenda business-entity identifier for the specified company.
       responses:
         '200':
           description: Supported registrations retrieved successfully
@@ -2676,7 +2804,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/CommendaOsPublicError'
         '403':
-          description: Business entity is not accessible to the affiliate
+          description: Company does not belong to this affiliate firm
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CommendaOsPublicError'
+        '404':
+          description: Business entity not found
           content:
             application/json:
               schema:
@@ -5656,7 +5790,7 @@ components:
             - type: array
               items:
                 type: string
-          example: Business entity is not accessible to the authenticated affiliate
+          example: Company does not belong to this affiliate firm
         error:
           type: string
           example: Forbidden

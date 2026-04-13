@@ -15,7 +15,7 @@ Pass your affiliate API key in the `x-api-key` header on every request.
 
 ```bash
 curl --request GET \
-  --url 'https://api.prod.commenda.io/api/v1/public/business-entities' \
+  --url 'https://api.prod.commenda.io/api/v1/public/companies/77/business-entities' \
   --header 'x-api-key: <affiliate_api_key>'
 ```
 
@@ -23,8 +23,9 @@ curl --request GET \
 
 - List endpoints return `{ <resourcePlural>, count }`.
 - Detail endpoints return `{ <resourceSingular> }`.
-- Business-entity-scoped endpoints return `403` when the authenticated affiliate cannot access the requested entity.
-- Business-entity-scoped endpoints return `404 Not Found` when the `businessEntityId` does not match an existing entity.
+- All Commenda OS public endpoints except `GET /registrations/supported` are scoped by `companyId`.
+- Company-scoped endpoints return `403` with `Company does not belong to this affiliate firm` when the affiliate cannot access the requested company.
+- Business-entity-scoped endpoints return `404 Not Found` when the `businessEntityId` does not belong to the specified company.
 
 ## Available resources
 
