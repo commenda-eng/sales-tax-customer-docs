@@ -110,6 +110,7 @@ schemas:
       - MANUFACTURER
       - AGRICULTURAL
       - OTHER
+      - EXEMPT_PRODUCT
   CorporationId:
     type: string
     description: The unique identifier for a corporation.

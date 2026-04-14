@@ -66,8 +66,8 @@ Files must be uploaded in CSV format, with the headers specified in our bulk upl
 | ship_to_state_code | false | ISO-3166-2 jurisdiction string valid in the destination country | Address to which the product is shipped or where the service is delivered. |
 | ship_to_zip | false | string (Valid postal code in destination country) | Address to which the product is shipped or where the service is delivered. |
 | ship_to_country_code | true | ISO-3166 Country String | Address to which the product is shipped or where the service is delivered. |
-| marketplace | false | string | Marketplace name if the transaction is from a marketplace. |
-| tax_remitter_type | false | string | Type of tax remitter. |
+| marketplace | false | [Marketplace](#marketplace) | Marketplace name if the transaction is from a marketplace. |
+| tax_remitter_type | false | [Tax Remitter Type](#tax-remitter-type) | Indicates who is responsible for collecting and remitting tax on this transaction. |
 | metadata | false | string (JSON) | Additional metadata for the transaction in JSON format. |
 
 ### Transaction Type Code
@@ -123,4 +123,16 @@ Reason why a purchaser is exempt from sales tax. Used to manually specify that a
 
 When this field is set, the transaction will not be considered for registration threshold tracking or for filings.
 
-Currently the following options are supported: `PURPOSE_RESALE`, `ENTITY_TYPE_NONPROFIT`, `GOVERNMENT`, `MANUFACTURER`, `AGRICULTURAL`, `OTHER`.
+Currently the following options are supported: `PURPOSE_RESALE`, `ENTITY_TYPE_NONPROFIT`, `GOVERNMENT`, `MANUFACTURER`, `AGRICULTURAL`, `OTHER`, `EXEMPT_PRODUCT`.
+
+#### Marketplace
+
+Indicates the marketplace platform through which the transaction was facilitated, if applicable.
+
+Currently the following options are supported: `AMAZON`.
+
+#### Tax Remitter Type
+
+Indicates who is responsible for collecting and remitting tax on this transaction.
+
+Currently the following options are supported: `MARKETPLACE_FACILITATOR`, `SELLER`, `BUYER`.
