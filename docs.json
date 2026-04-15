@@ -139,6 +139,12 @@
             "group": "FAQ",
             "pages": [
               "faq/general",
+              "faq/entity-management",
+              "faq/compliance-faq",
+              "faq/indirect-tax",
+              "faq/integrations",
+              "faq/services-and-marketplace-faq",
+              "faq/api-and-developer-api",
               "faq/billing",
               "faq/security"
             ]
