@@ -183,6 +183,9 @@ schemas:
                 exemption_certificate_id:
                   type: string
                   description: ID of exemption certificate, if applicable.
+      customer_business_identification_number:
+        type: string
+        description: Business identification number for the customer on this transaction (e.g., VAT number, EIN, or GST number).
       tax_included:
         type: boolean
         description: Whether tax is included in the line item prices.
@@ -268,6 +271,9 @@ schemas:
         type: string
         description: Method used to create this transaction.
         example: TRANSACTIONS_API_BULK
+      customer_business_identification_number:
+        type: string
+        description: Business identification number for the customer on this transaction (e.g., VAT number, EIN, or GST number).
       metadata:
         type: object
         nullable: true
