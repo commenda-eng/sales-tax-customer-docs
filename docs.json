@@ -318,7 +318,8 @@
           {
             "group": "Filings",
             "pages": [
-              "engine/indirect-tax/filings/filings-GET-ONE"
+              "engine/indirect-tax/filings/filings-GET-ONE",
+              "engine/indirect-tax/filings/filings-contributions-GET"
             ]
           },
           {

@@ -1458,6 +1458,43 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Error'
+  /filings/{id}/contributions:
+    get:
+      summary: List filing contributions
+      description: Returns the computed VAT-return box contributions for a filing, joined with content metadata for display. Each contribution represents a computed value for a specific box on the tax return. Results are ordered by box order, then by jurisdiction. Returns an empty list if no contributions have been computed yet.
+      operationId: listFilingContributions
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+          description: The unique identifier of the filing.
+      responses:
+        '200':
+          description: Filing contributions fetched successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    $ref: '#/components/schemas/FilingContributionsResponse'
+                  message:
+                    type: string
+                    example: Successfully fetched filing contributions.
+        '400':
+          description: Bad request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Filing not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
   /customers:
     post:
       summary: Create a customer
@@ -4835,6 +4872,71 @@ components:
                 reason:
                   type: string
                   description: Specific information why the payment failed.
+    FilingContributionsResponse:
+      type: object
+      properties:
+        count:
+          type: integer
+          description: The number of contribution items returned.
+          example: 5
+        contributions:
+          type: array
+          items:
+            $ref: '#/components/schemas/FilingContribution'
+    FilingContribution:
+      type: object
+      properties:
+        id:
+          type: string
+          description: The unique identifier for this contribution record.
+          example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+        filing_id:
+          type: string
+          description: The unique identifier of the filing this contribution belongs to.
+          example: "f1a2b3c4-d5e6-7890-abcd-ef1234567890"
+        filing_contribution_id:
+          type: string
+          description: A stable content-defined identifier that links this computed value back to its content-side definition. Follows the pattern `<filing_content_id>_<NN>`.
+          example: "DE_VAT_01"
+        filing_through_jurisdiction:
+          type: string
+          nullable: true
+          description: The Commenda jurisdiction identifier for per-jurisdiction contributions (e.g. OSS/IOSS filings). Null for country-level filings.
+          example: "COUNTRY_DE_3018"
+        value:
+          type: integer
+          format: int64
+          description: The computed monetary amount in minor currency units (e.g. cents).
+          example: 150000
+        value_type:
+          type: string
+          description: The type of the value field.
+          default: "INTEGER"
+          example: "INTEGER"
+        box_id:
+          type: string
+          description: The identifier of the tax return box this contribution maps to.
+          example: "81"
+        box_name:
+          type: string
+          description: The display name of the tax return box.
+          example: "Supplies and other services"
+        box_order:
+          type: integer
+          description: The display order of the box on the tax return form.
+          example: 1
+        box_type:
+          type: string
+          description: The classification of the box (e.g. tax base, tax amount).
+          example: "TAX_BASE"
+        created_at:
+          type: integer
+          format: int64
+          description: Unix timestamp in microseconds when the contribution was created.
+        updated_at:
+          type: integer
+          format: int64
+          description: Unix timestamp in microseconds when the contribution was last updated.
     CustomerInfo:
       type: object
       properties:
