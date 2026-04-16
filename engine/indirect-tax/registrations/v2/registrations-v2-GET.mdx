@@ -1,0 +1,181 @@
+---
+title: "List Registrations"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/list"
+description: "Retrieve all V2 registrations for a corporation with optional filters and pagination"
+---
+
+List all V2 registrations for a corporation. Supports filtering by country, state, jurisdiction type, registration status, validation status, and jurisdiction name search. Results are cursor-paginated.
+
+<Note>
+  This endpoint uses POST (not GET) to support complex filtering via the request body.
+</Note>
+
+## Request body
+
+<ParamField body="corporation_id" type="string" required>
+  The unique identifier for the corporation whose registrations you want to retrieve.
+</ParamField>
+
+<ParamField body="countries" type="array">
+  Filter by ISO 3166-1 alpha-2 country codes. Maximum 100 items.
+  
+  Example: `["US", "DE"]`
+</ParamField>
+
+<ParamField body="states" type="array">
+  Filter by state or province codes. Maximum 100 items.
+  
+  Example: `["CA", "NY", "TX"]`
+</ParamField>
+
+<ParamField body="jurisdiction_types" type="array">
+  Filter by jurisdiction type. Maximum 100 items.
+  
+  Values: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `COUNTRY`, `TERRITORY`, `TRADEBLOC`
+</ParamField>
+
+<ParamField body="jurisdiction_name" type="string">
+  Search by jurisdiction name (partial match).
+  
+  Example: `"California"` or `"Germany"`
+</ParamField>
+
+<ParamField body="registration_status" type="string">
+  Filter by registration status.
+</ParamField>
+
+<ParamField body="validation_status" type="string">
+  Filter by validation status.
+  
+  Values: `PENDING`, `VALID`, `INVALID`
+</ParamField>
+
+<ParamField body="include_archived" type="boolean" default="false">
+  Whether to include archived registrations in the results.
+</ParamField>
+
+<ParamField body="cursor" type="string">
+  Pagination cursor from a previous response. Leave empty for the first page.
+</ParamField>
+
+<ParamField body="limit" type="integer" default="10">
+  Maximum number of results to return (1–100).
+</ParamField>
+
+<RequestExample>
+```bash cURL - All
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000"
+  }'
+```
+
+```bash cURL - Filtered
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/list' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "countries": ["US"],
+    "states": ["CA", "TX"],
+    "validation_status": "PENDING"
+  }'
+```
+
+```json All registrations
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000"
+}
+```
+
+```json By country and state
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "countries": ["US"],
+  "states": ["CA", "NY", "TX"]
+}
+```
+
+```json Include archived
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "include_archived": true
+}
+```
+
+```json With pagination
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "limit": 25,
+  "cursor": "encoded_cursor_string"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "registrations": [
+      {
+        "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+        "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+        "tax_types": ["RST", "DTT"],
+        "frequencies": ["QUARTERLY"],
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "registration_name": "Sales and Use Tax",
+        "effective_start_date": "2024-01-01",
+        "registered_by": "COMMENDA",
+        "registration_status": "PENDING",
+        "validation_status": "PENDING",
+        "created_at": "2024-01-15T10:30:00Z"
+      },
+      {
+        "id": "8d9f7780-8536-51ef-a55c-c2851cbface8",
+        "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "registration_tax_type_id": "REG_STATE_CEN_48_RST",
+        "tax_types": ["RST"],
+        "frequencies": ["MONTHLY"],
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_name": "Texas",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "registration_name": "Sales and Use Tax",
+        "effective_start_date": "2024-02-01",
+        "registered_by": "API",
+        "registration_status": "PENDING",
+        "validation_status": "PENDING",
+        "created_at": "2024-02-01T14:20:00Z"
+      }
+    ],
+    "total": 12,
+    "cursor": "encoded_next_page_cursor"
+  }
+}
+```
+
+```json 400 - Missing corporation ID
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "corporation_id is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/list"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Get Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-GET) — Get details for a specific registration
+- [Create Registration](/engine/indirect-tax/registrations/v2/registrations-v2-POST) — Create a new V2 registration
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Registration concepts and lifecycle

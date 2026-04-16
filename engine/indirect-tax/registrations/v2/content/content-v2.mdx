@@ -1,0 +1,97 @@
+---
+title: "Registration Content V2"
+description: "Discover available jurisdictions, registration options, conditions, and portal requirements for V2 registrations"
+---
+
+## Overview
+
+The V2 Registration Content API provides a data-driven approach to creating tax registrations. Use these endpoints to discover what's available and what's required before creating a registration.
+
+The V2 content system adds two new capabilities over V1:
+
+- **Registration conditions** — Query prerequisite, mutual exclusivity, and member country requirements
+- **Tax type details** — Get descriptions and recommendations for each tax type
+
+<Info>
+  After gathering content information, use the [Create Registration V2](/engine/indirect-tax/registrations/v2/registrations-v2-POST) endpoint to create your registration.
+</Info>
+
+## Workflow
+
+<Steps>
+  <Step title="Search available jurisdictions">
+    Use [Available Jurisdictions](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) to find jurisdictions where you can register. Filter by country, state, or jurisdiction type.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-jurisdictions' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"filters": {"countries": ["US"], "types": ["STATE_OR_PROVINCE"]}}'
+    ```
+  </Step>
+  <Step title="Get registration options">
+    Use [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) to get `registration_tax_type_id`, tax type options, and frequency options for your selected jurisdictions.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-registrations' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"jurisdiction_ids": ["JUR_US_STATE_CA"]}'
+    ```
+  </Step>
+  <Step title="Check conditions (if applicable)">
+    For trade bloc registrations (EU OSS, IOSS), use [Registration Conditions](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) to understand prerequisites and conflicts.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/registration-conditions' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT"}'
+    ```
+  </Step>
+  <Step title="Get portal requirements">
+    Use [Portal Fields](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) to get the credential fields needed for automated filing.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/portal-fields' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{"portal_ids": ["PORTAL_CA_CDTFA"]}'
+    ```
+  </Step>
+  <Step title="Create registration">
+    Use [Create Registration V2](/engine/indirect-tax/registrations/v2/registrations-v2-POST) with the `registration_tax_type_id` from step 2.
+    
+    ```bash
+    curl --request POST \
+      --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2' \
+      --header 'Authorization: Bearer <your_token>' \
+      --header 'Content-Type: application/json' \
+      --data '{
+        "corporation_id": "your-corporation-id",
+        "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+        "tax_types": ["RST", "DTT"],
+        "frequencies": ["QUARTERLY"]
+      }'
+    ```
+  </Step>
+</Steps>
+
+## API endpoints
+
+| Endpoint | Description |
+|----------|-------------|
+| [`POST /registrations/v2/content/available-jurisdictions`](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) | Search for jurisdictions where you can register |
+| [`POST /registrations/v2/content/available-registrations`](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) | Get registration options for jurisdictions |
+| [`POST /registrations/v2/content/registration-conditions`](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) | Get conditions for a registration type |
+| [`POST /registrations/v2/content/portal-fields`](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) | Get portal credential requirements |
+| [`POST /registrations/v2/content/tax-type-details`](/engine/indirect-tax/registrations/v2/content/tax-type-details-POST) | Get tax type descriptions |
+
+## Related
+
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Full V2 registration workflow and concepts
+- [Create Registration V2](/engine/indirect-tax/registrations/v2/registrations-v2-POST) — Create a registration using V2 content IDs

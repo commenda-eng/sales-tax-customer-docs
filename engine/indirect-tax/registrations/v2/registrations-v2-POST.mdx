@@ -1,0 +1,243 @@
+---
+title: "Create Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2"
+description: "Create a new V2 tax registration for a corporation"
+---
+
+Create a registration to enable tax calculations and automated filing for a jurisdiction. Before calling this endpoint, use the [V2 content endpoints](/engine/indirect-tax/registrations/v2/content/content-v2) to discover available jurisdictions and get the required `registration_tax_type_id`.
+
+## Request body
+
+<ParamField body="corporation_id" type="string" required>
+  The unique identifier (UUID) for the corporation.
+</ParamField>
+
+<ParamField body="registration_tax_type_id" type="string" required>
+  The content ID identifying the jurisdiction and tax type combination. Obtain this from the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint.
+  
+  Example: `"REG_STATE_CEN_06_RST"` (California Retail Sales Tax)
+</ParamField>
+
+<ParamField body="tax_types" type="array" required>
+  Array of tax types to register for. Must be valid for the selected `registration_tax_type_id`.
+  
+  Include the primary tax type and all required related types (where `optional: false` in the content response). Minimum 1, maximum 100 items.
+  
+  Example: `["RST", "DTT"]`
+</ParamField>
+
+<ParamField body="frequencies" type="array" required>
+  Array of filing frequencies. Must exactly match one of the allowed frequency combinations from the content response.
+  
+  Minimum 1, maximum 100 items.
+  
+  Example: `["QUARTERLY"]` or `["QUARTERLY", "ANNUAL_RECONCILIATION"]`
+</ParamField>
+
+<ParamField body="effective_start_date" type="string">
+  ISO date (YYYY-MM-DD) when the registration became or becomes effective.
+</ParamField>
+
+<ParamField body="registered_by" type="string">
+  Who is creating this registration. Defaults to `COMMENDA` if not provided.
+  
+  Values: `COMMENDA`, `API`, `USER`
+</ParamField>
+
+<ParamField body="tax_registration_number" type="string">
+  Your tax registration ID, permit number, or account number issued by the tax authority.
+</ParamField>
+
+<ParamField body="credential_id" type="string">
+  Reference to stored portal credentials (UUID). Can be added later via update.
+</ParamField>
+
+<ParamField body="member_state_registration_id" type="string">
+  UUID of an existing active domestic registration. Required for Union OSS registrations that have a `PREREQUISITE_REGISTRATION` condition.
+  
+  The referenced registration must belong to the same corporation and be in an EU country where your business has a qualifying establishment.
+</ParamField>
+
+<ParamField body="registered_through_registration_tax_type_id" type="string">
+  Content ID of the member country to register through. Required for registrations with a `MEMBER_COUNTRY_TO_REGISTER_THROUGH` condition (Non-Union OSS, IOSS).
+  
+  Example: `"REG_COUNTRY_DE_3001_VAT"`
+</ParamField>
+
+## Validation rules
+
+| Rule | Description |
+|------|-------------|
+| **Tax types** | Must include all mandatory types and only allowed types for the content ID |
+| **Frequencies** | Must exactly match one allowed frequency combination |
+| **Duplicate prevention** | Only one active (non-archived) registration per `registration_tax_type_id` per corporation |
+| **Conditions** | Prerequisites must be met, mutually exclusive registrations must not be active |
+
+### EU establishment rules
+
+For EU trade bloc registrations, additional establishment checks are enforced automatically:
+
+| Scheme | Requirement |
+|--------|-------------|
+| **Union OSS** | Your business must have a qualifying EU establishment in the same country as the member state registration |
+| **Non-Union OSS** | Your business must **not** have any qualifying EU establishment |
+
+Qualifying establishment types: headquarters, branch office, warehouse, factory, retail location, dependent agent.
+
+<RequestExample>
+```bash cURL - US state
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequencies": ["QUARTERLY"],
+    "effective_start_date": "2024-01-01"
+  }'
+```
+
+```json US state
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+  "tax_types": ["RST", "DTT"],
+  "frequencies": ["QUARTERLY"],
+  "effective_start_date": "2024-01-01"
+}
+```
+
+```json Minimal
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_tax_type_id": "REG_STATE_CEN_48_RST",
+  "tax_types": ["RST"],
+  "frequencies": ["MONTHLY"]
+}
+```
+
+```json Union OSS
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT",
+  "tax_types": ["VAT"],
+  "frequencies": ["QUARTERLY"],
+  "member_state_registration_id": "8a1b2c3d-4e5f-6789-abcd-ef0123456789"
+}
+```
+
+```json Non-Union OSS
+{
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_NUOSS_VAT",
+  "tax_types": ["VAT"],
+  "frequencies": ["QUARTERLY"],
+  "registered_through_registration_tax_type_id": "REG_COUNTRY_DE_3001_VAT"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 201
+{
+  "message": "Registration created successfully.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequencies": ["QUARTERLY"],
+    "jurisdiction_id": "JUR_US_STATE_CA",
+    "jurisdiction_name": "California",
+    "jurisdiction_type": "STATE_OR_PROVINCE",
+    "registration_name": "Sales and Use Tax",
+    "effective_start_date": "2024-01-01",
+    "registered_by": "COMMENDA",
+    "registration_status": "PENDING",
+    "validation_status": "PENDING",
+    "created_at": "2024-01-15T10:30:00Z"
+  }
+}
+```
+
+```json 400 - Content not found
+{
+  "error": {
+    "type": "CONTENT_NOT_FOUND",
+    "title": "Registration content not found.",
+    "detail": "The registration_tax_type_id 'INVALID_ID' does not exist.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+
+```json 400 - Duplicate registration
+{
+  "error": {
+    "type": "DUPLICATE_REGISTRATION",
+    "title": "A registration already exists.",
+    "detail": "An active registration already exists for this registration_tax_type_id and corporation.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+
+```json 400 - Invalid tax type
+{
+  "error": {
+    "type": "INVALID_TAX_TYPE",
+    "title": "Invalid tax type for this registration.",
+    "detail": "The provided tax types do not match the allowed options for this registration.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+
+```json 400 - Invalid frequency
+{
+  "error": {
+    "type": "INVALID_FREQUENCY",
+    "title": "Invalid frequency for this registration.",
+    "detail": "The provided frequencies do not match any allowed frequency combination.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+
+```json 400 - Prerequisite not met
+{
+  "error": {
+    "type": "PREREQUISITE_NOT_MET",
+    "title": "Prerequisite registration required.",
+    "detail": "At least one prerequisite registration must be active before creating this registration.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+
+```json 400 - Mutually exclusive conflict
+{
+  "error": {
+    "type": "MUTUALLY_EXCLUSIVE_CONFLICT",
+    "title": "Registration conflict.",
+    "detail": "This registration conflicts with an existing active registration.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [V2 Registration Content](/engine/indirect-tax/registrations/v2/content/content-v2) — Discover jurisdictions and get content IDs
+- [Update Registration V2](/engine/indirect-tax/registrations/v2/registrations-v2-id-POST) — Add credentials or update fields
+- [Registration Conditions](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) — Check conditions before creating
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Full workflow

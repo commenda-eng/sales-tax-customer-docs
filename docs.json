@@ -198,17 +198,42 @@
                   "engine/indirect-tax/registrations/registrations-id-request-validation-POST",
                   "engine/indirect-tax/registrations/registrations-id-archive-POST",
                   "engine/indirect-tax/registrations/registrations-id-close-POST",
-                  {
-                    "group": "Registration Content",
-                    "pages": [
-                      "engine/indirect-tax/registrations/content/content",
-                      "engine/indirect-tax/registrations/content/available-jurisdictions-POST",
-                      "engine/indirect-tax/registrations/content/registration-input-options-POST",
-                      "engine/indirect-tax/registrations/content/portal-fields-POST"
-                    ]
-                  }
+              {
+                "group": "Registration Content",
+                "pages": [
+                  "engine/indirect-tax/registrations/content/content",
+                  "engine/indirect-tax/registrations/content/available-jurisdictions-POST",
+                  "engine/indirect-tax/registrations/content/registration-input-options-POST",
+                  "engine/indirect-tax/registrations/content/portal-fields-POST"
                 ]
               }
+            ]
+          },
+          {
+            "group": "Registrations V2",
+            "pages": [
+              "engine/indirect-tax/registrations/v2/registrations-v2",
+              "engine/indirect-tax/registrations/v2/registrations-v2-POST",
+              "engine/indirect-tax/registrations/v2/registrations-v2-GET",
+              "engine/indirect-tax/registrations/v2/registrations-v2-id-GET",
+              "engine/indirect-tax/registrations/v2/registrations-v2-id-POST",
+              "engine/indirect-tax/registrations/v2/registrations-v2-id-DELETE",
+              "engine/indirect-tax/registrations/v2/registrations-v2-id-archive-POST",
+              "engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST",
+              "engine/indirect-tax/registrations/v2/registrations-v2-credentials-GET",
+              {
+                "group": "Registration Content V2",
+                "pages": [
+                  "engine/indirect-tax/registrations/v2/content/content-v2",
+                  "engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST",
+                  "engine/indirect-tax/registrations/v2/content/available-registrations-POST",
+                  "engine/indirect-tax/registrations/v2/content/registration-conditions-POST",
+                  "engine/indirect-tax/registrations/v2/content/portal-fields-POST",
+                  "engine/indirect-tax/registrations/v2/content/tax-type-details-POST"
+                ]
+              }
+            ]
+          }
             ]
           },
           {

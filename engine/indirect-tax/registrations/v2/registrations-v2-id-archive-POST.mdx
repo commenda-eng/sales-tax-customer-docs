@@ -1,0 +1,78 @@
+---
+title: "Archive Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/{tax_registration_id}/archive"
+description: "Archive a V2 registration to stop tax calculations and hide from default views"
+---
+
+Archive a registration to completely exclude it from tax calculations and hide it from default list views. Archived registrations are preserved for historical records but no longer participate in tax processing.
+
+## Path parameters
+
+<ParamField path="tax_registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to archive.
+</ParamField>
+
+## What happens when you archive
+
+- **Tax calculations stop** — The registration is no longer considered when calculating taxes
+- **Hidden from views** — Excluded from list results unless you set `include_archived: true`
+- **Data preserved** — All historical data remains intact for reference
+
+## Archive vs. close vs. delete
+
+| Action | Use case | Tax calculations | Reversible |
+|--------|----------|------------------|------------|
+| **Archive** | Completely disable | Stopped entirely | Contact support |
+| [**Close**](/engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST) | Stop on a specific date | Active within date range | No |
+| [**Delete**](/engine/indirect-tax/registrations/v2/registrations-v2-id-DELETE) | Remove entirely | N/A — data removed | No |
+
+<Note>
+  If you need to stop collecting tax starting from a specific date but preserve calculations for the historical period, use [Close](/engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST) instead.
+</Note>
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Registration archived successfully."
+}
+```
+
+```json 404 - Not found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7/archive"
+  }
+}
+```
+</ResponseExample>
+
+## Viewing archived registrations
+
+To include archived registrations in list results, set `include_archived: true`:
+
+```json
+POST /registrations/v2/list
+{
+  "corporation_id": "your-corp-id",
+  "include_archived": true
+}
+```
+
+Archived registrations will have a non-null `archived_at` timestamp.
+
+## Related
+
+- [Close Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST) — Stop on a specific date (preserves historical calculations)
+- [Delete Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-DELETE) — Permanently remove
+- [List Registrations](/engine/indirect-tax/registrations/v2/registrations-v2-GET) — Use `include_archived: true` to see archived registrations

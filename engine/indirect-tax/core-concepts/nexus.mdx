@@ -129,13 +129,18 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
           "transactions_exposure_percentage": 0
         },
         "is_nexus_breached": true,
-        "date_of_breach": "2026-03-15"
+        "date_of_breach": "2026-03-15",
+        "recommended_registration_content_id": "REG_TRADEBLOC_EU_3000_UOSS"
       }
     ]
   },
   "message": "Successfully fetched nexus."
 }
 ```
+
+#### Recommended registration
+
+Each jurisdiction in the v2 response includes a `recommended_registration_content_id` field that links directly to the [V2 Registration API](/engine/indirect-tax/registrations/v2/registrations-v2). When a threshold is breached (or approaching breach), use this ID to discover the appropriate registration options via the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint.
 
 #### Key differences from the default response
 
