@@ -305,6 +305,7 @@ schemas:
       - MANUFACTURER
       - AGRICULTURAL
       - OTHER
+      - EXEMPT_PRODUCT
     description: Enum representing the reason for the exemption.
 
   ExemptionCertificateType:

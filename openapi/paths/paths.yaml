@@ -1464,6 +1464,48 @@
           application/json:
             schema:
               "$ref": "../components/components.yaml#/components/schemas/Error"
+"/filings/{id}/contributions":
+  get:
+    summary: List filing contributions
+    description: >-
+      Retrieve the computed tax box values (contributions) for a specific filing.
+      Each contribution represents a value that maps to a box on a tax return form,
+      such as taxable sales or tax due. Contributions are ordered by box order, then
+      by jurisdiction for multi-jurisdiction filings (e.g., EU OSS/IOSS).
+    operationId: listFilingContributions
+    parameters:
+    - in: path
+      name: id
+      required: true
+      schema:
+        type: string
+        format: uuid
+      description: The unique identifier of the filing to retrieve contributions for.
+    responses:
+      '200':
+        description: Filing contributions retrieved successfully
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                data:
+                  "$ref": "../components/filings.yaml#/schemas/FilingContributionsResponse"
+                message:
+                  type: string
+                  example: Successfully fetched filing contributions.
+      '400':
+        description: Bad request
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
+      '404':
+        description: Filing not found
+        content:
+          application/json:
+            schema:
+              "$ref": "../components/components.yaml#/components/schemas/Error"
 "/customers":
   post:
     summary: Create a customer

@@ -1,0 +1,137 @@
+---
+title: "Indirect Tax FAQ"
+description: "Frequently asked questions about Commenda's indirect tax platform (VAT, GST, Sales Tax)"
+sidebarTitle: "Indirect Tax"
+keywords: ["indirect tax questions", "vat questions", "gst questions"]
+---
+
+<script type="application/ld+json">{`
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What indirect taxes does Commenda support?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda supports VAT (Value Added Tax), GST (Goods and Services Tax), and US sales tax. These cover the primary forms of indirect tax that multinational companies face when selling goods or services across international borders or US state lines."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does Commenda determine whether a company needs to register for VAT or sales tax in a jurisdiction?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda tracks registration thresholds by jurisdiction — the revenue or transaction volume levels at which a company becomes obligated to register for indirect tax. When transaction data is synced into Commenda, the platform monitors exposure against these thresholds and flags when a company is approaching or has exceeded a registration requirement."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is a registration threshold?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "A registration threshold is the level of taxable sales or transactions in a jurisdiction above which a business is legally required to register for indirect tax (VAT, GST, or sales tax). Thresholds vary significantly by country and US state. Commenda tracks these thresholds and monitors company exposure against them so finance teams are alerted before a registration obligation is missed."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Commenda calculate sales tax or VAT at the point of sale?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda's Indirect Tax API includes a tax calculation endpoint that computes the applicable sales tax, VAT, or GST for a given transaction based on the buyer's location, product type, and applicable exemptions. This can be integrated into billing or checkout systems via API."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is nexus in the context of US sales tax?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Nexus is the connection between a business and a US state that creates a sales tax obligation. A company has nexus in a state when it meets certain thresholds — either physical presence (an office, employee, or warehouse) or economic nexus (a certain volume of sales into that state). Commenda tracks nexus exposure across US states based on transaction data so companies know where they are obligated to collect and remit sales tax."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Commenda support exemption certificates?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda manages exemption certificates — documents that allow certain buyers (e.g., resellers, non-profits) to purchase goods without paying sales tax. Commenda stores exemption certificates at the customer level, tracks their validity, and applies them to transactions to prevent over-collection of tax."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can Commenda handle indirect tax for digital products and SaaS?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda is also built for digital businesses and SaaS companies selling globally, with full support for the jurisdiction-specific tax rules that apply to electronically supplied services, software subscriptions, and digital downloads."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Commenda file indirect tax returns on our behalf?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda prepares, files, and remits your returns on your behalf — monthly, quarterly, or annually — across all registered jurisdictions, with no spreadsheets or manual uploads required. This covers both U.S. sales tax and international VAT filings."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What integrations does Commenda support for syncing transaction data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda integrates with major accounting and e-commerce platforms to sync transaction data automatically. Supported platforms include Stripe, Shopify, Xero, QuickBooks, NetSuite, Zoho, and WooCommerce. This means transaction volume is monitored against registration thresholds without manual data entry."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Commenda support bulk import of historical transactions?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda supports bulk transaction import, allowing companies to upload historical transaction data to establish a baseline of prior tax exposure before going live with ongoing transaction syncing."
+      }
+    }
+  ]
+}
+`}</script>
+
+<AccordionGroup>
+  <Accordion title="What indirect taxes does Commenda support?">
+    Commenda supports VAT (Value Added Tax), GST (Goods and Services Tax), and US sales tax. These cover the primary forms of indirect tax that multinational companies face when selling goods or services across international borders or US state lines.
+  </Accordion>
+
+  <Accordion title="How does Commenda determine whether a company needs to register for VAT or sales tax in a jurisdiction?">
+    Commenda tracks registration thresholds by jurisdiction — the revenue or transaction volume levels at which a company becomes obligated to register for indirect tax. When transaction data is synced into Commenda, the platform monitors exposure against these thresholds and flags when a company is approaching or has exceeded a registration requirement.
+  </Accordion>
+
+  <Accordion title="What is a registration threshold?">
+    A registration threshold is the level of taxable sales or transactions in a jurisdiction above which a business is legally required to register for indirect tax (VAT, GST, or sales tax). Thresholds vary significantly by country and US state. Commenda tracks these thresholds and monitors company exposure against them so finance teams are alerted before a registration obligation is missed.
+  </Accordion>
+
+  <Accordion title="Can Commenda calculate sales tax or VAT at the point of sale?">
+    Yes. Commenda's Indirect Tax API includes a tax calculation endpoint that computes the applicable sales tax, VAT, or GST for a given transaction based on the buyer's location, product type, and applicable exemptions. This can be integrated into billing or checkout systems via API.
+  </Accordion>
+
+  <Accordion title="What is nexus in the context of US sales tax?">
+    Nexus is the connection between a business and a US state that creates a sales tax obligation. A company has nexus in a state when it meets certain thresholds — either physical presence (an office, employee, or warehouse) or economic nexus (a certain volume of sales into that state). Commenda tracks nexus exposure across US states based on transaction data so companies know where they are obligated to collect and remit sales tax.
+  </Accordion>
+
+  <Accordion title="Does Commenda support exemption certificates?">
+    Yes. Commenda manages exemption certificates — documents that allow certain buyers (e.g., resellers, non-profits) to purchase goods without paying sales tax. Commenda stores exemption certificates at the customer level, tracks their validity, and applies them to transactions to prevent over-collection of tax.
+  </Accordion>
+
+  <Accordion title="Can Commenda handle indirect tax for digital products and SaaS?">
+    Yes. Commenda is also built for digital businesses and SaaS companies selling globally, with full support for the jurisdiction-specific tax rules that apply to electronically supplied services, software subscriptions, and digital downloads.
+  </Accordion>
+
+  <Accordion title="Does Commenda file indirect tax returns on our behalf?">
+    Yes. Commenda prepares, files, and remits your returns on your behalf — monthly, quarterly, or annually — across all registered jurisdictions, with no spreadsheets or manual uploads required. This covers both U.S. sales tax and international VAT filings.
+  </Accordion>
+
+  <Accordion title="What integrations does Commenda support for syncing transaction data?">
+    Commenda integrates with major accounting and e-commerce platforms to sync transaction data automatically. Supported platforms include Stripe, Shopify, Xero, QuickBooks, NetSuite, Zoho, and WooCommerce. This means transaction volume is monitored against registration thresholds without manual data entry. See the full list at[ <u>Supported Integrations</u>](https://docs.commenda.io/integrations/supported-integrations).
+  </Accordion>
+
+  <Accordion title="Does Commenda support bulk import of historical transactions?">
+    Yes. Commenda supports bulk transaction import, allowing companies to upload historical transaction data to establish a baseline of prior tax exposure before going live with ongoing transaction syncing.
+  </Accordion>
+</AccordionGroup>

@@ -1,0 +1,79 @@
+schemas:
+  FilingContribution:
+    type: object
+    properties:
+      id:
+        type: string
+        format: uuid
+        description: Unique identifier for this contribution.
+        example: "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+      filing_id:
+        type: string
+        format: uuid
+        description: The filing this contribution belongs to.
+        example: "f1e2d3c4-b5a6-7890-abcd-ef1234567890"
+      filing_contribution_id:
+        type: string
+        description: >-
+          Stable content identifier that links this contribution to its
+          tax return box rule definition.
+        example: "REG_COUNTRY_DE_3018_VAT_01_01"
+      filing_through_jurisdiction:
+        type: string
+        nullable: true
+        description: >-
+          Commenda jurisdiction identifier for the member state this contribution
+          applies to. Present for multi-jurisdiction filings (e.g., EU OSS/IOSS);
+          null for single-jurisdiction filings.
+        example: "COUNTRY_DE_3018"
+      value:
+        type: integer
+        format: int64
+        description: >-
+          The computed monetary amount in minor currency units (e.g., cents).
+          For example, a value of 12345 represents 123.45 in the filing currency.
+        example: 12345
+      value_type:
+        type: string
+        description: The type of the value field. Currently always `INTEGER`.
+        example: "INTEGER"
+      box_id:
+        type: string
+        description: >-
+          Identifier for the tax return form box this contribution maps to.
+        example: "DE_81"
+      box_name:
+        type: string
+        description: Human-readable name of the tax return form box.
+        example: "Steuerpflichtige Umsätze"
+      box_order:
+        type: integer
+        format: int32
+        description: Display order of the box on the tax return form.
+        example: 1
+      box_type:
+        type: string
+        description: Classification of the box (e.g., input, output, total).
+        example: "OUTPUT"
+      created_at:
+        type: integer
+        format: int64
+        description: Timestamp when this contribution was created, in Unix microseconds.
+        example: 1713168000000000
+      updated_at:
+        type: integer
+        format: int64
+        description: Timestamp when this contribution was last updated, in Unix microseconds.
+        example: 1713168000000000
+
+  FilingContributionsResponse:
+    type: object
+    properties:
+      count:
+        type: integer
+        description: Total number of contributions returned.
+        example: 5
+      contributions:
+        type: array
+        items:
+          "$ref": "#/schemas/FilingContribution"

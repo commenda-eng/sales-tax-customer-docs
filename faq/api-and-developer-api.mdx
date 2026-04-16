@@ -1,0 +1,88 @@
+---
+title: "API & Developer FAQ"
+description: "Frequently asked questions about Commenda's API and developer resources"
+sidebarTitle: "API & Developer"
+---
+
+<script type="application/ld+json">{`
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "What APIs does Commenda offer?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda offers six APIs: the Global Indirect Tax API (for tax calculation, registration, and transaction management), CommendaOS API (a global entity data modeling system), the Incorporation API, the Workflow Builder API, the Company Name Checker API, and the Address API."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is CommendaOS?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "CommendaOS is Commenda's global entity data modeling system — an API layer that exposes structured data about business entities, including government identifiers, registrations, locations, key persons, credentials, and documents. It is designed for software teams building products that need rich, structured entity data across multiple jurisdictions."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does authentication work for Commenda's APIs?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda APIs use API key-based authentication. API keys are passed in the request header (x-commenda-key) and are assigned specific roles that determine which endpoints they can access. Bearer token authentication is also supported for certain APIs."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Commenda offer webhooks?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda's Indirect Tax API supports webhooks for event-driven integrations. Webhooks can be configured to fire on specific events, allowing downstream systems to react in real time when data changes in Commenda."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Does Commenda have an MCP server?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda offers an MCP (Model Context Protocol) server, which allows AI coding assistants like Claude and Cursor to interact with Commenda's APIs directly within a development environment."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "What is Commenda's Workflow Builder?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "The Workflow Builder is a Commenda API product that allows developers to define and execute custom multi-step workflows — for example, automating the sequence of steps involved in onboarding a new entity or completing a compliance filing. It uses a DSL (domain-specific language) to define workflow logic that can be triggered programmatically."
+      }
+    }
+  ]
+}
+`}</script>
+
+<AccordionGroup>
+  <Accordion title="What APIs does Commenda offer?">
+    Commenda offers six APIs: the Global Indirect Tax API (for tax calculation, registration, and transaction management), CommendaOS API (a global entity data modeling system), the Incorporation API, the Workflow Builder API, the Company Name Checker API, and the Address API. A full overview is available at[ <u>API Introduction</u>](https://docs.commenda.io/engine/api-introduction).
+  </Accordion>
+
+  <Accordion title="What is CommendaOS?">
+    CommendaOS is Commenda's global entity data modeling system — an API layer that exposes structured data about business entities, including government identifiers, registrations, locations, key persons, credentials, and documents. It is designed for software teams building products that need rich, structured entity data across multiple jurisdictions.
+  </Accordion>
+
+  <Accordion title="How does authentication work for Commenda's APIs?">
+    Commenda APIs use API key-based authentication. API keys are passed in the request header (x-commenda-key) and are assigned specific roles that determine which endpoints they can access. Bearer token authentication is also supported for certain APIs. Full authentication documentation is available at[ <u>API Introduction</u>](https://docs.commenda.io/engine/api-introduction).
+  </Accordion>
+
+  <Accordion title="Does Commenda offer webhooks?">
+    Yes. Commenda's Indirect Tax API supports webhooks for event-driven integrations. Webhooks can be configured to fire on specific events, allowing downstream systems to react in real time when data changes in Commenda.
+  </Accordion>
+
+  <Accordion title="Does Commenda have an MCP server?">
+    Yes. Commenda offers an MCP (Model Context Protocol) server, which allows AI coding assistants like Claude and Cursor to interact with Commenda's APIs directly within a development environment. Setup documentation is available at[ <u>MCP Server</u>](https://docs.commenda.io/engine/mcp-server/overview).
+  </Accordion>
+
+  <Accordion title="What is Commenda's Workflow Builder?">
+    The Workflow Builder is a Commenda API product that allows developers to define and execute custom multi-step workflows — for example, automating the sequence of steps involved in onboarding a new entity or completing a compliance filing. It uses a DSL (domain-specific language) to define workflow logic that can be triggered programmatically.
+  </Accordion>
+</AccordionGroup>

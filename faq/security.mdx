@@ -5,6 +5,63 @@ description: "Frequently asked questions about data security and privacy."
 keywords: ["security", "privacy", "data protection", "encryption"]
 ---
 
+<script type="application/ld+json">{`
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    {
+      "@type": "Question",
+      "name": "How does Commenda protect my data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Commenda uses industry-standard security practices including encryption in transit (TLS) and at rest, role-based access control, secure credential storage for sensitive information like tax portal passwords, and regular security audits."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Who can see my company's data?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Only people you've explicitly granted access to can see your data: team members with the roles you've assigned, advisor firms linked to your company (only for assigned entities), agent firms working on your service requests (only for assigned work), and Commenda admins for platform support purposes."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How are credentials stored?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Sensitive credentials (like tax portal usernames and passwords, bank account numbers, and government IDs) are encrypted using strong encryption before storage. They are only decrypted when needed by authorized users."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Is my bank account information safe?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Bank connections are handled through Plaid, a trusted financial data platform used by thousands of financial institutions. Commenda never stores your banking login credentials. The connection uses bank-level encryption."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "Can I control who accesses what?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Yes. Commenda provides role-based access control with multiple roles (Admin, User, Accountant, Controller, Employee, Custom). You can restrict team members to specific entities and control what data they can view and edit."
+      }
+    },
+    {
+      "@type": "Question",
+      "name": "How does document access control work?",
+      "acceptedAnswer": {
+        "@type": "Answer",
+        "text": "Documents can be set as private (specific team members), shared (your team and your advisor), or restricted based on the entity they belong to. File-level access control lists give you fine-grained control over who can view each document."
+      }
+    }
+  ]
+}
+`}</script>
+
 <AccordionGroup>
   <Accordion title="How does Commenda protect my data?">
     Commenda uses industry-standard security practices including:
