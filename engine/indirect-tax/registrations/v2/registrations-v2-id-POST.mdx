@@ -1,0 +1,162 @@
+---
+title: "Update Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/{tax_registration_id}"
+description: "Update an existing V2 registration's details"
+---
+
+Update a V2 registration to modify tax types, frequencies, credentials, and other fields. Uses merge semantics — only fields present in the request body are updated; omitted fields keep their current values.
+
+## Path parameters
+
+<ParamField path="tax_registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to update.
+</ParamField>
+
+## Request body
+
+All fields are optional. Only the fields you provide will be updated.
+
+<ParamField body="tax_types" type="array">
+  Array of tax types. Must be valid for the registration's content ID.
+  
+  Minimum 1, maximum 100 items.
+</ParamField>
+
+<ParamField body="frequencies" type="array">
+  Array of filing frequencies. Must exactly match one allowed frequency combination from the content.
+  
+  Minimum 1, maximum 100 items.
+</ParamField>
+
+<ParamField body="effective_start_date" type="string">
+  ISO date (YYYY-MM-DD) when the registration became or becomes effective. Pass an empty string to clear the value.
+</ParamField>
+
+<ParamField body="tax_registration_number" type="string">
+  Your tax registration ID or permit number. Pass an empty string to clear the value.
+</ParamField>
+
+<ParamField body="credential_id" type="string">
+  Reference to stored portal credentials (UUID). Pass an empty string to clear the value.
+</ParamField>
+
+<ParamField body="registered_by" type="string">
+  Who created the registration.
+  
+  Values: `COMMENDA`, `API`, `USER`
+</ParamField>
+
+## Validation rules
+
+When updating `tax_types` or `frequencies`, the new values are re-validated against the registration's content:
+
+- **Tax types** must include all mandatory types and only allowed types
+- **Frequencies** must exactly match one allowed frequency combination
+
+<RequestExample>
+```bash cURL - Add credentials
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "tax_registration_number": "123-456789-00",
+    "credential_id": "cred_abc123def456"
+  }'
+```
+
+```json Add credentials
+{
+  "tax_registration_number": "123-456789-00",
+  "credential_id": "cred_abc123def456"
+}
+```
+
+```json Change frequency
+{
+  "frequencies": ["MONTHLY"]
+}
+```
+
+```json Update multiple fields
+{
+  "tax_types": ["RST", "DTT"],
+  "frequencies": ["QUARTERLY"],
+  "effective_start_date": "2024-02-01"
+}
+```
+
+```json Clear a field
+{
+  "tax_registration_number": ""
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Registration updated successfully.",
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequencies": ["QUARTERLY"],
+    "jurisdiction_id": "JUR_US_STATE_CA",
+    "jurisdiction_name": "California",
+    "jurisdiction_type": "STATE_OR_PROVINCE",
+    "registration_name": "Sales and Use Tax",
+    "effective_start_date": "2024-02-01",
+    "tax_registration_number": "123-456789-00",
+    "credential_id": "cred_abc123def456",
+    "registered_by": "COMMENDA",
+    "registration_status": "PENDING",
+    "validation_status": "PENDING",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-02-15T09:00:00Z"
+  }
+}
+```
+
+```json 400 - Invalid tax type
+{
+  "error": {
+    "type": "INVALID_TAX_TYPE",
+    "title": "Invalid tax type for this registration.",
+    "detail": "The provided tax types do not match the allowed options.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Invalid frequency
+{
+  "error": {
+    "type": "INVALID_FREQUENCY",
+    "title": "Invalid frequency for this registration.",
+    "detail": "The provided frequencies do not match any allowed frequency combination.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 404 - Not found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Get Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-GET) — View registration details
+- [Create Registration](/engine/indirect-tax/registrations/v2/registrations-v2-POST) — Create a new registration
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Registration concepts and lifecycle

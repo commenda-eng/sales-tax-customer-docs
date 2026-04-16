@@ -139,6 +139,10 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
 }
 ```
 
+#### Recommended registration
+
+Each jurisdiction in the v2 response includes a `recommended_registration_content_id` field that links directly to the [V2 Registration API](/engine/indirect-tax/registrations/v2/registrations-v2). When a threshold is breached (or approaching breach), use this ID to discover the appropriate registration options via the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint.
+
 #### Key differences from the default response
 
 | Field | Default | V2 (`v2=true`) |

@@ -1,0 +1,85 @@
+---
+title: "Close Registration"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/{tax_registration_id}/close"
+description: "Close a V2 registration by setting an effective end date"
+---
+
+Close a registration when you stop doing business in a jurisdiction. This sets an `effective_end_date` and stops tax calculations for transactions after that date.
+
+## Path parameters
+
+<ParamField path="tax_registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to close.
+</ParamField>
+
+## Request body
+
+<ParamField body="effective_end_date" type="string" required>
+  ISO date (YYYY-MM-DD) when the registration ends. Must not be before the `effective_start_date`.
+  
+  Example: `"2024-12-31"`
+</ParamField>
+
+## Effect of closing
+
+After the `effective_end_date`:
+
+1. **Tax calculations** — The `/calculate` endpoint returns zero tax for this jurisdiction
+2. **Filing** — No returns are filed for periods after the end date
+3. **Historical data** — All transaction and filing history is preserved
+
+<Note>
+  Closing a registration does **not** affect filings for periods up to and including the end date.
+</Note>
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7/close' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{"effective_end_date": "2024-12-31"}'
+```
+
+```json Request body
+{
+  "effective_end_date": "2024-12-31"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "message": "Registration closed successfully."
+}
+```
+
+```json 400 - Invalid end date
+{
+  "error": {
+    "type": "INVALID_EFFECTIVE_END_DATE",
+    "title": "Invalid effective_end_date.",
+    "detail": "Effective end date cannot be before the effective start date.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7/close"
+  }
+}
+```
+
+```json 404 - Not found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "status": 404,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7/close"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Archive Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-archive-POST) — Completely disable (stops all calculations)
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Registration lifecycle

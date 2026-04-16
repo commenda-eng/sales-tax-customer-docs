@@ -1,0 +1,147 @@
+---
+title: "List Available Jurisdictions"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-jurisdictions"
+description: "Search for jurisdictions where you can create V2 tax registrations"
+---
+
+Search for tax jurisdictions where V2 registrations are available. Returns jurisdictions that match your filters, with cursor-based pagination for large result sets.
+
+## Request body
+
+<ParamField body="filters" type="object">
+  Filter criteria for jurisdictions.
+  
+  <Expandable title="Filter options">
+    <ParamField body="filters.countries" type="array">
+      Filter by ISO 3166-1 alpha-2 country codes.
+      
+      Example: `["US", "DE"]`
+    </ParamField>
+    
+    <ParamField body="filters.states" type="array">
+      Filter by state or province codes.
+      
+      Example: `["CA", "NY", "TX"]`
+    </ParamField>
+    
+    <ParamField body="filters.types" type="array">
+      Filter by jurisdiction type.
+      
+      Values: `TRADEBLOC`, `COUNTRY`, `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `DISTRICT`, `LOCAL`, `TERRITORY`
+    </ParamField>
+  </Expandable>
+</ParamField>
+
+<ParamField body="search" type="string">
+  Free-text search across jurisdiction names.
+  
+  Example: `"California"` or `"Germany"`
+</ParamField>
+
+<ParamField body="cursor" type="string">
+  Pagination cursor from a previous response. Leave empty for the first page.
+</ParamField>
+
+<ParamField body="limit" type="integer" default="10">
+  Maximum number of results to return (1–100).
+</ParamField>
+
+<RequestExample>
+```bash cURL - US states
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "countries": ["US"],
+      "types": ["STATE_OR_PROVINCE"]
+    },
+    "limit": 50
+  }'
+```
+
+```bash cURL - Search
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "search": "Germany",
+    "limit": 10
+  }'
+```
+
+```json US states
+{
+  "filters": {
+    "countries": ["US"],
+    "types": ["STATE_OR_PROVINCE"]
+  },
+  "limit": 50
+}
+```
+
+```json EU countries
+{
+  "filters": {
+    "types": ["COUNTRY"],
+    "countries": ["DE", "FR", "IT", "ES"]
+  },
+  "limit": 20
+}
+```
+
+```json Trade blocs
+{
+  "filters": {
+    "types": ["TRADEBLOC"]
+  }
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "jurisdictions": [
+      {
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "country": "US",
+        "state": "CA"
+      },
+      {
+        "jurisdiction_id": "JUR_US_STATE_TX",
+        "jurisdiction_name": "Texas",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "country": "US",
+        "state": "TX"
+      }
+    ],
+    "total": 45,
+    "cursor": "SlVSX1VTX1NUQVRFX05Z"
+  }
+}
+```
+
+```json 400 - Invalid request
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "limit must be between 1 and 100",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/content/available-jurisdictions"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) — Get registration options for jurisdictions
+- [V2 Registration Content Overview](/engine/indirect-tax/registrations/v2/content/content-v2) — Full content API workflow

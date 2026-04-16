@@ -1,0 +1,287 @@
+---
+title: "Tax Registrations V2"
+description: "Manage tax registrations with enhanced support for international jurisdictions, composite tax types, and condition-based validation."
+---
+
+## Overview
+
+The **V2 Registration API** is the next generation of Commenda's tax registration system. It introduces enhanced support for international jurisdictions (including EU trade bloc schemes), composite tax types and filing frequencies, and automated condition validation for complex registration rules.
+
+V2 registrations use a content-driven approach where each registration is identified by a `registration_tax_type_id` — a content ID that encodes the jurisdiction, registration type, and tax type combination. The system validates your inputs against the content database to ensure correctness.
+
+<Info>
+  **Getting started?** Use the [V2 Content API](/engine/indirect-tax/registrations/v2/content/content-v2) to discover available jurisdictions, registration options, and conditions before creating registrations.
+</Info>
+
+## What's different from V1
+
+| Feature | V1 | V2 |
+|---------|----|----|
+| **Content identifier** | `registration_content_id` | `registration_tax_type_id` |
+| **Filing frequency** | Single string (`"QUARTERLY"`) | Array of strings (`["QUARTERLY", "ANNUAL_RECONCILIATION"]`) |
+| **Condition validation** | Manual | Automated (prerequisites, mutual exclusivity, EU establishment checks) |
+| **EU trade bloc support** | Basic (member state linking) | Full (Union OSS, Non-Union OSS, IOSS with establishment rules) |
+| **Registration conditions** | Not exposed | Queryable via dedicated endpoint |
+| **Tax type details** | Not available | Queryable with descriptions and recommendations |
+
+## Key concepts
+
+### Registration tax type IDs
+
+Each registration option has a unique `registration_tax_type_id` that encodes the jurisdiction and tax type combination. Examples:
+
+- `REG_STATE_CEN_06_RST` — California Retail Sales Tax
+- `REG_COUNTRY_DE_3001_VAT` — Germany VAT
+- `REG_TRADEBLOC_EU_3000_UOSS_VAT` — EU Union One-Stop Shop VAT
+
+Use the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint to discover these IDs.
+
+### Composite tax types
+
+Some registrations require multiple tax types to be filed together. V2 represents these as structured objects:
+
+```json
+{
+  "primary": "RST",
+  "related": [
+    { "value": "DTT", "optional": false }
+  ]
+}
+```
+
+- **Primary** — The base tax type (always required)
+- **Related** with `optional: false` — Must be included alongside the primary type
+- **Related** with `optional: true` — May be included at your discretion
+
+When creating a registration, pass all required tax types in the `tax_types` array.
+
+### Composite filing frequencies
+
+Similarly, some jurisdictions require multiple filing frequencies. V2 represents frequencies as arrays:
+
+```json
+{
+  "primary": "QUARTERLY",
+  "related": [
+    { "value": "ANNUAL_RECONCILIATION", "optional": false }
+  ]
+}
+```
+
+When creating a registration, pass the full set of frequencies in the `frequencies` array (e.g., `["QUARTERLY", "ANNUAL_RECONCILIATION"]`).
+
+Available frequency values: `MONTHLY`, `QUARTERLY`, `SEMI_ANNUALLY`, `ANNUAL_CALENDAR_YEAR`, `FISCAL_YEAR`, `MONTHLY_ACCELERATED_PREPAY_EARLY`, `QUARTERLY_PREPAY_MONTHLY`, `ANNUAL_RECONCILIATION`, `BI_MONTHLY`, `TRI_ANNUALLY`, `QUARTERLY_FEB`, `QUARTERLY_MAR`
+
+### Registration conditions
+
+V2 introduces queryable conditions that define relationships between registrations:
+
+| Condition type | Description |
+|---------------|-------------|
+| `PREREQUISITE_REGISTRATION` | At least one of the listed registrations must be active before you can create this registration |
+| `MUTUALLY_EXCLUSIVE` | You cannot hold this registration if any of the listed registrations are active |
+| `MUTUALLY_EXCLUSIVE_WITH_MSI` | Blocks the registration only in the specific member state country you select |
+| `MEMBER_COUNTRY_TO_REGISTER_THROUGH` | You must choose a member country to register through (for Non-Union OSS, IOSS) |
+
+Use the [Registration Conditions](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) endpoint to query these before creating a registration.
+
+## Registration workflow
+
+### Step 1: Discover available jurisdictions
+
+Use the [Available Jurisdictions](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) endpoint to find jurisdictions where you can register:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-jurisdictions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "filters": {
+      "countries": ["US"],
+      "types": ["STATE_OR_PROVINCE"]
+    },
+    "limit": 50
+  }'
+```
+
+### Step 2: Get registration options
+
+Use the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint to get `registration_tax_type_id`, tax types, and frequencies:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-registrations' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "jurisdiction_ids": ["JUR_US_STATE_CA"]
+  }'
+```
+
+### Step 3: Check conditions (if applicable)
+
+For trade bloc or international registrations, check conditions before creating:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/registration-conditions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT"
+  }'
+```
+
+### Step 4: Get portal credential requirements
+
+Use the [Portal Fields](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) endpoint to understand what credentials are needed:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/portal-fields' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "portal_ids": ["PORTAL_CA_CDTFA"]
+  }'
+```
+
+### Step 5: Create the registration
+
+Use the [Create Registration](/engine/indirect-tax/registrations/v2/registrations-v2-POST) endpoint:
+
+```bash
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequencies": ["QUARTERLY"],
+    "effective_start_date": "2024-01-01"
+  }'
+```
+
+## EU trade bloc registrations
+
+V2 provides full support for EU One-Stop Shop (OSS) and Import One-Stop Shop (IOSS) registration schemes with automated establishment validation.
+
+### Supported schemes
+
+| Scheme | Registration tax type ID pattern | Requirements |
+|--------|----------------------------------|-------------|
+| **Union OSS** | `REG_TRADEBLOC_EU_3000_UOSS_VAT` | Qualifying EU establishment in the member state country |
+| **Non-Union OSS** | `REG_TRADEBLOC_EU_3000_NUOSS_VAT` | No qualifying EU establishment in any EU country |
+| **IOSS** | `REG_TRADEBLOC_EU_3000_IOSS_VAT` | For imports of goods valued under €150 |
+
+### Union OSS example
+
+```bash
+# Create a Union OSS registration linked to a German domestic registration
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT",
+    "tax_types": ["VAT"],
+    "frequencies": ["QUARTERLY"],
+    "member_state_registration_id": "<german_domestic_registration_uuid>"
+  }'
+```
+
+<Note>
+  The `member_state_registration_id` must reference an active domestic registration in an EU country where your business has a qualifying establishment (headquarters, branch office, warehouse, factory, retail location, or dependent agent).
+</Note>
+
+### Non-Union OSS example
+
+```bash
+# Create a Non-Union OSS registration through a member country
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_NUOSS_VAT",
+    "tax_types": ["VAT"],
+    "frequencies": ["QUARTERLY"],
+    "registered_through_registration_tax_type_id": "REG_COUNTRY_DE_3001_VAT"
+  }'
+```
+
+<Warning>
+  Non-Union OSS registration is blocked if your business has any qualifying EU establishment. This is validated automatically when you create the registration.
+</Warning>
+
+## Registration lifecycle
+
+### Status fields
+
+| Field | Description | Values |
+|-------|-------------|--------|
+| `validation_status` | Whether Commenda has verified your registration | `PENDING`, `VALID`, `INVALID` |
+| `registration_status` | Current stage of the registration | `PENDING`, `ACTIVE`, and others |
+
+### Managing registrations
+
+- **[Update](/engine/indirect-tax/registrations/v2/registrations-v2-id-POST)** — Modify tax types, frequencies, credentials, or other fields
+- **[Close](/engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST)** — Set an effective end date when you stop operating in a jurisdiction
+- **[Archive](/engine/indirect-tax/registrations/v2/registrations-v2-id-archive-POST)** — Soft-delete a registration (excluded from calculations and default list views)
+- **[Delete](/engine/indirect-tax/registrations/v2/registrations-v2-id-DELETE)** — Permanently remove a registration (only allowed when `validation_status` is not `VALID`)
+
+## Sample registration object
+
+```json
+{
+  "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+  "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+  "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+  "tax_types": ["RST", "DTT"],
+  "frequencies": ["QUARTERLY"],
+  "jurisdiction_id": "JUR_US_STATE_CA",
+  "jurisdiction_name": "California",
+  "jurisdiction_type": "STATE_OR_PROVINCE",
+  "registration_name": "Sales and Use Tax",
+  "effective_start_date": "2024-01-01",
+  "registered_by": "COMMENDA",
+  "registration_status": "PENDING",
+  "validation_status": "PENDING",
+  "created_at": "2024-01-15T10:30:00Z"
+}
+```
+
+## API endpoints
+
+### Registration content (discovery)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations/v2/content/available-jurisdictions`](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) | POST | Search for available jurisdictions |
+| [`/registrations/v2/content/available-registrations`](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) | POST | Get registration options for jurisdictions |
+| [`/registrations/v2/content/registration-conditions`](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) | POST | Get conditions for a registration type |
+| [`/registrations/v2/content/portal-fields`](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) | POST | Get portal credential requirements |
+| [`/registrations/v2/content/tax-type-details`](/engine/indirect-tax/registrations/v2/content/tax-type-details-POST) | POST | Get tax type descriptions |
+
+### Registration management
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations/v2`](/engine/indirect-tax/registrations/v2/registrations-v2-POST) | POST | Create a new registration |
+| [`/registrations/v2/list`](/engine/indirect-tax/registrations/v2/registrations-v2-GET) | POST | List registrations with filters |
+| [`/registrations/v2/{id}`](/engine/indirect-tax/registrations/v2/registrations-v2-id-GET) | GET | Get a single registration |
+| [`/registrations/v2/{id}`](/engine/indirect-tax/registrations/v2/registrations-v2-id-POST) | POST | Update a registration |
+| [`/registrations/v2/{id}`](/engine/indirect-tax/registrations/v2/registrations-v2-id-DELETE) | DELETE | Delete a registration |
+
+### Registration lifecycle
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| [`/registrations/v2/{id}/archive`](/engine/indirect-tax/registrations/v2/registrations-v2-id-archive-POST) | POST | Archive a registration |
+| [`/registrations/v2/{id}/close`](/engine/indirect-tax/registrations/v2/registrations-v2-id-close-POST) | POST | Close a registration |
+| [`/registrations/v2/credentials/by-portal/{portal_id}`](/engine/indirect-tax/registrations/v2/registrations-v2-credentials-GET) | GET | Look up credentials by portal |

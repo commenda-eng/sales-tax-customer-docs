@@ -1,0 +1,154 @@
+---
+title: "Get Registration Conditions"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/registration-conditions"
+description: "Get prerequisite, mutual exclusivity, and member country conditions for a registration type"
+---
+
+Retrieve the conditions that apply to a specific registration tax type. Conditions define relationships between registrations — prerequisites that must be met, conflicts that block creation, and member country choices for trade bloc schemes.
+
+<Info>
+  Check conditions before creating trade bloc or international registrations to understand what's required and what conflicts exist.
+</Info>
+
+## Request body
+
+<ParamField body="registration_tax_type_id" type="string" required>
+  The registration tax type ID to get conditions for. Get this from the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint.
+  
+  Example: `"REG_TRADEBLOC_EU_3000_UOSS_VAT"`
+</ParamField>
+
+## Condition types
+
+| Type | Description | Create behavior |
+|------|-------------|----------------|
+| `PREREQUISITE_REGISTRATION` | At least one of the listed registrations must be active | Blocked if no prerequisite is active |
+| `MUTUALLY_EXCLUSIVE` | Cannot coexist with any of the listed registrations | Blocked if any listed registration is active |
+| `MUTUALLY_EXCLUSIVE_WITH_MSI` | Cannot coexist with listed registrations in the selected member state country only | Blocked only in the specific country |
+| `MEMBER_COUNTRY_TO_REGISTER_THROUGH` | You must choose one of the listed countries to register through | Pass `registered_through_registration_tax_type_id` when creating |
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/registration-conditions' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT"
+  }'
+```
+
+```json Request body
+{
+  "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT"
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "conditions": [
+      {
+        "type": "PREREQUISITE_REGISTRATION",
+        "registration_options": [
+          {
+            "registration_tax_type_id": "REG_COUNTRY_DE_3001_VAT",
+            "registration_name": "Germany VAT",
+            "jurisdiction_id": "JUR_COUNTRY_DE",
+            "jurisdiction_name": "Germany",
+            "jurisdiction_type": "COUNTRY",
+            "portal_ids": ["PORTAL_DE_ELSTER"]
+          },
+          {
+            "registration_tax_type_id": "REG_COUNTRY_FR_3002_VAT",
+            "registration_name": "France VAT",
+            "jurisdiction_id": "JUR_COUNTRY_FR",
+            "jurisdiction_name": "France",
+            "jurisdiction_type": "COUNTRY",
+            "portal_ids": ["PORTAL_FR_IMPOTS"]
+          }
+        ]
+      },
+      {
+        "type": "MUTUALLY_EXCLUSIVE",
+        "registration_options": [
+          {
+            "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_NUOSS_VAT",
+            "registration_name": "Non-Union OSS",
+            "jurisdiction_id": "TRADEBLOC_EU_3000",
+            "jurisdiction_name": "European Union",
+            "jurisdiction_type": "TRADEBLOC",
+            "portal_ids": []
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+```json 200 - No conditions
+{
+  "data": {
+    "conditions": []
+  }
+}
+```
+
+```json 400 - Missing field
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "registration_tax_type_id is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/content/registration-conditions"
+  }
+}
+```
+</ResponseExample>
+
+## Using conditions when creating registrations
+
+### Prerequisites
+
+If a `PREREQUISITE_REGISTRATION` condition exists, at least one of the listed registrations must be active for your corporation. For Union OSS, this means you need an active domestic VAT registration in an EU member state.
+
+When creating, pass the UUID of your existing domestic registration as `member_state_registration_id`:
+
+```json
+{
+  "corporation_id": "your-corp-id",
+  "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_UOSS_VAT",
+  "tax_types": ["VAT"],
+  "frequencies": ["QUARTERLY"],
+  "member_state_registration_id": "<uuid_of_your_german_vat_registration>"
+}
+```
+
+### Member country to register through
+
+If a `MEMBER_COUNTRY_TO_REGISTER_THROUGH` condition exists (Non-Union OSS, IOSS), you must choose one of the listed countries and pass its content ID:
+
+```json
+{
+  "corporation_id": "your-corp-id",
+  "registration_tax_type_id": "REG_TRADEBLOC_EU_3000_NUOSS_VAT",
+  "tax_types": ["VAT"],
+  "frequencies": ["QUARTERLY"],
+  "registered_through_registration_tax_type_id": "REG_COUNTRY_DE_3001_VAT"
+}
+```
+
+### Mutual exclusivity
+
+If a `MUTUALLY_EXCLUSIVE` condition exists, creating the registration is blocked when any of the listed registrations are active. You must archive or close the conflicting registration first.
+
+## Related
+
+- [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) — Get registration tax type IDs
+- [Create Registration V2](/engine/indirect-tax/registrations/v2/registrations-v2-POST) — Create a registration with condition fields
+- [Tax Registrations V2](/engine/indirect-tax/registrations/v2/registrations-v2) — EU trade bloc registration details

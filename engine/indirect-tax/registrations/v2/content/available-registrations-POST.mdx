@@ -1,0 +1,179 @@
+---
+title: "Get Available Registrations"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-registrations"
+description: "Get registration options with tax types, frequencies, and portal IDs for given jurisdictions"
+---
+
+Retrieve the available registration options for one or more jurisdictions. Returns structured registration data including `registration_tax_type_id`, parsed composite tax types, parsed composite frequencies, and associated portal IDs.
+
+## Request body
+
+<ParamField body="jurisdiction_ids" type="array" required>
+  Array of jurisdiction IDs to get registration options for. Get these from the [Available Jurisdictions](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) endpoint.
+  
+  Minimum 1, maximum 100 items.
+  
+  Example: `["JUR_US_STATE_CA", "JUR_US_STATE_TX"]`
+</ParamField>
+
+## Response structure
+
+Each jurisdiction returns one or more registration objects. Each registration includes:
+
+- **`registration_tax_type_id`** — The content ID to use when creating a registration
+- **`tax_type_options`** — Available tax type combinations with parsed composite structure
+- **`frequencies`** — Available filing frequency combinations with parsed composite structure
+- **`portal_ids`** — Portal IDs for credential lookup
+
+### Composite tax types
+
+Tax types are returned as structured objects instead of raw strings:
+
+```json
+{
+  "primary": "RST",
+  "related": [
+    { "value": "DTT", "optional": false }
+  ]
+}
+```
+
+- `optional: false` — This related type **must** be included when creating the registration
+- `optional: true` — This related type **may** be included at your discretion
+
+### Composite frequencies
+
+Frequencies follow the same structure:
+
+```json
+{
+  "primary": "QUARTERLY",
+  "related": [
+    { "value": "ANNUAL_RECONCILIATION", "optional": false }
+  ]
+}
+```
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/available-registrations' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "jurisdiction_ids": ["JUR_US_STATE_CA"]
+  }'
+```
+
+```json Single jurisdiction
+{
+  "jurisdiction_ids": ["JUR_US_STATE_CA"]
+}
+```
+
+```json Multiple jurisdictions
+{
+  "jurisdiction_ids": ["JUR_US_STATE_CA", "JUR_US_STATE_TX", "TRADEBLOC_EU_3000"]
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "registrations": [
+      {
+        "registration_id": "REG_STATE_CEN_06",
+        "jurisdiction_id": "JUR_US_STATE_CA",
+        "jurisdiction_name": "California",
+        "jurisdiction_type": "STATE_OR_PROVINCE",
+        "registration_name": "Sales and Use Tax",
+        "tax_type_options": [
+          {
+            "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+            "tax_types": {
+              "primary": "RST",
+              "related": [
+                { "value": "DTT", "optional": false }
+              ]
+            },
+            "is_default": true,
+            "effective_start_date": "2024-01-01",
+            "portal_ids": ["PORTAL_CA_CDTFA"],
+            "frequencies": [
+              {
+                "primary": "MONTHLY",
+                "related": []
+              },
+              {
+                "primary": "QUARTERLY",
+                "related": []
+              },
+              {
+                "primary": "ANNUAL_CALENDAR_YEAR",
+                "related": []
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+```json 400 - Missing jurisdiction IDs
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "jurisdiction_ids is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/content/available-registrations"
+  }
+}
+```
+
+```json 400 - Too many jurisdiction IDs
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "jurisdiction_ids must contain at most 100 items",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/content/available-registrations"
+  }
+}
+```
+</ResponseExample>
+
+## Using the response
+
+From the response, extract:
+
+1. **`registration_tax_type_id`** — Use this when calling `POST /registrations/v2`
+2. **`tax_types`** — Combine primary and required related types into the `tax_types` array
+3. **`frequencies`** — Pick one frequency option and pass all its components in the `frequencies` array
+4. **`portal_ids`** — Use with the [Portal Fields](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) endpoint to get credential requirements
+
+### Example: creating a California registration
+
+From the response above, California requires RST + DTT (DTT is not optional):
+
+```json
+{
+  "corporation_id": "your-corporation-id",
+  "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+  "tax_types": ["RST", "DTT"],
+  "frequencies": ["QUARTERLY"]
+}
+```
+
+## Related
+
+- [Available Jurisdictions](/engine/indirect-tax/registrations/v2/content/available-jurisdictions-POST) — Find jurisdictions first
+- [Registration Conditions](/engine/indirect-tax/registrations/v2/content/registration-conditions-POST) — Check conditions for trade bloc registrations
+- [Portal Fields](/engine/indirect-tax/registrations/v2/content/portal-fields-POST) — Get credential requirements

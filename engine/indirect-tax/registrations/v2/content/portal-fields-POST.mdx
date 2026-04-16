@@ -1,0 +1,110 @@
+---
+title: "Get Portal Fields"
+api: "POST https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/portal-fields"
+description: "Get portal credential requirements for V2 registrations"
+---
+
+Retrieve portal information and credential fields required for automated tax filing. Each jurisdiction has one or more tax portals where credentials are needed to file returns.
+
+<Note>
+  V2 portal fields are looked up by `portal_id` (from the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) response), not by `registration_content_id` as in V1.
+</Note>
+
+## Request body
+
+<ParamField body="portal_ids" type="array" required>
+  Array of portal IDs to get fields for. Get these from the `portal_ids` field in the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) response.
+  
+  Minimum 1, maximum 100 items.
+  
+  Example: `["PORTAL_CA_CDTFA", "PORTAL_DE_ELSTER"]`
+</ParamField>
+
+<RequestExample>
+```bash cURL
+curl --request POST \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/content/portal-fields' \
+  --header 'Authorization: Bearer <your_token>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "portal_ids": ["PORTAL_CA_CDTFA"]
+  }'
+```
+
+```json Single portal
+{
+  "portal_ids": ["PORTAL_CA_CDTFA"]
+}
+```
+
+```json Multiple portals
+{
+  "portal_ids": ["PORTAL_CA_CDTFA", "PORTAL_TX_COMPTROLLER"]
+}
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "portals": [
+      {
+        "portal_id": "PORTAL_CA_CDTFA",
+        "portal_name": "California Department of Tax and Fee Administration",
+        "portal_url": "https://onlineservices.cdtfa.ca.gov/",
+        "credential_fields": [
+          {
+            "credential_key": "username",
+            "credential_name": "Username",
+            "credential_type": "STRING",
+            "required": true,
+            "is_unique_per_registration": false,
+            "display_order": 1
+          },
+          {
+            "credential_key": "password",
+            "credential_name": "Password",
+            "credential_type": "STRING",
+            "required": true,
+            "is_unique_per_registration": false,
+            "display_order": 2
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+```json 400 - Missing portal IDs
+{
+  "message": "Failed to parse request body.",
+  "error": {
+    "type": "CLIENT_INVALID_REQUEST_BODY",
+    "title": "Failed to validate the request body",
+    "detail": "portal_ids is required",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/content/portal-fields"
+  }
+}
+```
+</ResponseExample>
+
+## Credential field properties
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `credential_key` | string | Field identifier used when storing credentials |
+| `credential_name` | string | Human-readable label for the field |
+| `credential_type` | string | Input type (`STRING`, etc.) |
+| `required` | boolean | Whether the field must be provided |
+| `is_unique_per_registration` | boolean | Whether each registration needs a unique value |
+| `regex` | string | Validation regex pattern (if applicable) |
+| `display_order` | integer | Suggested display order for UI rendering |
+
+## Related
+
+- [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) — Get portal IDs for jurisdictions
+- [Credential Lookup](/engine/indirect-tax/registrations/v2/registrations-v2-credentials-GET) — Check if credentials already exist for a portal
+- [V2 Registration Content Overview](/engine/indirect-tax/registrations/v2/content/content-v2) — Full content API workflow

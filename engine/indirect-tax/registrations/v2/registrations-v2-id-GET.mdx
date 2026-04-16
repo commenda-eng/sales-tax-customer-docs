@@ -1,0 +1,101 @@
+---
+title: "Get Registration"
+api: "GET https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/{tax_registration_id}"
+description: "Retrieve details of a specific V2 registration by ID"
+---
+
+Retrieve the full details of a V2 registration, including its current status, jurisdiction information, and configuration.
+
+## Path parameters
+
+<ParamField path="tax_registration_id" type="string" required>
+  The unique identifier (UUID) of the registration to retrieve.
+</ParamField>
+
+## Response fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Unique identifier for the registration |
+| `corporation_id` | string | The corporation this registration belongs to |
+| `registration_tax_type_id` | string | Content ID identifying the jurisdiction and tax type |
+| `tax_types` | array | Tax types registered for (e.g., `["RST", "DTT"]`) |
+| `frequencies` | array | Filing frequencies (e.g., `["QUARTERLY"]`) |
+| `jurisdiction_id` | string | Unique identifier for the jurisdiction |
+| `jurisdiction_name` | string | Human-readable name of the jurisdiction |
+| `jurisdiction_type` | string | Type: `STATE_OR_PROVINCE`, `CITY`, `COUNTY`, `COUNTRY`, `TRADEBLOC`, etc. |
+| `registration_name` | string | Human-readable name of the registration |
+| `effective_start_date` | string | When the registration became effective (YYYY-MM-DD) |
+| `effective_end_date` | string | When the registration ended (YYYY-MM-DD), if closed |
+| `tax_registration_number` | string | Tax authority issued ID or permit number |
+| `registered_by` | string | Who created the registration: `API`, `USER`, `COMMENDA` |
+| `credential_id` | string | Reference to stored portal credentials |
+| `registration_status` | string | Current registration status |
+| `validation_status` | string | `PENDING`, `VALID`, or `INVALID` |
+| `registered_through_registration_tax_type_id` | string | Content ID of the country registered through (for Non-Union OSS, IOSS) |
+| `member_state_registration_id` | string | UUID of the linked domestic registration (for Union OSS) |
+| `archived_at` | string | Timestamp if archived, otherwise null |
+| `created_at` | string | When the registration was created |
+| `updated_at` | string | When the registration was last updated |
+
+<RequestExample>
+```bash cURL
+curl --request GET \
+  --url 'https://transaction-tax.api.in.commenda.io/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7' \
+  --header 'Authorization: Bearer <your_token>'
+```
+</RequestExample>
+
+<ResponseExample>
+```json 200
+{
+  "data": {
+    "id": "7c9e6679-7425-40de-944b-e07fc1f90ae7",
+    "corporation_id": "550e8400-e29b-41d4-a716-446655440000",
+    "registration_tax_type_id": "REG_STATE_CEN_06_RST",
+    "tax_types": ["RST", "DTT"],
+    "frequencies": ["QUARTERLY"],
+    "jurisdiction_id": "JUR_US_STATE_CA",
+    "jurisdiction_name": "California",
+    "jurisdiction_type": "STATE_OR_PROVINCE",
+    "registration_name": "Sales and Use Tax",
+    "effective_start_date": "2024-01-15",
+    "registered_by": "COMMENDA",
+    "registration_status": "PENDING",
+    "validation_status": "PENDING",
+    "created_at": "2024-01-15T10:30:00Z",
+    "updated_at": "2024-01-20T15:45:00Z"
+  }
+}
+```
+
+```json 404 - Not found
+{
+  "error": {
+    "type": "REGISTRATION_NOT_FOUND",
+    "title": "Registration not found.",
+    "detail": "The registration does not exist or you don't have access.",
+    "status": 404,
+    "instance": "/api/v1/registrations/v2/7c9e6679-7425-40de-944b-e07fc1f90ae7"
+  }
+}
+```
+
+```json 400 - Invalid UUID
+{
+  "error": {
+    "type": "INVALID_INPUT",
+    "title": "Invalid registration ID.",
+    "detail": "The provided ID is not a valid UUID.",
+    "status": 400,
+    "instance": "/api/v1/registrations/v2/not-a-uuid"
+  }
+}
+```
+</ResponseExample>
+
+## Related
+
+- [List Registrations](/engine/indirect-tax/registrations/v2/registrations-v2-GET) — Get all registrations with filters
+- [Update Registration](/engine/indirect-tax/registrations/v2/registrations-v2-id-POST) — Modify this registration
+- [Tax Registrations V2 Overview](/engine/indirect-tax/registrations/v2/registrations-v2) — Registration concepts and lifecycle
