@@ -70,9 +70,9 @@ When a ship-from address is provided for US destinations, the state must be a va
 
 Each address is validated against per-country requirements that define which fields are required, optional, or ignored. Only `country` is always required. All other fields — including `postal_code` and `state` — may be required, optional, or ignored depending on the country. Validation includes:
 
-- **Field presence** — fields marked as required for a country (e.g., `address_line_1`, `city`, `state`, and `postal_code` for US) must be provided and non-empty.
-- **State code validation** — when provided, the state must match one of the valid ISO 3166-2 subdivision codes for the country.
-- **Postal code format** — when provided, the postal code must match the country's expected format (e.g., `^\d{5}(-\d{4})?$` for US ZIP codes).
+- **Field presence** — required fields (e.g., `address_line_1`, `city` for US) must be provided and non-empty.
+- **State code validation** — the state must match one of the valid ISO 3166-2 subdivision codes for the country.
+- **Postal code format** — when a postal code is provided, it must match the country's expected format (e.g., `^\d{5}(-\d{4})?$` for US ZIP codes). Note that `postal_code` is required for the US but optional for EU countries (such as DE and FR), GB, and CA. Providing a postal code when it is optional improves tax jurisdiction accuracy.
 
 Use the [`/address-requirements`](/engine/indirect-tax/address-requirements/address-requirements) endpoint to query which fields and formats are expected for each country before calling `/calculate`.
 

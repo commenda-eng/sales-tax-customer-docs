@@ -45,7 +45,9 @@ Address requirements vary by country and region. Here are some key differences t
 
 When `postal_code_regex` is present in the response, you can use it to validate postal codes before submission. For example, the US pattern `^\d{5}(-\d{4})?$` accepts both 5-digit and 9-digit ZIP codes.
 
-If a postal code is `OPTIONAL` for a country, you can omit it without error. However, if you provide a postal code, it must still match the country's regex pattern — otherwise the API returns a `400` validation error.
+<Note>
+The `postal_code` field is **optional** for EU countries (such as DE and FR), GB, and CA. If a postal code is provided for these countries, it is still validated against the country's regex pattern. For the US, postal code remains **required**.
+</Note>
 
 ## Valid state codes
 
