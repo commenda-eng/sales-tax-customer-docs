@@ -104,7 +104,8 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
           "sales_exposure_percentage": 0.30,
           "transactions_exposure_percentage": 0
         },
-        "is_nexus_breached": false
+        "is_nexus_breached": false,
+        "recommended_registration_content_id": "REG_STATE_CEN_06_1000"
       },
       {
         "jurisdiction_id": "TRADEBLOC_EU_3000",
@@ -151,4 +152,5 @@ Each jurisdiction in the v2 response includes a `recommended_registration_conten
 | Currency | Implicitly USD | Explicit `currency` field |
 | Exposure rule metadata | Not included | `exposure_type`, `exposure_rule_id`, `jurisdiction_type` |
 | Calculation fields | `total_sales`, `total_transactions`, etc. | `included_sales`, `included_transactions`, etc. |
+| Registration recommendation | Not included | `recommended_registration_content_id` |
 | Supported jurisdictions | US states only | US, Canada, UK, EU (country-level and tradebloc) |
