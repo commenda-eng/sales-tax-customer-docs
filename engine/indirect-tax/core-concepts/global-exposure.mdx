@@ -104,7 +104,8 @@ The v2 response returns an array of jurisdiction objects, each representing one 
           "sales_exposure_percentage": 0.64,
           "transactions_exposure_percentage": 0
         },
-        "is_nexus_breached": false
+        "is_nexus_breached": false,
+        "recommended_registration_content_id": "REG_STATE_CEN_36_1036"
       },
       {
         "jurisdiction_id": "TRADEBLOC_EU_3000",
@@ -128,7 +129,8 @@ The v2 response returns an array of jurisdiction objects, each representing one 
           "sales_exposure_percentage": 0.85,
           "transactions_exposure_percentage": 0
         },
-        "is_nexus_breached": false
+        "is_nexus_breached": false,
+        "recommended_registration_content_id": "REG_TRADEBLOC_EU_3000_UOSS"
       }
     ]
   },
@@ -153,6 +155,7 @@ Each jurisdiction object includes:
 | `calculation` | Your current progress toward the threshold |
 | `is_nexus_breached` | Whether you have exceeded the registration threshold |
 | `date_of_breach` | Date when the threshold was exceeded, if breached |
+| `recommended_registration_content_id` | Content identifier of the recommended tax registration for this jurisdiction. Use with V2 registration content APIs to look up details. Null when no recommendation applies |
 
 <Note>
 A single jurisdiction may appear multiple times in the response if multiple exposure rules apply (e.g., separate rules for goods and services in France or Ireland).

@@ -226,6 +226,11 @@ schemas:
           type: string
           format: date
           description: The earliest date the threshold was exceeded, if applicable.
+        recommended_registration_content_id:
+          type: string
+          nullable: true
+          description: The content identifier of the recommended tax registration for this jurisdiction and exposure rule. Use this value with the V2 registration content APIs to look up registration details. Null when no specific registration is recommended.
+          example: REG_STATE_CEN_06_1000
     NexusRuleV2:
       type: object
       required:
