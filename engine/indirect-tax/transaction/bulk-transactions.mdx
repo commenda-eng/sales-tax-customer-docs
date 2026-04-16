@@ -66,9 +66,8 @@ Files must be uploaded in CSV format, with the headers specified in our bulk upl
 | ship_to_state_code | false | ISO-3166-2 jurisdiction string valid in the destination country | Address to which the product is shipped or where the service is delivered. |
 | ship_to_zip | false | string (Valid postal code in destination country) | Address to which the product is shipped or where the service is delivered. |
 | ship_to_country_code | true | ISO-3166 Country String | Address to which the product is shipped or where the service is delivered. |
-| marketplace | false | [Marketplace](#marketplace) | Marketplace name if the transaction is from a marketplace. |
-| tax_remitter_type | false | [Tax Remitter Type](#tax-remitter-type) | Indicates who is responsible for collecting and remitting tax on this transaction. |
-| customer_business_identification_number | false | string | Business identification number for the customer on this invoice (e.g., VAT number, EIN, or GST number). Must be consistent across all line items within the same invoice. |
+| marketplace | false | [Marketplace](#marketplace-1) | Marketplace name if the transaction is from a marketplace. |
+| tax_remitter_type | false | [Tax Remitter Type](#tax-remitter-type) | Indicates who is responsible for remitting the tax on this transaction. |
 | metadata | false | string (JSON) | Additional metadata for the transaction in JSON format. |
 
 ### Transaction Type Code
@@ -126,14 +125,20 @@ When this field is set, the transaction will not be considered for registration 
 
 Currently the following options are supported: `PURPOSE_RESALE`, `ENTITY_TYPE_NONPROFIT`, `GOVERNMENT`, `MANUFACTURER`, `AGRICULTURAL`, `OTHER`, `EXEMPT_PRODUCT`.
 
-#### Marketplace
-
-Indicates the marketplace platform through which the transaction was facilitated, if applicable.
-
-Currently the following options are supported: `AMAZON`.
+The `EXEMPT_PRODUCT` reason is used when the product itself is exempt from tax, rather than the purchaser. For Xero integrations, this is automatically applied to line items with `EXEMPTINPUT` or `EXEMPTOUTPUT` tax types.
 
 #### Tax Remitter Type
 
-Indicates who is responsible for collecting and remitting tax on this transaction.
+Indicates which party is responsible for collecting and remitting the tax on a transaction.
 
-Currently the following options are supported: `MARKETPLACE_FACILITATOR`, `SELLER`, `BUYER`.
+Currently the following options are supported:
+
+- `MARKETPLACE_FACILITATOR` — the marketplace is responsible for collecting and remitting tax on behalf of the seller. Automatically set for Amazon transactions synced via NetSuite.
+- `SELLER` — the seller is responsible for remitting tax.
+- `BUYER` — the buyer is responsible for remitting tax, as in a reverse charge scenario. Automatically set for Xero transactions with the `REVERSECHARGES` tax type.
+
+#### Marketplace
+
+The marketplace through which the transaction was facilitated. When set alongside a `MARKETPLACE_FACILITATOR` tax remitter type, this indicates that the marketplace collected and remitted tax on the seller's behalf.
+
+Currently the following option is supported: `AMAZON`.

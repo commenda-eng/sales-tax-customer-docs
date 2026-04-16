@@ -69,6 +69,22 @@ Commenda uses the shipping (STREET) address when available. If no shipping addre
   </Step>
 </Steps>
 
+## VAT-specific handling
+
+When syncing transactions from Xero, Commenda automatically detects and applies VAT-specific tax treatments based on Xero's tax type codes:
+
+### Reverse charges
+
+If a line item uses the `REVERSECHARGES` tax type in Xero, Commenda sets the tax remitter type to `BUYER` on the synced transaction. This indicates that the buyer, not the seller, is responsible for remitting the tax — a common requirement for cross-border B2B transactions in VAT jurisdictions.
+
+### VAT-exempt transactions
+
+Line items with `EXEMPTINPUT` or `EXEMPTOUTPUT` tax types in Xero are automatically marked with the `EXEMPT_PRODUCT` exemption reason. This ensures that exempt items are excluded from tax calculations and do not count toward registration thresholds.
+
+### Customer tax identification
+
+Commenda syncs the **tax number** from Xero contacts into the `business_identification_number` field on the corresponding customer record. This is useful for storing VAT IDs and other tax registration numbers required for compliance in certain jurisdictions.
+
 ## Known behaviors
 
 - **Lock dates are respected** — Commenda skips invoices dated before your Xero organisation's period lock date or end-of-year lock date
