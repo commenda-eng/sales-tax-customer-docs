@@ -60,6 +60,16 @@ Certain transactions are automatically excluded from threshold calculations when
 - **Product taxability** — specific product categories excluded per jurisdiction rules (e.g., tangible goods excluded from digital services thresholds)
 - **Destination registered** — transactions to jurisdictions where you are already registered
 
+### Exposure types
+
+Each jurisdiction rule is categorized by an exposure type that indicates why a registration obligation may apply:
+
+| Type | Description |
+|---|---|
+| `ECONOMIC` | The obligation is based on economic activity (sales revenue or transaction count) exceeding a jurisdiction's threshold. This is the most common type for remote sellers. |
+| `PHYSICAL` | The obligation is based on physical presence in the jurisdiction, such as an office, warehouse, or employee. Physical presence can trigger an immediate registration requirement regardless of sales volume. |
+| `REGISTRATION` | The obligation arises because you already hold an active registration in the jurisdiction. This tracks ongoing compliance requirements for existing registrations. |
+
 ### Max transaction value (IOSS)
 
 The EU Import One-Stop Shop (IOSS) scheme applies only to consignments valued at or below €150. Transactions exceeding this cap are excluded from IOSS threshold tracking. An invoice exactly equal to the cap is included.
@@ -172,17 +182,48 @@ A single jurisdiction may appear multiple times in the response if multiple expo
 | `sales_exposure_percentage` | Ratio of included sales to the sales threshold (0 to 1+) |
 | `transactions_exposure_percentage` | Ratio of included transactions to the transactions threshold (0 to 1+) |
 
-## Triggering a sync
+## Managing exposure data
 
-The exposure engine runs automatically on a schedule. You can also trigger a manual sync for a specific corporation:
+### Generating exposure data
+
+The exposure engine runs automatically on a schedule. You can also trigger a manual sync to recalculate exposure for a specific corporation. This is useful after posting a batch of transactions or when you need up-to-date threshold status before making registration decisions.
 
 ```bash
 curl -X POST "https://transaction-tax.api.in.commenda.io/api/v1/internal/nexus/sync/corporation/{corporation_id}?v2=true" \
   -H "Authorization: Bearer <your_token>"
 ```
 
+The response confirms the sync was initiated:
+
+```json
+{
+  "message": "Successfully synced nexus."
+}
+```
+
 <Warning>
 Pass `v2=true` to run the global exposure engine. Without this parameter, only the legacy US-focused sync runs.
+</Warning>
+
+### Clearing exposure data
+
+You can clear all calculated exposure data for a corporation. This removes all jurisdiction-level threshold calculations, allowing you to start fresh. Use this when resetting a corporation's exposure state — for example, after correcting a large batch of historical transactions.
+
+```bash
+curl -X DELETE "https://transaction-tax.api.in.commenda.io/api/v1/internal/nexus/clear/corporation/{corporation_id}?v2=true" \
+  -H "Authorization: Bearer <your_token>"
+```
+
+The response confirms the data was cleared:
+
+```json
+{
+  "message": "Successfully cleared nexus."
+}
+```
+
+<Warning>
+Clearing exposure data is irreversible. After clearing, you must trigger a new sync to regenerate exposure calculations based on your current transaction data.
 </Warning>
 
 ## Physical presence

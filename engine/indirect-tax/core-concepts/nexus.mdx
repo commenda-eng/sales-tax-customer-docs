@@ -143,6 +143,18 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
 
 Each jurisdiction in the v2 response includes a `recommended_registration_content_id` field that links directly to the [V2 Registration API](/engine/indirect-tax/registrations/v2/registrations-v2). When a threshold is breached (or approaching breach), use this ID to discover the appropriate registration options via the [Available Registrations](/engine/indirect-tax/registrations/v2/content/available-registrations-POST) endpoint.
 
+#### Exposure types
+
+The v2 response categorizes each rule with an `exposure_type` field:
+
+| Type | Description |
+|---|---|
+| `ECONOMIC` | Obligation based on economic activity exceeding a jurisdiction's sales or transaction threshold |
+| `PHYSICAL` | Obligation based on physical presence (office, warehouse, employee) in the jurisdiction |
+| `REGISTRATION` | Ongoing compliance requirement from an existing registration |
+
+See [global exposure tracking](/engine/indirect-tax/core-concepts/global-exposure) for details on how exposure types, exclusions, and location-based scopes affect threshold calculations.
+
 #### Key differences from the default response
 
 | Field | Default | V2 (`v2=true`) |

@@ -251,6 +251,28 @@ schemas:
           "$ref": "#/schemas/ThresholdType"
         evaluation_period_type:
           "$ref": "#/schemas/EvaluationPeriod"
+        location_based_scope:
+          type: string
+          description: Defines which transactions count toward the threshold based on the geographic relationship between buyer and seller.
+          enum:
+            - DESTINATION
+            - WORLDWIDE
+            - INTRA_COMMUNITY
+            - IMPORT
+        exclusion_types:
+          type: array
+          description: Transaction categories excluded from threshold calculations for this rule.
+          items:
+            type: string
+        establishment_types:
+          type: array
+          description: Business establishment types that determine which rules apply (e.g., resident vs. non-resident).
+          items:
+            type: string
+        max_transaction_value:
+          type: number
+          nullable: true
+          description: Maximum value per transaction for inclusion in threshold calculations. Transactions exceeding this amount are excluded. Used primarily for IOSS (€150 cap).
     CalculationObjectV2:
       type: object
       required:
