@@ -24,20 +24,39 @@ Each jurisdiction has one or more exposure rules that define when registration i
 | Field | Description |
 |---|---|
 | `exposure_rule_id` | Unique identifier for the rule |
-| `exposure_type` | The type of tax obligation (e.g., `EXPOSURE`) |
+| `exposure_type` | The type of exposure obligation — see [exposure types](#exposure-types) |
 | `threshold_type` | Whether the threshold is based on `SALES`, `TRANSACTIONS`, or `SALES_OR_TRANSACTIONS` |
 | `sales_threshold` | Revenue amount that triggers registration |
 | `transactions_threshold` | Transaction count that triggers registration |
 | `evaluation_period` | Time window for measuring activity (e.g., `PRECEDING_12_MONTHS`, `PREVIOUS_OR_CURRENT_CALENDAR_YEAR`) |
+| `location_based_scope` | Which transactions count based on geographic relationship — see [location-based scope](#location-based-scope) |
+| `exclusion_types` | Transaction and customer types excluded from threshold calculations — see [exclusions](#exclusions) |
+| `establishment_types` | Location types required for resident rules (empty for non-resident rules) — see [establishment filtering](#establishment-filtering) |
+| `max_transaction_value` | Per-consignment value cap in minor units (e.g., IOSS €150 limit). Transactions exceeding this value are excluded. |
 
-### Multi-rule jurisdictions
+### Exposure types
 
-Some jurisdictions have multiple rules that apply based on your business's establishment status. For example, an EU member state may have:
+The `exposure_type` field indicates what kind of obligation the rule represents:
 
-- A **resident rule** for businesses with a physical establishment in that country (e.g., office, warehouse)
-- A **non-resident rule** for businesses selling into the country without a local establishment
+| Value | Description |
+|---|---|
+| `EXPOSURE_ECONOMIC` | Threshold-based obligation triggered by sales volume or transaction count. Used for US economic nexus rules. |
+| `EXPOSURE_PHYSICAL` | Presence-based obligation triggered by having a physical establishment in the jurisdiction. Always evaluates to 100% exposure when matched. |
+| `EXPOSURE` | Generic exposure rule used for non-US jurisdictions (EU, Canada, UK). May include threshold-based evaluation with establishment filtering. |
 
-The engine automatically selects the applicable rules based on your registered locations.
+### Establishment filtering
+
+Some jurisdictions have multiple rules that apply based on your business's establishment status. The engine uses the `establishment_types` field on each rule to determine which rules apply to your business:
+
+- **Non-resident rules** have an empty `establishment_types` array. These rules apply only if your business does **not** have any location in the rule's jurisdiction.
+- **Resident rules** list one or more location types (e.g., `OFFICE`, `WAREHOUSE`, `REGISTRATION`). These rules apply only if your business has at least one location with a matching type in the jurisdiction.
+
+For example, an EU member state may have:
+
+- A **resident rule** with `establishment_types: ["OFFICE", "WAREHOUSE"]` for businesses with a physical establishment in that country
+- A **non-resident rule** with `establishment_types: []` for businesses selling into the country without a local establishment
+
+The engine automatically selects the applicable rules based on the locations you register via the [Locations API](/engine/commendaos/locations). For trade bloc rules, "in the jurisdiction" means in any member country of the trade bloc.
 
 ### Location-based scope
 
@@ -52,13 +71,16 @@ Rules define which transactions count toward the threshold based on the geograph
 
 ### Exclusions
 
-Certain transactions are automatically excluded from threshold calculations when the rule defines exclusions:
+Certain transactions are automatically excluded from threshold calculations when the rule's `exclusion_types` array includes the relevant type:
 
-- **Marketplace transactions** — sales facilitated by a marketplace that collects tax on your behalf
-- **B2B transactions** — sales to business customers identified by a business identification number (e.g., VAT number), which are typically subject to reverse charge
-- **Resale transactions** — sales to customers with valid resale certificates
-- **Product taxability** — specific product categories excluded per jurisdiction rules (e.g., tangible goods excluded from digital services thresholds)
-- **Destination registered** — transactions to jurisdictions where you are already registered
+| Exclusion type | Description |
+|---|---|
+| `TRANSACTION.MARKETPLACE` | Sales facilitated by a marketplace that collects tax on your behalf |
+| `CUSTOMER.B2B` | Sales to business customers identified by a business identification number (e.g., VAT number), typically subject to reverse charge |
+| `CUSTOMER.RESALE` | Sales to customers with valid resale certificates |
+| `TRANSACTION.DESTINATION_REGISTERED` | Transactions to jurisdictions where you are already registered |
+| `TRANSACTION.REFUNDS` | Refund transactions |
+| `PRODUCT.TANGIBLE.TAXABLE`, `PRODUCT.TANGIBLE.EXEMPT`, `PRODUCT.DIGITAL.TAXABLE`, `PRODUCT.DIGITAL.EXEMPT`, `PRODUCT.SERVICES.TAXABLE`, `PRODUCT.SERVICES.EXEMPT` | Product category exclusions — specific product types excluded per jurisdiction rules (e.g., tangible goods excluded from digital services thresholds) |
 
 ### Max transaction value (IOSS)
 
@@ -85,7 +107,8 @@ The v2 response returns an array of jurisdiction objects, each representing one 
       {
         "jurisdiction_id": "STATE_US_NY_1036",
         "jurisdiction_type": "STATE",
-        "exposure_type": "EXPOSURE",
+        "jurisdiction_name": "New York",
+        "exposure_type": "EXPOSURE_ECONOMIC",
         "exposure_rule_id": "us_ny_economic",
         "country": "US",
         "subdivision": "NY",
@@ -94,7 +117,11 @@ The v2 response returns an array of jurisdiction objects, each representing one 
           "sales_threshold": 500000,
           "transactions_threshold": null,
           "threshold_type": "SALES",
-          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR"
+          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR",
+          "location_based_scope": "DESTINATION",
+          "exclusion_types": ["CUSTOMER.RESALE"],
+          "establishment_types": [],
+          "max_transaction_value": null
         },
         "calculation": {
           "included_sales": 320000,
@@ -110,6 +137,7 @@ The v2 response returns an array of jurisdiction objects, each representing one 
       {
         "jurisdiction_id": "TRADEBLOC_EU_3000",
         "jurisdiction_type": "TRADEBLOC",
+        "jurisdiction_name": "European Union",
         "exposure_type": "EXPOSURE",
         "exposure_rule_id": "eu_union_oss",
         "country": "",
@@ -119,7 +147,11 @@ The v2 response returns an array of jurisdiction objects, each representing one 
           "sales_threshold": 10000,
           "transactions_threshold": null,
           "threshold_type": "SALES",
-          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR"
+          "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR",
+          "location_based_scope": "INTRA_COMMUNITY",
+          "exclusion_types": ["CUSTOMER.B2B", "TRANSACTION.DESTINATION_REGISTERED"],
+          "establishment_types": [],
+          "max_transaction_value": null
         },
         "calculation": {
           "included_sales": 8500,
@@ -146,16 +178,32 @@ Each jurisdiction object includes:
 |---|---|
 | `jurisdiction_id` | Internal identifier for the jurisdiction. For trade bloc rules, this is the trade bloc ID (e.g., `TRADEBLOC_EU_3000`) |
 | `jurisdiction_type` | `STATE`, `COUNTRY`, or `TRADEBLOC` |
-| `exposure_type` | Type of exposure obligation |
+| `jurisdiction_name` | Human-readable name of the jurisdiction (e.g., "California", "European Union") |
+| `exposure_type` | Type of exposure obligation: `EXPOSURE_ECONOMIC`, `EXPOSURE_PHYSICAL`, or `EXPOSURE` — see [exposure types](#exposure-types) |
 | `exposure_rule_id` | Identifier for the specific rule being evaluated |
 | `country` | ISO country code, empty for trade bloc-level rules |
 | `subdivision` | State or province code, if applicable |
 | `currency` | Currency of the threshold amounts |
-| `rule` | The threshold rule being applied |
+| `rule` | The threshold rule being applied — see [rule fields](#rule-fields) |
 | `calculation` | Your current progress toward the threshold |
 | `is_nexus_breached` | Whether you have exceeded the registration threshold |
 | `date_of_breach` | Date when the threshold was exceeded, if breached |
 | `recommended_registration_content_id` | The V2 registration content ID recommended for this jurisdiction (e.g., `REG_STATE_CEN_06`). Use this with the [V2 Registration API](/engine/indirect-tax/registrations/v2/registrations-v2) to create a registration. |
+
+### Rule fields
+
+Each `rule` object contains:
+
+| Field | Description |
+|---|---|
+| `sales_threshold` | Revenue amount that triggers registration (in minor currency units), or `null` if not applicable |
+| `transactions_threshold` | Transaction count that triggers registration, or `null` if not applicable |
+| `threshold_type` | `SALES`, `TRANSACTIONS`, or `SALES_OR_TRANSACTIONS` |
+| `evaluation_period_type` | Time window: `PRECEDING_12_MONTHS`, `PREVIOUS_OR_CURRENT_CALENDAR_YEAR`, or `PREVIOUS_CALENDAR_YEAR` |
+| `location_based_scope` | Which transactions count: `DESTINATION`, `WORLDWIDE`, `INTRA_COMMUNITY`, or `IMPORT` |
+| `exclusion_types` | Array of exclusion types applied to this rule (e.g., `["CUSTOMER.B2B", "TRANSACTION.DESTINATION_REGISTERED"]`) |
+| `establishment_types` | Array of location types that qualify for this rule. Empty for non-resident rules |
+| `max_transaction_value` | Per-consignment value cap in minor currency units (e.g., 15000 for IOSS €150 limit). `null` if no cap applies |
 
 <Note>
 A single jurisdiction may appear multiple times in the response if multiple exposure rules apply (e.g., separate rules for goods and services in France or Ireland).
@@ -187,6 +235,43 @@ Pass `v2=true` to run the global exposure engine. Without this parameter, only t
 
 ## Physical presence
 
-If your business has a physical establishment (office, warehouse, or other location) in a jurisdiction, the engine evaluates resident rules for that jurisdiction. Resident rules may have different thresholds or no threshold at all — physical presence can trigger an immediate registration obligation.
+If your business has a physical establishment (office, warehouse, or other location) in a jurisdiction, the engine evaluates two things:
+
+1. **Resident exposure rules** — threshold-based rules that only apply to businesses with an establishment in the jurisdiction. These may have different thresholds than non-resident rules.
+2. **Physical exposure** — an immediate registration obligation triggered by physical presence alone, without any sales threshold. These appear in the response with `exposure_type: "EXPOSURE_PHYSICAL"`.
+
+Physical exposure entries always show `is_nexus_breached: true` with 100% exposure percentages and zero sales or transaction counts, since the obligation is based on presence rather than economic activity:
+
+```json
+{
+  "jurisdiction_id": "STATE_US_CA_1000",
+  "jurisdiction_type": "STATE",
+  "jurisdiction_name": "California",
+  "exposure_type": "EXPOSURE_PHYSICAL",
+  "exposure_rule_id": "us_ca_physical",
+  "country": "US",
+  "subdivision": "CA",
+  "currency": "USD",
+  "rule": {
+    "sales_threshold": null,
+    "transactions_threshold": null,
+    "threshold_type": "SALES_OR_TRANSACTIONS",
+    "evaluation_period_type": "PREVIOUS_OR_CURRENT_CALENDAR_YEAR",
+    "location_based_scope": "DESTINATION",
+    "exclusion_types": [],
+    "establishment_types": ["OFFICE", "WAREHOUSE"],
+    "max_transaction_value": null
+  },
+  "calculation": {
+    "included_sales": 0,
+    "included_transactions": 0,
+    "gross_sales": 0,
+    "gross_transactions": 0,
+    "sales_exposure_percentage": 100,
+    "transactions_exposure_percentage": 100
+  },
+  "is_nexus_breached": true
+}
+```
 
 Register your business locations via the [Locations API](/engine/commendaos/locations) to ensure the engine correctly identifies which rules apply.

@@ -75,7 +75,7 @@ The default response uses field names like `is_nexus_breached` and `states` for 
 
 Pass `v2=true` as a query parameter to get global jurisdiction-level threshold data. This covers US, Canada, UK, and EU jurisdictions, including support for multiple exposure rules per jurisdiction (for example, EU Union OSS, Non-Union OSS, and IOSS).
 
-The v2 response uses a `jurisdictions` array instead of `states`, and includes additional fields such as `jurisdiction_id`, `exposure_type`, `exposure_rule_id`, `country`, `subdivision`, and `currency`.
+The v2 response uses a `jurisdictions` array instead of `states`, and includes additional fields such as `jurisdiction_id`, `jurisdiction_name`, `exposure_type`, `exposure_rule_id`, `country`, `subdivision`, and `currency`. The `rule` object also includes `location_based_scope`, `exclusion_types`, `establishment_types`, and `max_transaction_value`.
 
 ```json
 {
@@ -85,7 +85,8 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
       {
         "jurisdiction_id": "US_CA_1000",
         "jurisdiction_type": "STATE",
-        "exposure_type": "ECONOMIC",
+        "jurisdiction_name": "California",
+        "exposure_type": "EXPOSURE_ECONOMIC",
         "exposure_rule_id": "US_CA_ECONOMIC_001",
         "country": "US",
         "subdivision": "CA",
@@ -94,7 +95,11 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
           "sales_threshold": 500000,
           "transactions_threshold": null,
           "threshold_type": "SALES_ONLY",
-          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR"
+          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR",
+          "location_based_scope": "DESTINATION",
+          "exclusion_types": ["CUSTOMER.RESALE"],
+          "establishment_types": [],
+          "max_transaction_value": null
         },
         "calculation": {
           "included_sales": 150000,
@@ -110,16 +115,21 @@ The v2 response uses a `jurisdictions` array instead of `states`, and includes a
       {
         "jurisdiction_id": "TRADEBLOC_EU_3000",
         "jurisdiction_type": "TRADEBLOC",
-        "exposure_type": "ECONOMIC",
+        "jurisdiction_name": "European Union",
+        "exposure_type": "EXPOSURE",
         "exposure_rule_id": "EU_UNION_OSS_001",
-        "country": "DE",
+        "country": "",
         "subdivision": "",
         "currency": "EUR",
         "rule": {
           "sales_threshold": 10000,
           "transactions_threshold": null,
           "threshold_type": "SALES_ONLY",
-          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR"
+          "evaluation_period_type": "PREV_OR_CURRENT_CALENDAR_YEAR",
+          "location_based_scope": "INTRA_COMMUNITY",
+          "exclusion_types": ["CUSTOMER.B2B", "TRANSACTION.DESTINATION_REGISTERED"],
+          "establishment_types": [],
+          "max_transaction_value": null
         },
         "calculation": {
           "included_sales": 12000,
@@ -148,9 +158,10 @@ Each jurisdiction in the v2 response includes a `recommended_registration_conten
 | Field | Default | V2 (`v2=true`) |
 |---|---|---|
 | Top-level array | `states` | `jurisdictions` |
-| Jurisdiction identifier | `state` (US state code) | `jurisdiction_id`, `country`, `subdivision` |
+| Jurisdiction identifier | `state` (US state code) | `jurisdiction_id`, `jurisdiction_name`, `country`, `subdivision` |
 | Currency | Implicitly USD | Explicit `currency` field |
 | Exposure rule metadata | Not included | `exposure_type`, `exposure_rule_id`, `jurisdiction_type` |
+| Rule details | `threshold_type`, `evaluation_period_type` only | Adds `location_based_scope`, `exclusion_types`, `establishment_types`, `max_transaction_value` |
 | Calculation fields | `total_sales`, `total_transactions`, etc. | `included_sales`, `included_transactions`, etc. |
 | Registration recommendation | Not included | `recommended_registration_content_id` |
 | Supported jurisdictions | US states only | US, Canada, UK, EU (country-level and tradebloc) |
